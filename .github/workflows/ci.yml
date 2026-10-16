@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # O deploy é disparado à mão (Actions → Run workflow) enquanto a montagem da
+  # VPS está em andamento. Ver job `deploy` abaixo.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint / typecheck / build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: install
+        run: pnpm install --frozen-lockfile
+      - name: lint
+        run: pnpm lint
+      - name: typecheck
+        run: pnpm typecheck
+      # O build não precisa de banco: as páginas que consultam o Payload são
+      # renderizadas na primeira visita.
+      - name: build
+        env:
+          NEXT_PUBLIC_SERVER_URL: https://felpma.com.br
+        run: pnpm build
+
+  deploy:
+    name: Deploy
+    needs: quality
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-felpma
+      cancel-in-progress: false
+    steps:
+      - name: SSH and redeploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          # Mesma disciplina do ranking-lpo: recria tudo, depois espera o
+          # healthcheck do site ficar healthy antes de dar verde no job.
+          # O `if` explícito é obrigatório — `[ ... ] && exit 0` com `set -e`
+          # mata o script no sh/dash quando o test falha.
+          script: |
+            set -e
+            cd /opt/felpma
+            docker network inspect ingress >/dev/null 2>&1 || docker network create ingress
+            git fetch --quiet origin main
+            git reset --hard origin/main
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile producao up -d --build --force-recreate --remove-orphans
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile producao ps --format "table {{.Name}}\t{{.Status}}"
+            echo "waiting site healthy..."
+            for i in $(seq 1 60); do
+              s=$(docker inspect felpma-site --format '{{.State.Health.Status}}' 2>/dev/null || echo "starting")
+              echo "attempt $i: $s"
+              if [ "$s" = "healthy" ]; then
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "::error::site never became healthy after redeploy"
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile producao logs --tail=100 site
+            exit 1
+
+  smoke:
+    name: Smoke test (prod)
+    needs: deploy
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: healthz
+        run: |
+          for i in {1..24}; do
+            code=$(curl -s -o /dev/null --connect-timeout 3 --max-time 10 -w "%{http_code}" https://felpma.com.br/healthz || echo "000")
+            echo "attempt $i: $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 5
+          done
+          echo "::error::/healthz never returned 200"; exit 1
+      - name: home
+        run: |
+          code=$(curl -s -o /dev/null --connect-timeout 3 --max-time 30 -w "%{http_code}" https://felpma.com.br/)
+          echo "home: $code"
+          [ "$code" = "200" ] || exit 1
+      - name: admin
+        run: |
+          code=$(curl -s -o /dev/null --connect-timeout 3 --max-time 30 -w "%{http_code}" https://felpma.com.br/admin)
+          echo "admin: $code"
+          case "$code" in
+            200|302|307) exit 0 ;;
+            *) exit 1 ;;
+          esac
+      - name: www redirects
+        run: |
+          code=$(curl -s -o /dev/null --connect-timeout 3 --max-time 10 -w "%{http_code}" https://www.felpma.com.br/healthz)
+          loc=$(curl -s -o /dev/null --connect-timeout 3 --max-time 10 -w "%{redirect_url}" https://www.felpma.com.br/)
+          echo "www: $code -> $loc"
+          [ "$code" = "301" ] || exit 1

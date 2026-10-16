@@ -9,6 +9,10 @@ RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
 WORKDIR /app
+# Next congela NEXT_PUBLIC_* no build. Quem define o valor é o build.args do
+# docker-compose.prod.yml — sem ele o sitemap/robots saem com localhost:3000.
+ARG NEXT_PUBLIC_SERVER_URL
+ENV NEXT_PUBLIC_SERVER_URL=$NEXT_PUBLIC_SERVER_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # O build gera as páginas sob demanda; não precisa de banco nesta etapa

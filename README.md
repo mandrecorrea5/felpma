@@ -81,15 +81,33 @@ Em produção, as migrations pendentes rodam automaticamente quando o servidor i
 ## Publicando
 
 O build não precisa de banco: as páginas são renderizadas a cada visita, então o que muda no painel aparece no site na hora.
-
 ### Em um servidor com Docker (VPS)
 
+A VPS já roda o stack do `ranking-lpo` (`weightlogx.com.br`), e o Caddy dele é
+quem segura as portas 80/443. Este projeto **não** sobe um proxy próprio: ele
+entra na network Docker `ingress` e o domínio é publicado no
+`ranking-lpo/deploy/caddy/Caddyfile`, que faz o TLS e o reverse proxy até o
+container `felpma-site:3000`.
+
+Uma vez na máquina:
+
 ```bash
-# .env com PAYLOAD_SECRET, POSTGRES_PASSWORD e NEXT_PUBLIC_SERVER_URL=https://seu-dominio
-docker compose --profile producao up -d --build
+git clone git@github.com:mandrecorrea5/felpma.git /opt/felpma
+cd /opt/felpma
+docker network create ingress          # idempotente, só na primeira vez
+cp .env.example .env                   # PAYLOAD_SECRET, POSTGRES_PASSWORD,
+                                       # NEXT_PUBLIC_SERVER_URL=https://felpma.com.br
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile producao up -d --build
 ```
 
-Imagens e PDFs enviados pelo painel ficam nos volumes `uploads-media` e `uploads-documentos`. Inclua esses volumes **e o banco** na rotina de backup.
+O overlay de produção não publica porta nenhuma no host (nem o 5432) e trava os
+limites de CPU/memória. O deploy automático (`.github/workflows/ci.yml`) roda os
+mesmos comandos via SSH em `/opt/felpma` — precisa dos secrets `VPS_HOST`,
+`VPS_USER` e `VPS_SSH_KEY` no GitHub, os mesmos valores usados no
+`ranking-lpo`.
+
+DNS: `felpma.com.br` e `www.felpma.com.br` apontando para o IP da VPS. O `www` é
+redirecionado para a raiz.
 
 ### Em plataformas serverless (Vercel e similares)
 
@@ -102,6 +120,40 @@ Nessas plataformas o disco não é persistente. Antes de publicar, configure um 
 - [ ] Substituir todos os placeholders `[...]` e os PDFs de exemplo
 - [ ] Revisar a política de privacidade com a assessoria jurídica
 - [ ] Configurar um adaptador de e-mail do Payload, para recuperação de senha do painel
+- [ ] Preencher `R2_*` + `HEALTHCHECK_URL` no `.env` do servidor e rodar `bash deploy/backup/test-restore.sh`
+
+## Backup
+
+O serviço `backup` (só no overlay de produção) roda 03:00 todo dia e gera três
+artefatos por execução em `deploy/backup/backups/`:
+
+| Arquivo | Origem |
+|---|---|
+| `felpma-<data-hora>.dump` | `pg_dump -Fc` do banco |
+| `felpma-media-<data-hora>.tar.gz` | volume `uploads-media` (imagens do painel) |
+| `felpma-documentos-<data-hora>.tar.gz` | volume `uploads-documentos` (PDFs) |
+
+Os uploads precisam do tar.gz: o banco guarda só o caminho do arquivo, então um
+restore que trouxer apenas o dump devolve páginas com imagem quebrada.
+
+Retenção: 14 dias no disco da VPS, 30 dias no Cloudflare R2 (se as envs `R2_*`
+estiverem no `.env` — sem elas o upload é pulado e o backup fica mono-disco).
+`HEALTHCHECK_URL` (healthchecks.io) é o alarme: silêncio no check = backup não
+rodou.
+
+```bash
+# dispara um backup agora, sem esperar o cron
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backup sh -c '. /etc/backup/env.sh && /backup.sh'
+
+# agenda e últimos artefatos
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=40 backup
+ls -lh deploy/backup/backups/
+
+# valida que o backup mais remoto restaura (Postgres efêmero, não toca em prod)
+bash deploy/backup/test-restore.sh
+```
+
+O `test-restore.sh` exige as envs `R2_*` no `.env` e a porta 55434 livre.
 
 ## Fora deste projeto (por enquanto)
 
