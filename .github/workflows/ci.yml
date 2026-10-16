@@ -71,6 +71,9 @@ jobs:
               s=$(docker inspect felpma-site --format '{{.State.Health.Status}}' 2>/dev/null || echo "starting")
               echo "attempt $i: $s"
               if [ "$s" = "healthy" ]; then
+                # Site de pé antes do proxy apontar pra ele: se o reload do
+                # Caddy vier antes, o primeiro pedido público pega 502.
+                sh deploy/reload-caddy.sh
                 exit 0
               fi
               sleep 5

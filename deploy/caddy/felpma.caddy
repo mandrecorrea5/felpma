@@ -1,0 +1,69 @@
+# ============================================================================
+# felpma.com.br — portal institucional da FELPMA
+#
+# Este arquivo NÃO pertence ao ranking-lpo. Ele mora no repositório
+# mandrecorrea5/felpma e é montado dentro do container ranking-caddy, em
+# read-only, como /etc/caddy/sites/felpma.caddy (ver o volume `caddy` em
+# docker-compose.prod.yml do projeto vizinho).
+#
+# Consequência prática: mexeu aqui, commitou, e o deploy do felpma faz
+#
+#   docker exec ranking-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+#   docker exec ranking-caddy caddy reload   --config /etc/caddy/Caddyfile --adapter caddyfile
+#
+# `reload` relê este arquivo e aplica sem reiniciar o container, sem derrubar
+# weightlogx.com.br e sem tocar no compose do outro projeto. É por isso que o
+# arquivo existe em vez de o bloco ir direto no Caddyfile dele.
+#
+# O domínio aqui é LITERAL, não {$CADDY_FELPMA_HOST}: o container ranking-caddy
+# só recebe as variáveis do .env do ranking-lpo, e obrigar aquele .env a carregar
+# uma variável deste projeto (ou pior: exigir a presença dela com `:?`, que faz o
+# deploy do vizinho falhar se alguém esquecer) é exatamente o acoplamento que a
+# gente quer eliminar.
+#
+# DNS: nuvem CINZA na Cloudflare, obrigatório. O Caddy emite e renova o próprio
+# certificado via TLS-ALPN/HTTP-01, e a imagem caddy:2.8-alpine não traz o módulo
+# dns.cloudflare — com a nuvem laranja a renovação ia falhar em silêncio e o
+# certificado venceria. Mesmo modelo já em uso por weightlogx.com.br.
+# ============================================================================
+
+# O www só redireciona. Precisa do próprio certificado, então o registro existe
+# na Cloudflare e o Caddy emite pra ele também.
+www.felpma.com.br {
+	redir https://felpma.com.br{uri} permanent
+}
+
+felpma.com.br {
+	encode zstd gzip
+
+	# Uploads do painel têm teto de 20 MB no Payload (upload.limits.fileSize em
+	# src/payload.config.ts). Os 30 MB aqui são o mesmo teto visto pelo proxy,
+	# com folga — sem ele, um POST de vários GB chega ao único CPU da máquina.
+	request_body {
+		max_size 30MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Sem CSP de propósito, e sem X-Frame-Options: o painel do Payload injeta
+	# estilo e script inline e o mapa de centros é um iframe do OpenStreetMap.
+	# Uma CSP herdada do bloco do SvelteKit do vizinho quebraria o painel no
+	# escuro. Se um dia for escrever CSP pra este site, escreva do zero e em
+	# Content-Security-Policy-Report-Only primeiro.
+
+	# `dynamic a` re-resolve o DNS interno do Docker a cada 10s. Sem isso, todo
+	# `--force-recreate` do felpma troca o IP do container e o Caddy continua
+	# batendo no IP velho, devolvendo 502 até alguém reiniciá-lo.
+	reverse_proxy {
+		dynamic a {
+			name felpma-site
+			port 3000
+			refresh 10s
+		}
+	}
+}
