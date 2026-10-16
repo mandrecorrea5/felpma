@@ -4,8 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
-  # O deploy é disparado à mão (Actions → Run workflow) enquanto a montagem da
-  # VPS está em andamento. Ver job `deploy` abaixo.
+  # CD: todo push em main publica. workflow_dispatch fica só pra re-publicar
+  # o que já está no ar sem mudar código (redeploy depois de mexer no .env, por
+  # exemplo). Ver job `deploy` abaixo.
   workflow_dispatch:
 
 permissions:
@@ -41,7 +42,11 @@ jobs:
   deploy:
     name: Deploy
     needs: quality
-    if: github.event_name == 'workflow_dispatch'
+    # `!= pull_request` e nao `== push` de proposito: continua valendo o
+    # workflow_dispatch pra re-publicar sem commit novo. E PR aberto jamais
+    # publica — o script abaixo faz reset numa branch fixa do servidor, então um
+    # deploy disparado por PR publicaria o main, nao o codigo do PR.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     concurrency:
       group: deploy-felpma
@@ -63,7 +68,12 @@ jobs:
             cd /opt/felpma
             docker network inspect ingress >/dev/null 2>&1 || docker network create ingress
             git fetch --quiet origin main
-            git reset --hard origin/main
+            # SHA deste run, nao a ponta de origin/main. Com CD automatico dois
+            # pushes em sequencia entram na fila, e o `concurrency` acima so
+            # serializa: o segundo ainda leria a ponta de main (ja mais adiantada
+            # que ele) e publicaria codigo que nao passou pelo quality daquele
+            # run. Assim cada deploy publica exatamente o commit que ele validou.
+            git reset --hard ${{ github.sha }}
             docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile producao up -d --build --force-recreate --remove-orphans
             docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile producao ps --format "table {{.Name}}\t{{.Status}}"
             echo "waiting site healthy..."
@@ -85,7 +95,7 @@ jobs:
   smoke:
     name: Smoke test (prod)
     needs: deploy
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: healthz
