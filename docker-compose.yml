@@ -1,0 +1,44 @@
+# Desenvolvimento: sobe só o Postgres.
+#   docker compose up -d
+#
+# Produção (servidor/VPS): sobe Postgres + site.
+#   docker compose --profile producao up -d --build
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: felpma
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-felpma}
+      POSTGRES_DB: felpma
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U felpma']
+      interval: 5s
+      retries: 10
+
+  site:
+    profiles: ['producao']
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://felpma:${POSTGRES_PASSWORD:-felpma}@postgres:5432/felpma
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET:?defina PAYLOAD_SECRET no .env}
+      NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL:-http://localhost:3000}
+    ports:
+      - '3000:3000'
+    volumes:
+      # Imagens e PDFs enviados pelo painel
+      - uploads-media:/app/media
+      - uploads-documentos:/app/documentos
+
+volumes:
+  pgdata:
+  uploads-media:
+  uploads-documentos:
