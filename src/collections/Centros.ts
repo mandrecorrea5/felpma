@@ -1,8 +1,39 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, NumberField } from 'payload'
 import { authenticated } from '../access'
 import { slugField } from '../fields/slug'
 import { revalidateHooks } from '../hooks/revalidate'
 import { TAGS_CENTRO } from '../lib/constants'
+
+/**
+ * Latitude e longitude aceitam qualquer número, e o input do painel com locale
+ * pt-BR descarta o separador decimal quando a coordenada é colada:
+ * -44.259103920400776 chega como -44259103920400776. Esse valor passa pelo
+ * L.marker()/setView() do Leaflet (components/CentrosMap.tsx), cuja projeção
+ * Web Mercator devolve um X de ~5e18 px — e é o navegador de quem abre o site
+ * que trava. min/max seguram no input; validate é a mensagem que diz o que fazer.
+ */
+const coordenada = (
+  nome: 'latitude' | 'longitude',
+  limite: number,
+  admin: NumberField['admin'],
+): NumberField => ({
+  name: nome,
+  type: 'number',
+  min: -limite,
+  max: limite,
+  admin,
+  validate: (value) => {
+    if (value === null || value === undefined) return true
+    // O painel entrega number, mas a API aceita string: Number() cobre as duas
+    // pontas e o Number.isFinite pega o resto (NaN, Infinity, texto).
+    const n = typeof value === 'number' ? value : Number(value)
+    if (!Number.isFinite(n)) return `Digite ${nome} como número.`
+    if (n < -limite || n > limite) {
+      return `${nome === 'latitude' ? 'Latitude' : 'Longitude'} precisa estar entre -${limite} e ${limite}. Se você colou o valor, confira se o ponto decimal não se perdeu.`
+    }
+    return true
+  },
+})
 
 export const Centros: CollectionConfig = {
   slug: 'centros',
@@ -35,16 +66,12 @@ export const Centros: CollectionConfig = {
     {
       type: 'row',
       fields: [
-        {
-          name: 'latitude',
-          type: 'number',
-          admin: {
-            width: '50%',
-            description:
-              'Para o mapa. No Google Maps: clique com o botão direito no local e copie as coordenadas.',
-          },
-        },
-        { name: 'longitude', type: 'number', admin: { width: '50%' } },
+        coordenada('latitude', 90, {
+          width: '50%',
+          description:
+            'Para o mapa. No Google Maps: clique com o botão direito no local e copie as coordenadas.',
+        }),
+        coordenada('longitude', 180, { width: '50%' }),
       ],
     },
     {
