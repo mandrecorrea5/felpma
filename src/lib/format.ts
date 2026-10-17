@@ -85,6 +85,26 @@ export const mediaUrl = (m: unknown, size?: 'thumb' | 'card' | 'hero') => {
   return (size && m.sizes?.[size]?.url) || m.url || null
 }
 
+/**
+ * Versão relativa de mediaUrl, para <Image src>. O payload.config põe
+ * serverURL, então mediaUrl devolve https://felpma.com.br/api/media/file/x.webp
+ * — e o otimizador do Next recusa URL absoluta, mesmo do próprio host: responde
+ * 400 `"url" parameter is not allowed` e a imagem não aparece. Relativo casa com
+ * o localPatterns do next.config.ts.
+ *
+ * Não trocar mediaUrl por esta em openGraph.images: aí a absoluta é obrigatória,
+ * senão o compartilhamento em WhatsApp e redes fica sem miniatura.
+ */
+export const mediaSrc = (m: unknown, size?: 'thumb' | 'card' | 'hero') => {
+  const url = mediaUrl(m, size)
+  if (!url || !url.startsWith('http')) return url
+  try {
+    return new URL(url).pathname
+  } catch {
+    return url
+  }
+}
+
 export const tamanhoArquivo = (bytes?: number | null) => {
   if (!bytes) return ''
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`

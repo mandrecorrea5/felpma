@@ -7,7 +7,7 @@ import {
   dia,
   extensao,
   isMedia,
-  mediaUrl,
+  mediaSrc,
   mesAbrev,
   statusCompeticao,
   tamanhoArquivo,
@@ -152,7 +152,7 @@ export function Midia({
   className?: string
   style?: React.CSSProperties
 }) {
-  const url = mediaUrl(media, size)
+  const url = mediaSrc(media, size)
   if (!url || !isMedia(media)) {
     return (
       <div

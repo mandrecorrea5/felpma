@@ -8,7 +8,7 @@ import { RichText } from '@/components/RichText'
 import { Midia, PageHero } from '@/components/ui'
 import { pontosDosCentros } from '@/lib/centros'
 import { TAGS_CENTRO, labelOf } from '@/lib/constants'
-import { instagramLink, isMedia, mediaUrl, whatsappLink } from '@/lib/format'
+import { instagramLink, isMedia, mediaSrc, mediaUrl, whatsappLink } from '@/lib/format'
 import { getPayloadClient } from '@/lib/payload'
 
 type Props = { params: Promise<{ slug: string }> }
@@ -93,7 +93,7 @@ export default async function CentroPage({ params }: Props) {
                 {galeria.map((m) => (
                   <Image
                     key={m.id}
-                    src={mediaUrl(m, 'card')!}
+                    src={mediaSrc(m, 'card')!}
                     alt={m.alt}
                     width={360}
                     height={270}
