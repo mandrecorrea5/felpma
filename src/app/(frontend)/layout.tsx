@@ -10,6 +10,7 @@ import '@fontsource/ibm-plex-sans/600.css'
 import './globals.css'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { NdovuTracker } from '@/lib/ndovu/NdovuTracker'
 import { getConfiguracoes } from '@/lib/payload'
 
 // Páginas renderizadas a cada visita: o conteúdo do painel aparece na hora e o build
@@ -37,6 +38,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="pt-BR">
       <body>
+        <NdovuTracker />
         <Header config={config} />
         <main id="conteudo">{children}</main>
         <Footer config={config} />

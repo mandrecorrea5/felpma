@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from '../Icon'
+import { rastreia } from '@/lib/ndovu/client'
 import { NAV_PRINCIPAL, NAV_TOPO, isAtivo } from './nav'
 
 export function NavDesktop() {
@@ -31,26 +32,40 @@ export function HeaderActions({ linkAreaFiliado }: { linkAreaFiliado?: string | 
   const [buscaEm, setBuscaEm] = useState<string | null>(null)
   const menu = menuEm === pathname
   const busca = buscaEm === pathname
-  const setMenu = (v: boolean) => setMenuEm(v ? pathname : null)
-  const setBusca = (fn: (v: boolean) => boolean) => setBuscaEm(fn(busca) ? pathname : null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+
+  // Fecha o menu reportando o porquê. Os três caminhos de fechamento são
+  // distintos de propósito: "abriu e fechou sem clicar em nada" é o sinal de
+  // que o menu não foi entendido como menu.
+  const fechaMenu = useCallback(
+    (motivo: 'botao_fechar' | 'fora_do_painel' | 'tecla_esc' | 'envio_de_busca') => {
+      setMenuEm(null)
+      rastreia.acao('menu_fechado', { feature: 'nav', metadados: { motivo } })
+    },
+    [],
+  )
 
   useEffect(() => {
     if (!menu) return
     closeRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuEm(null)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && fechaMenu('tecla_esc')
     document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = ''
     }
-  }, [menu])
+  }, [menu, fechaMenu])
 
   useEffect(() => {
     if (busca) searchRef.current?.focus()
   }, [busca])
+
+  const alternaBusca = (abre: boolean) => {
+    setBuscaEm(abre ? pathname : null)
+    rastreia.acao(abre ? 'busca_painel_aberta' : 'busca_painel_fechada', { feature: 'busca' })
+  }
 
   return (
     <>
@@ -61,7 +76,7 @@ export function HeaderActions({ linkAreaFiliado }: { linkAreaFiliado?: string | 
           aria-label="Buscar no site"
           aria-expanded={busca}
           aria-controls="painel-busca"
-          onClick={() => setBusca((v) => !v)}
+          onClick={() => alternaBusca(!busca)}
         >
           <Icon name="busca" />
         </button>
@@ -74,7 +89,10 @@ export function HeaderActions({ linkAreaFiliado }: { linkAreaFiliado?: string | 
           aria-label="Abrir menu"
           aria-expanded={menu}
           aria-controls="menu-mobile"
-          onClick={() => setMenu(true)}
+          onClick={() => {
+            setMenuEm(pathname)
+            rastreia.acao('menu_aberto', { feature: 'nav' })
+          }}
         >
           <Icon name="menu" size={22} strokeWidth={2.2} />
         </button>
@@ -86,7 +104,26 @@ export function HeaderActions({ linkAreaFiliado }: { linkAreaFiliado?: string | 
           className="search-panel"
           style={{ position: 'absolute', left: 0, right: 0, top: '100%' }}
         >
-          <form action="/busca" className="container" role="search">
+          <form
+            action="/busca"
+            className="container"
+            role="search"
+            data-ndovu-manual
+            onSubmit={(e) => {
+              const campo = e.currentTarget.elements.namedItem('q')
+              const termo = campo instanceof HTMLInputElement ? campo.value.trim() : ''
+              rastreia.acao('busca_enviada', {
+                feature: 'busca',
+                metadados: {
+                  origem: 'painel_do_topo',
+                  termo: termo.slice(0, 60),
+                  vazio: termo.length === 0,
+                },
+              })
+              // O `page_view` de /busca já traz o termo em `filtros.q`: o que este
+              // evento acrescenta é que a busca saiu do painel do topo.
+            }}
+          >
             <label htmlFor="busca-topo" className="sr-only">
               Buscar no site
             </label>
@@ -97,7 +134,7 @@ export function HeaderActions({ linkAreaFiliado }: { linkAreaFiliado?: string | 
               type="search"
               className="input"
               placeholder="Buscar notícias, competições, documentos…"
-              onKeyDown={(e) => e.key === 'Escape' && setBusca(() => false)}
+              onKeyDown={(e) => e.key === 'Escape' && alternaBusca(false)}
             />
             <button type="submit" className="btn btn--azul">
               Buscar
@@ -107,7 +144,10 @@ export function HeaderActions({ linkAreaFiliado }: { linkAreaFiliado?: string | 
       ) : null}
 
       {menu ? (
-        <div className="drawer" onClick={(e) => e.target === e.currentTarget && setMenu(false)}>
+        <div
+          className="drawer"
+          onClick={(e) => e.target === e.currentTarget && fechaMenu('fora_do_painel')}
+        >
           <nav id="menu-mobile" className="drawer__panel" aria-label="Menu">
             <div className="drawer__head">
               <span>Menu</span>
@@ -116,7 +156,7 @@ export function HeaderActions({ linkAreaFiliado }: { linkAreaFiliado?: string | 
                 type="button"
                 className="icon-btn"
                 aria-label="Fechar menu"
-                onClick={() => setMenu(false)}
+                onClick={() => fechaMenu('botao_fechar')}
               >
                 <Icon name="fechar" strokeWidth={2.2} />
               </button>

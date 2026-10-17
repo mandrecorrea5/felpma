@@ -13,6 +13,16 @@ WORKDIR /app
 # docker-compose.prod.yml — sem ele o sitemap/robots saem com localhost:3000.
 ARG NEXT_PUBLIC_SERVER_URL
 ENV NEXT_PUBLIC_SERVER_URL=$NEXT_PUBLIC_SERVER_URL
+# Ndovu (observabilidade) é frontend puro: a chave é embutida no bundle, então
+# também precisa existir no build. Vazias = SDK fica no-op e o site sobe igual.
+ARG NEXT_PUBLIC_NDOVU_ENDPOINT
+ARG NEXT_PUBLIC_NDOVU_API_KEY
+ARG NEXT_PUBLIC_NDOVU_APP
+ARG NEXT_PUBLIC_APP_VERSION
+ENV NEXT_PUBLIC_NDOVU_ENDPOINT=$NEXT_PUBLIC_NDOVU_ENDPOINT \
+    NEXT_PUBLIC_NDOVU_API_KEY=$NEXT_PUBLIC_NDOVU_API_KEY \
+    NEXT_PUBLIC_NDOVU_APP=$NEXT_PUBLIC_NDOVU_APP \
+    NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # O build gera as páginas sob demanda; não precisa de banco nesta etapa

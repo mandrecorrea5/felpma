@@ -91,6 +91,7 @@ export default async function CalendarioPage({ searchParams }: Props) {
               <AutoSubmitSelect
                 id="ano"
                 name="ano"
+                feature="competicoes"
                 className="select"
                 defaultValue={ano ? String(ano) : ''}
                 style={{ height: 44 }}

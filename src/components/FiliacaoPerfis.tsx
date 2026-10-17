@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Icon } from './Icon'
+import { rastreia } from '@/lib/ndovu/client'
 
 export type PerfilFiliacao = {
   nome: string
@@ -39,7 +40,15 @@ export function FiliacaoPerfis({
               className="perfil"
               aria-pressed={i === sel}
               aria-controls="docs-perfil"
-              onClick={() => setSel(i)}
+              onClick={() => {
+                setSel(i)
+                // O funil de filiação começa aqui: qual perfil a pessoa quis ver é
+                // o que separa "chegou na página" de "escolheu um caminho".
+                rastreia.acao('perfil_filiacao_selecionado', {
+                  feature: 'filiacao',
+                  metadados: { perfil: p.nome, indice: i, repetido: i === sel },
+                })
+              }}
             >
               <strong>{p.nome}</strong>
               {p.descricao ? <span>{p.descricao}</span> : null}
@@ -76,13 +85,40 @@ export function FiliacaoPerfis({
             </strong>
           </div>
           {atual.linkInscricao ? (
-            <a href={atual.linkInscricao} className="btn btn--vermelho">
+            // `data-ndovu-manual`: a delegação automática chamaria isso de
+            // `link_externo`. Aqui o nome é o do funil, e o perfil vai junto.
+            <a
+              href={atual.linkInscricao}
+              className="btn btn--vermelho"
+              data-ndovu-manual
+              onClick={() =>
+                rastreia.acao('filiacao_iniciada', {
+                  feature: 'filiacao',
+                  metadados: {
+                    perfil: atual.nome,
+                    destino: 'formulario_externo',
+                    temFormulario: Boolean(atual.formulario),
+                  },
+                })
+              }
+            >
               Iniciar filiação de {atual.nome}
             </a>
           ) : (
             <a
               href={`/contato?assunto=filiacao&perfil=${encodeURIComponent(atual.nome)}`}
               className="btn btn--vermelho"
+              data-ndovu-manual
+              onClick={() =>
+                rastreia.acao('filiacao_iniciada', {
+                  feature: 'filiacao',
+                  metadados: {
+                    perfil: atual.nome,
+                    destino: 'form_contato',
+                    temFormulario: Boolean(atual.formulario),
+                  },
+                })
+              }
             >
               Solicitar filiação de {atual.nome}
             </a>

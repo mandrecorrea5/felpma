@@ -2,7 +2,16 @@
 
 import { getPayloadClient } from '@/lib/payload'
 
-export type EstadoContato = { ok: boolean; erro?: string; campos?: Record<string, string> }
+export type EstadoContato = {
+  ok: boolean
+  erro?: string
+  campos?: Record<string, string>
+  /**
+   * `spam` = o anti-spam barrou e nada foi gravado, mas o usuário vê o mesmo
+   * sucesso. Sem este sinal o funil de contato contaria robô como conversa.
+   */
+  motivo?: 'spam'
+}
 
 const ASSUNTOS = ['filiacao', 'competicoes', 'imprensa', 'parcerias', 'outros'] as const
 
@@ -17,7 +26,8 @@ export async function enviarContato(_prev: EstadoContato, form: FormData): Promi
 
   // Anti-spam simples: campo invisível preenchido ou envio em menos de 3 segundos.
   const inicio = Number(form.get('t') ?? 0)
-  if (form.get('site') || (inicio && Date.now() - inicio < 3000)) return { ok: true }
+  if (form.get('site') || (inicio && Date.now() - inicio < 3000))
+    return { ok: true, motivo: 'spam' }
 
   if (campos.nome.length < 2) return { ok: false, erro: 'Informe seu nome.', campos }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(campos.email))

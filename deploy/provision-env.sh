@@ -57,6 +57,18 @@ PAYLOAD_SECRET=${SECRET}
 # arg (docker-compose.prod.yml). Mudar aqui exige rebuild, não só restart.
 NEXT_PUBLIC_SERVER_URL=https://felpma.com.br
 
+# --- Ndovu (observabilidade) ---------------------------------------------------
+# Chave de INGESTÃO do frontend, gerada no backoffice do Ndovu (Apps → Cadastrar
+# app). É pública por natureza: Next embute NEXT_PUBLIC_* no bundle do navegador.
+# Vale só para ingerir evento no app dono da chave — nunca para consultar.
+#
+# Como os outros NEXT_PUBLIC_*, mudar aqui exige rebuild da imagem, não restart.
+# Vazio = SDK desligado e o site funcionando igual.
+NEXT_PUBLIC_NDOVU_ENDPOINT=
+NEXT_PUBLIC_NDOVU_API_KEY=
+NEXT_PUBLIC_NDOVU_APP=felpma
+NEXT_PUBLIC_APP_VERSION=
+
 # --- Backup ------------------------------------------------------------------
 # Com as quatro R2_* vazias o upload é pulado e o dump fica só no disco da VPS
 # — que é o disco que já carrega o ranking-lpo, ou seja: sem backup de fato.

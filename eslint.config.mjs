@@ -24,7 +24,16 @@ const eslintConfig = [
     },
   },
   {
-    ignores: ['.next/', 'src/payload-types.ts', 'src/payload-generated-schema.ts', 'src/migrations/', 'src/app/(payload)/'],
+    ignores: [
+      '.next/',
+      'src/payload-types.ts',
+      'src/payload-generated-schema.ts',
+      'src/migrations/',
+      'src/app/(payload)/',
+      // SDK do Ndovu: código de terceiro copiado para o repo. Não é nosso para
+      // formatizar — e um `no-this-alias` nele não tem conserto sem editar o vendor.
+      'src/lib/ndovu/ndovu-browser.js',
+    ],
   },
 ]
 

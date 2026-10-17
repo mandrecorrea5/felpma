@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
+import { rastreia } from '@/lib/ndovu/client'
 import { enviarContato, type EstadoContato } from './actions'
 
 const ASSUNTOS = [
@@ -11,6 +12,8 @@ const ASSUNTOS = [
   { value: 'outros', label: 'Outros assuntos' },
 ]
 
+const ESTADO_INICIAL: EstadoContato = { ok: false }
+
 export function ContatoForm({
   assuntoInicial,
   mensagemInicial,
@@ -18,9 +21,48 @@ export function ContatoForm({
   assuntoInicial?: string
   mensagemInicial?: string
 }) {
-  const [estado, action, enviando] = useActionState<EstadoContato, FormData>(enviarContato, {
-    ok: false,
-  })
+  const [estado, action, enviando] = useActionState<EstadoContato, FormData>(
+    enviarContato,
+    ESTADO_INICIAL,
+  )
+  const inicioDoEnvio = useRef<number | null>(null)
+  const assunto = useRef<string>('outros')
+
+  // Estado inicial é `{ ok: false }` sem `erro` — a mesma forma de um fracasso.
+  // Por isso só se reporta quando há `erro`, `ok` explícito ou `motivo`.
+  useEffect(() => {
+    const duracaoMs =
+      inicioDoEnvio.current === null
+        ? undefined
+        : Math.round(performance.now() - inicioDoEnvio.current)
+    inicioDoEnvio.current = null
+
+    const metadados = { assunto: assunto.current }
+
+    if (estado.erro) {
+      // Rejeição de validação: é erro do fluxo (o usuário não conseguiu), mas com
+      // código próprio para não se misturar com falha técnica.
+      rastreia.erro('contato_rejeitado', {
+        code: 'VALIDACAO',
+        mensagem: estado.erro,
+        feature: 'contato',
+        duracaoMs,
+        metadados,
+      })
+      return
+    }
+
+    if (!estado.ok) return
+
+    if (estado.motivo === 'spam') {
+      // O usuário vê "enviado", mas nada foi gravado. Sem este evento o funil
+      // contaria como sucesso um robô que foi barrado.
+      rastreia.custom('contato_barrado_como_spam', metadados)
+      return
+    }
+
+    rastreia.acao('contato_enviado', { feature: 'contato', metadados: { ...metadados, duracaoMs } })
+  }, [estado])
 
   if (estado.ok) {
     return (
@@ -32,7 +74,23 @@ export function ContatoForm({
 
   const c = estado.campos
   return (
-    <form action={action} className="form" noValidate>
+    <form
+      action={action}
+      className="form"
+      noValidate
+      data-ndovu-manual
+      onSubmit={(e) => {
+        const fd = new FormData(e.currentTarget)
+        assunto.current = String(fd.get('assunto') ?? 'outros')
+        inicioDoEnvio.current = performance.now()
+        // Reporta-se a tentativa sem nenhum campo: nome/e-mail/telefone/mensagem
+        // são PII e não saem do navegador.
+        rastreia.acao('contato_tentando_enviar', {
+          feature: 'contato',
+          metadados: { assunto: assunto.current },
+        })
+      }}
+    >
       {estado.erro ? (
         <div className="alerta alerta--erro" role="alert">
           {estado.erro}

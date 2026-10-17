@@ -49,6 +49,12 @@ services:
       # build arg, sitemap/robots/metadata saem com o fallback localhost:3000.
       args:
         NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL:?defina NEXT_PUBLIC_SERVER_URL no .env}
+        # Ndovu. Os quatro são opcionais: com o endpoint ou a chave vazios o SDK
+        # não inicializa e o site se comporta exatamente como antes.
+        NEXT_PUBLIC_NDOVU_ENDPOINT: ${NEXT_PUBLIC_NDOVU_ENDPOINT:-}
+        NEXT_PUBLIC_NDOVU_API_KEY: ${NEXT_PUBLIC_NDOVU_API_KEY:-}
+        NEXT_PUBLIC_NDOVU_APP: ${NEXT_PUBLIC_NDOVU_APP:-felpma}
+        NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-}
     networks:
       - felpma-net
       - ingress
