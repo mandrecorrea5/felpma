@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { GoogleAnalytics } from '@next/third-parties/google'
 import React from 'react'
 import '@fontsource/montserrat/600.css'
 import '@fontsource/montserrat/700.css'
@@ -43,6 +44,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <main id="conteudo">{children}</main>
         <Footer config={config} />
       </body>
+      {/* Só em produção, pra o `next dev` não sujar as métricas do GA. */}
+      {process.env.NODE_ENV === 'production' && <GoogleAnalytics gaId="G-NBE78VLWCS" />}
     </html>
   )
 }
