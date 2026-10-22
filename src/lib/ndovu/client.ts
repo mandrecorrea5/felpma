@@ -239,8 +239,10 @@ function observarMutacoes(sdk: NdovuSdk): void {
       'GET'
     ).toUpperCase()
 
+    // Terceiro não é mutação do site: o POST do gtag para google-analytics.com
+    // /g/collect entrava aqui como `mutacao` e virava funil falso.
     const ehDoNdovu = pedido.startsWith(cfg.endpoint)
-    if (metodo === 'GET' || ehDoNdovu) return original(input, init)
+    if (metodo === 'GET' || ehDoNdovu || !mesmaOrigem(pedido)) return original(input, init)
 
     const rota = caminhoDe(pedido)
     const rastro = novoRastro()
@@ -278,6 +280,14 @@ function observarMutacoes(sdk: NdovuSdk): void {
       })
       throw e
     }
+  }
+}
+
+function mesmaOrigem(pedido: string): boolean {
+  try {
+    return new URL(pedido, window.location.origin).origin === window.location.origin
+  } catch {
+    return false
   }
 }
 
