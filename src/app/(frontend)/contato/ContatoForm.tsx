@@ -99,9 +99,13 @@ export function ContatoForm({
       <div className="field-row">
         <div className="field">
           <label htmlFor="nome">Nome</label>
+          {/* `data-ndovu-mask` não é decoração: sem `type`, o input cairia no
+              else do captureDOM() do SDK e o valor digitado viraria atributo
+              no HTML do snapshot, enviado a cada error(). */}
           <input
             id="nome"
             name="nome"
+            data-ndovu-mask
             className="input"
             required
             autoComplete="name"
@@ -114,6 +118,7 @@ export function ContatoForm({
             id="email"
             name="email"
             type="email"
+            data-ndovu-mask
             className="input"
             required
             autoComplete="email"
@@ -128,6 +133,7 @@ export function ContatoForm({
             id="telefone"
             name="telefone"
             type="tel"
+            data-ndovu-mask
             className="input"
             autoComplete="tel"
             defaultValue={c?.telefone}
@@ -155,6 +161,7 @@ export function ContatoForm({
         <textarea
           id="mensagem"
           name="mensagem"
+          data-ndovu-mask
           className="textarea"
           required
           defaultValue={c?.mensagem ?? mensagemInicial}
