@@ -2489,3 +2489,118 @@ p {
     white-space: normal;
   }
 }
+
+/* ---------- Inscrições e área do atleta ---------- */
+.inscricao-passo {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+.inscricao-passo > .eyebrow {
+  margin-bottom: -6px;
+}
+.inscricao-progresso {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  margin: 0 0 8px;
+}
+.inscricao-progresso li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--texto-3);
+  padding: 8px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  background: var(--fundo);
+}
+.inscricao-progresso li span {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--fundo-3);
+  color: var(--texto-2);
+  font-weight: 600;
+  font-size: 12px;
+}
+.inscricao-progresso li[data-concluido='true'] {
+  border-color: var(--verde);
+  color: var(--verde);
+}
+.inscricao-progresso li[aria-current='step'] {
+  border-color: var(--azul);
+  background: var(--azul-claro);
+  color: var(--azul);
+  font-weight: 600;
+}
+.inscricao-progresso li[aria-current='step'] span {
+  background: var(--azul);
+  color: #fff;
+}
+
+.inscricao-secao {
+  margin-top: 8px;
+}
+.inscricao-secao h3 {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.consentimento {
+  border-left: 3px solid var(--azul);
+  background: var(--fundo-2);
+  border-radius: 0 var(--r) var(--r) 0;
+  padding: 10px 14px;
+}
+
+.campo-erro {
+  display: block;
+  color: var(--vermelho-escuro);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.inscricao-acoes {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .inscricao-acoes .btn {
+    flex: 1 1 auto;
+  }
+}
+
+/* Resumo de erros: links levam ao campo, que também ganha destaque próprio. */
+.erro-resumo ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+.erro-resumo a {
+  color: var(--vermelho-escuro);
+  text-decoration: underline;
+  font-weight: 500;
+}
+.input[aria-invalid='true'],
+.select[aria-invalid='true'],
+.textarea[aria-invalid='true'] {
+  border-color: var(--vermelho);
+  background: #fffafa;
+}
+.input[aria-invalid='true']:focus,
+.select[aria-invalid='true']:focus,
+.textarea[aria-invalid='true']:focus {
+  box-shadow: 0 0 0 3px rgba(215, 0, 15, 0.15);
+}

@@ -31,6 +31,17 @@ services:
       DATABASE_URL: postgres://felpma:${POSTGRES_PASSWORD:-felpma}@postgres:5432/felpma
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:?defina PAYLOAD_SECRET no .env}
       NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL:-http://localhost:3000}
+      # LGPD: sem estas duas o app se recusa a gravar dado pessoal (de propósito).
+      # Gere uma vez e guarde a chave fora do servidor — perdê-la é perder os dados cifrados.
+      LGPD_CHAVE_CAMPOS: ${LGPD_CHAVE_CAMPOS:?defina LGPD_CHAVE_CAMPOS no .env}
+      LGPD_HASH_SALT: ${LGPD_HASH_SALT:?defina LGPD_HASH_SALT no .env}
+      # SMTP é opcional: sem ele só a recuperação de senha fica indisponível.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_FROM_NOME: ${SMTP_FROM_NOME:-FELPMA}
     ports:
       - '3000:3000'
     volumes:

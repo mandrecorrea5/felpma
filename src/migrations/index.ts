@@ -1,4 +1,7 @@
-import * as migration_20261016_052329_initial from './20261016_052329_initial'
+import * as migration_20261016_052329_initial from './20261016_052329_initial';
+import * as migration_20261030_140639_inscricoes from './20261030_140639_inscricoes';
+import * as migration_20261030_154204_remove_verificacao_email from './20261030_154204_remove_verificacao_email';
+import * as migration_20261030_154227_aprovacao_cadastro from './20261030_154227_aprovacao_cadastro';
 
 export const migrations = [
   {
@@ -6,4 +9,19 @@ export const migrations = [
     down: migration_20261016_052329_initial.down,
     name: '20261016_052329_initial',
   },
-]
+  {
+    up: migration_20261030_140639_inscricoes.up,
+    down: migration_20261030_140639_inscricoes.down,
+    name: '20261030_140639_inscricoes',
+  },
+  {
+    up: migration_20261030_154204_remove_verificacao_email.up,
+    down: migration_20261030_154204_remove_verificacao_email.down,
+    name: '20261030_154204_remove_verificacao_email',
+  },
+  {
+    up: migration_20261030_154227_aprovacao_cadastro.up,
+    down: migration_20261030_154227_aprovacao_cadastro.down,
+    name: '20261030_154227_aprovacao_cadastro'
+  },
+];

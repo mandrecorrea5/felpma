@@ -113,3 +113,30 @@ export const labelOf = <T extends readonly { label: string; value: string }[]>(
   options: T,
   value: string | null | undefined,
 ): string => options.find((o) => o.value === value)?.label ?? value ?? ''
+
+/** Bases legais da LGPD usadas no cadastro de formulários (art. 7º e 11). */
+export const BASES_LEGAIS = [
+  { label: 'Execução de contrato ou procedimentos preliminares (art. 7º, V)', value: 'contrato' },
+  { label: 'Consentimento do titular (art. 7º, I)', value: 'consentimento' },
+  { label: 'Obrigação legal ou regulatória (art. 7º, II)', value: 'obrigacao-legal' },
+  { label: 'Legítimo interesse (art. 7º, IX)', value: 'legitimo-interesse' },
+  { label: 'Exercício regular de direitos (art. 7º, VI)', value: 'exercicio-direitos' },
+  { label: 'Dados sensíveis: consentimento específico (art. 11, I)', value: 'sensivel-consentimento' },
+] as const
+
+export const FINALIDADES_CONSENTIMENTO = [
+  { label: 'Inscrição no evento', value: 'inscricao' },
+  { label: 'Dados sensíveis (saúde, paradesporto)', value: 'dados-sensiveis' },
+  { label: 'Consentimento do responsável (menor de 18)', value: 'menor' },
+  { label: 'Uso de imagem', value: 'imagem' },
+  { label: 'Comunicações e novidades', value: 'comunicacoes' },
+] as const
+
+export const STATUS_INSCRICAO = [
+  { label: 'Recebida', value: 'recebida' },
+  { label: 'Em análise', value: 'em-analise' },
+  { label: 'Aprovada', value: 'aprovada' },
+  { label: 'Lista de espera', value: 'lista-espera' },
+  { label: 'Rejeitada', value: 'rejeitada' },
+  { label: 'Cancelada', value: 'cancelada' },
+] as const

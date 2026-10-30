@@ -7,6 +7,9 @@ import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
 import { Users } from './collections/Users'
+import { Atletas } from './collections/Atletas'
+import { FormulariosInscricao } from './collections/FormulariosInscricao'
+import { Inscricoes } from './collections/Inscricoes'
 import { Media } from './collections/Media'
 import { Documentos } from './collections/Documentos'
 import { Noticias } from './collections/Noticias'
@@ -23,6 +26,7 @@ import { Home } from './globals/Home'
 import { Filiacao } from './globals/Filiacao'
 import { Federacao } from './globals/Federacao'
 import { migrations } from './migrations'
+import { emailAdapter } from './lib/email'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -32,6 +36,10 @@ export default buildConfig({
   admin: {
     user: Users.slug,
     importMap: { baseDir: path.resolve(dirname) },
+    components: {
+      // Atalho para a fila de aprovação de cadastros de atleta.
+      afterNavLinks: ['/components/admin/LinkPendentes#LinkPendentes'],
+    },
     meta: { titleSuffix: ' · Painel FELPMA' },
     dateFormat: 'dd/MM/yyyy HH:mm',
   },
@@ -52,8 +60,14 @@ export default buildConfig({
     Documentos,
     Media,
     Users,
+    Atletas,
+    FormulariosInscricao,
+    Inscricoes,
   ],
   globals: [Home, Filiacao, Federacao, Configuracoes],
+  // SMTP por variáveis de ambiente. Sem credenciais, em dev o link sai no terminal;
+  // em produção o cadastro fica bloqueado até configurar (ver src/lib/email.ts).
+  email: emailAdapter,
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },

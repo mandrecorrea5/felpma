@@ -113,6 +113,8 @@ const doc = async (titulo: string, categoria: string, extra: Record<string, unkn
 
 // ---------- limpeza ----------
 const limpar: CollectionSlug[] = [
+  'inscricoes',
+  'formularios-inscricao',
   'convocacoes',
   'resultados',
   'recordes',
@@ -665,6 +667,100 @@ log('páginas fixas atualizadas')
 
 // Evita "variável não usada" para documentos que só existem para aparecer nas listagens.
 void [estatuto, regGeral, calendarioOficial, fichaAtleta]
+
+// ---------- inscrições (formulário de exemplo) ----------
+const eventoInscricao = await payload.create({
+  collection: 'competicoes',
+  data: {
+    nome: `Curso de Formação de Árbitros ${ano}`,
+    tipo: 'curso',
+    area: 'Arbitragem',
+    dataInicio: dias(35),
+    dataFim: dias(36),
+    cidade: 'São Luís',
+    uf: 'MA',
+    inscricoesAbertas: true,
+    inscricoesDe: dias(-1),
+    inscricoesAte: dias(20),
+    descricao: texto(
+      'Curso de formação e reciclagem de árbitros de levantamento de pesos, promovido pela FELPMA.',
+      '## Inscrições',
+      'Preencha o formulário com seus dados e sua experiência. A federação confirma a vaga por e-mail.',
+    ),
+  } as never,
+})
+
+await payload.create({
+  collection: 'formularios-inscricao',
+  data: {
+    titulo: `Inscrição — Curso de Formação de Árbitros ${ano}`,
+    evento: eventoInscricao.id,
+    _status: 'published',
+    descricao: texto(
+      'Leva cerca de 3 minutos. Tenha em mãos o nome do seu clube/CT, se houver.',
+    ),
+    campos: [
+      { blockType: 'secao', titulo: 'Sobre você', descricao: 'Dados para contato da organização.' },
+      {
+        blockType: 'texto',
+        nome: 'clube',
+        rotulo: 'Clube ou CT (se houver)',
+        obrigatorio: false,
+        maxLength: 120,
+      },
+      {
+        blockType: 'selecao',
+        nome: 'experiencia',
+        rotulo: 'Experiência com arbitragem',
+        obrigatorio: true,
+        opcoes: [
+          { valor: 'nenhuma', rotulo: 'Nenhuma' },
+          { valor: 'ate-2-anos', rotulo: 'Até 2 anos' },
+          { valor: 'mais-2-anos', rotulo: 'Mais de 2 anos' },
+        ],
+      },
+      {
+        blockType: 'texto-longo',
+        nome: 'motivacao',
+        rotulo: 'Por que quer participar?',
+        obrigatorio: false,
+        maxLength: 600,
+      },
+      {
+        blockType: 'aceite',
+        nome: 'declaracao-regulamento',
+        texto: 'Declaro que li e aceito o edital do curso.',
+        obrigatorio: true,
+      },
+    ],
+    lgpd: {
+      finalidade: 'Organizar a inscrição no curso e o contato com a organização.',
+      baseLegal: 'contrato',
+      prazoRetencaoMeses: 12,
+      justificativaRetencao: 'Prazo de defesa em processo disciplinar.',
+      versaoAviso: '2026-10',
+      avisoPrivacidade: texto(
+        'Usamos seus dados apenas para organizar esta inscrição e falar com você sobre o curso.',
+        'Você pode pedir acesso, correção, portabilidade ou exclusão na área do atleta.',
+      ),
+    },
+    consentimentos: [
+      {
+        identificador: 'tratamento-inscricao',
+        finalidade: 'inscricao',
+        obrigatorio: true,
+        texto: 'Autorizo o uso dos meus dados para a inscrição neste curso.',
+      },
+      {
+        identificador: 'uso-imagem',
+        finalidade: 'imagem',
+        obrigatorio: false,
+        texto: 'Autorizo o uso da minha imagem em fotos e vídeos do curso.',
+      },
+    ],
+  } as never,
+})
+log('formulário de inscrição de exemplo criado')
 
 log('pronto! Rode `pnpm dev` e abra http://localhost:3000')
 process.exit(0)

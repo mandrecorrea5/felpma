@@ -8,6 +8,8 @@ import { DocRow, Midia, PageHero, StatusBadge } from '@/components/ui'
 import { ROTULO_TIPO, TIPOS_CONVOCACAO, labelOf } from '@/lib/constants'
 import { dataCurta, dataLonga, isDocumento, isMedia, mediaUrl, periodo } from '@/lib/format'
 import { getPayloadClient } from '@/lib/payload'
+import { formularioPublicado } from '@/lib/inscricoes/consultas'
+import { estadoInscricao, type EventoParaInscricao } from '@/lib/inscricoes/estado'
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -38,7 +40,7 @@ export default async function CompeticaoPage({ params }: Props) {
   if (!c) notFound()
 
   const payload = await getPayloadClient()
-  const [convocacoes, resultados] = await Promise.all([
+  const [convocacoes, resultados, formulario] = await Promise.all([
     payload.find({
       collection: 'convocacoes',
       where: { competicao: { equals: c.id } },
@@ -52,7 +54,12 @@ export default async function CompeticaoPage({ params }: Props) {
       depth: 0,
       limit: 5,
     }),
+    formularioPublicado(c.id),
   ])
+
+  const inscricao = estadoInscricao(c as EventoParaInscricao, {
+    temFormulario: Boolean(formulario),
+  })
 
   const eventoJsonLd = {
     '@context': 'https://schema.org',
@@ -167,8 +174,10 @@ export default async function CompeticaoPage({ params }: Props) {
                 <li>
                   <Icon name="carteirinha" />
                   <div>
-                    <small>Inscrições até</small>
-                    {dataLonga(c.inscricoesAte)}
+                    <small>Inscrições</small>
+                    {c.inscricoesDe
+                      ? `${dataLonga(c.inscricoesDe)} a ${dataLonga(c.inscricoesAte)}`
+                      : `até ${dataLonga(c.inscricoesAte)}`}
                   </div>
                 </li>
               ) : null}
@@ -182,7 +191,11 @@ export default async function CompeticaoPage({ params }: Props) {
                 </li>
               ) : null}
             </ul>
-            {c.linkInscricao ? (
+            {inscricao.estado === 'aberto' ? (
+              <Link href={`/inscricoes/${c.slug}`} className="btn btn--azul btn--bloco">
+                {c.tipo === 'curso' || c.tipo === 'evento' ? 'Inscrever-se' : 'Inscrever atleta'}
+              </Link>
+            ) : c.linkInscricao && inscricao.estado === 'sem-formulario' ? (
               <a
                 href={c.linkInscricao}
                 className="btn btn--azul btn--bloco"
@@ -191,7 +204,11 @@ export default async function CompeticaoPage({ params }: Props) {
               >
                 {c.tipo === 'curso' || c.tipo === 'evento' ? 'Inscrever-se' : 'Inscrever atleta'}
               </a>
-            ) : null}
+            ) : (
+              <span className="alerta" style={{ fontSize: 14 }}>
+                {inscricao.rotulo}
+              </span>
+            )}
             {isDocumento(c.regulamento) && c.regulamento.url ? (
               <a
                 href={c.regulamento.url}

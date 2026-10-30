@@ -34,9 +34,13 @@ export async function temporadas() {
 /** Convocações e resultados ligados a cada competição (para os botões de ação). */
 export async function relacionados(ids: (number | string)[]) {
   if (ids.length === 0)
-    return { convocacoes: new Map<string, Convocacao>(), resultados: new Map<string, Resultado>() }
+    return {
+      convocacoes: new Map<string, Convocacao>(),
+      formularios: new Set<string>(),
+      resultados: new Map<string, Resultado>(),
+    }
   const payload = await getPayloadClient()
-  const [conv, res] = await Promise.all([
+  const [conv, res, forms] = await Promise.all([
     payload.find({
       collection: 'convocacoes',
       where: { competicao: { in: ids } },
@@ -51,6 +55,15 @@ export async function relacionados(ids: (number | string)[]) {
       depth: 0,
       select: { slug: true, competicao: true, titulo: true },
     }),
+    payload.find({
+      collection: 'formularios-inscricao',
+      where: {
+        and: [{ evento: { in: ids } }, { _status: { equals: 'published' } }],
+      },
+      limit: 500,
+      depth: 0,
+      select: { evento: true },
+    }),
   ])
   const convocacoes = new Map<string, Convocacao>()
   conv.docs.forEach((c) => {
@@ -64,7 +77,13 @@ export async function relacionados(ids: (number | string)[]) {
       r as Resultado,
     ),
   )
-  return { convocacoes, resultados }
+  const formularios = new Set<string>()
+  forms.docs.forEach((f) => {
+    const k = String(typeof f.evento === 'object' ? f.evento?.id : f.evento)
+    formularios.add(k)
+  })
+
+  return { convocacoes, formularios, resultados }
 }
 
 /** Ação principal do cartão: resultado > inscrição > convocação > detalhes. */
@@ -72,6 +91,11 @@ export function acaoPrincipal(c: Competicao, rel: Awaited<ReturnType<typeof rela
   const status = statusCompeticao(c)
   const resultado = rel.resultados.get(String(c.id))
   if (resultado?.slug) return { href: `/resultados/${resultado.slug}`, label: 'Ver resultados' }
+  if (status.label === 'Inscrições abertas' && rel.formularios.has(String(c.id)))
+    return {
+      href: `/inscricoes/${c.slug}`,
+      label: c.tipo === 'curso' || c.tipo === 'evento' ? 'Inscrever-se' : 'Inscrever atleta',
+    }
   if (status.label === 'Inscrições abertas' && c.linkInscricao)
     return {
       href: c.linkInscricao,

@@ -59,278 +59,307 @@ export type SupportedTimezones =
   | 'Pacific/Guam'
   | 'Pacific/Noumea'
   | 'Pacific/Auckland'
-  | 'Pacific/Fiji'
+  | 'Pacific/Fiji';
 
 export interface Config {
   auth: {
-    users: UserAuthOperations
-  }
-  blocks: {}
+    users: UserAuthOperations;
+    atletas: AtletaAuthOperations;
+  };
+  blocks: {};
   collections: {
-    noticias: Noticia
-    paginas: Pagina
-    mensagens: Mensagem
-    competicoes: Competicao
-    convocacoes: Convocacao
-    resultados: Resultado
-    recordes: Recorde
-    centros: Centro
-    diretoria: Diretoria
-    documentos: Documento
-    media: Media
-    users: User
-    'payload-kv': PayloadKv
-    'payload-locked-documents': PayloadLockedDocument
-    'payload-preferences': PayloadPreference
-    'payload-migrations': PayloadMigration
-  }
-  collectionsJoins: {}
+    noticias: Noticia;
+    paginas: Pagina;
+    mensagens: Mensagem;
+    competicoes: Competicao;
+    convocacoes: Convocacao;
+    resultados: Resultado;
+    recordes: Recorde;
+    centros: Centro;
+    diretoria: Diretoria;
+    documentos: Documento;
+    media: Media;
+    users: User;
+    atletas: Atleta;
+    'formularios-inscricao': FormularioInscricao;
+    inscricoes: Inscricao;
+    'payload-kv': PayloadKv;
+    'payload-locked-documents': PayloadLockedDocument;
+    'payload-preferences': PayloadPreference;
+    'payload-migrations': PayloadMigration;
+  };
+  collectionsJoins: {
+    competicoes: {
+      formularios: 'formularios-inscricao';
+    };
+  };
   collectionsSelect: {
-    noticias: NoticiasSelect<false> | NoticiasSelect<true>
-    paginas: PaginasSelect<false> | PaginasSelect<true>
-    mensagens: MensagensSelect<false> | MensagensSelect<true>
-    competicoes: CompeticoesSelect<false> | CompeticoesSelect<true>
-    convocacoes: ConvocacoesSelect<false> | ConvocacoesSelect<true>
-    resultados: ResultadosSelect<false> | ResultadosSelect<true>
-    recordes: RecordesSelect<false> | RecordesSelect<true>
-    centros: CentrosSelect<false> | CentrosSelect<true>
-    diretoria: DiretoriaSelect<false> | DiretoriaSelect<true>
-    documentos: DocumentosSelect<false> | DocumentosSelect<true>
-    media: MediaSelect<false> | MediaSelect<true>
-    users: UsersSelect<false> | UsersSelect<true>
-    'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>
-    'payload-locked-documents':
-      PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>
-    'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>
-    'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>
-  }
+    noticias: NoticiasSelect<false> | NoticiasSelect<true>;
+    paginas: PaginasSelect<false> | PaginasSelect<true>;
+    mensagens: MensagensSelect<false> | MensagensSelect<true>;
+    competicoes: CompeticoesSelect<false> | CompeticoesSelect<true>;
+    convocacoes: ConvocacoesSelect<false> | ConvocacoesSelect<true>;
+    resultados: ResultadosSelect<false> | ResultadosSelect<true>;
+    recordes: RecordesSelect<false> | RecordesSelect<true>;
+    centros: CentrosSelect<false> | CentrosSelect<true>;
+    diretoria: DiretoriaSelect<false> | DiretoriaSelect<true>;
+    documentos: DocumentosSelect<false> | DocumentosSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
+    users: UsersSelect<false> | UsersSelect<true>;
+    atletas: AtletasSelect<false> | AtletasSelect<true>;
+    'formularios-inscricao': FormulariosInscricaoSelect<false> | FormulariosInscricaoSelect<true>;
+    inscricoes: InscricoesSelect<false> | InscricoesSelect<true>;
+    'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
+    'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
+    'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
+    'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
+  };
   db: {
-    defaultIDType: number
-  }
-  fallbackLocale: null
+    defaultIDType: number;
+  };
+  fallbackLocale: null;
   globals: {
-    home: PaginaInicial
-    filiacao: PaginaFiliacao
-    federacao: PaginaFederacao
-    configuracoes: ConfiguracoesSite
-  }
+    home: PaginaInicial;
+    filiacao: PaginaFiliacao;
+    federacao: PaginaFederacao;
+    configuracoes: ConfiguracoesSite;
+  };
   globalsSelect: {
-    home: HomeSelect<false> | HomeSelect<true>
-    filiacao: FiliacaoSelect<false> | FiliacaoSelect<true>
-    federacao: FederacaoSelect<false> | FederacaoSelect<true>
-    configuracoes: ConfiguracoesSelect<false> | ConfiguracoesSelect<true>
-  }
-  locale: null
+    home: HomeSelect<false> | HomeSelect<true>;
+    filiacao: FiliacaoSelect<false> | FiliacaoSelect<true>;
+    federacao: FederacaoSelect<false> | FederacaoSelect<true>;
+    configuracoes: ConfiguracoesSelect<false> | ConfiguracoesSelect<true>;
+  };
+  locale: null;
   widgets: {
-    collections: CollectionsWidget
-  }
-  user: User
+    collections: CollectionsWidget;
+  };
+  user: User | Atleta;
   jobs: {
-    tasks: unknown
-    workflows: unknown
-  }
+    tasks: unknown;
+    workflows: unknown;
+  };
 }
 export interface UserAuthOperations {
   forgotPassword: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
   login: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
   registerFirstUser: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
   unlock: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
+}
+export interface AtletaAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "noticias".
  */
 export interface Noticia {
-  id: number
-  titulo: string
+  id: number;
+  titulo: string;
   /**
    * Duas ou três linhas. Aparece na listagem e no compartilhamento.
    */
-  resumo: string
-  capa?: (number | null) | Media
+  resumo: string;
+  capa?: (number | null) | Media;
   conteudo: {
     root: {
-      type: string
+      type: string;
       children: {
-        type: any
-        version: number
-        [k: string]: unknown
-      }[]
-      direction: ('ltr' | 'rtl') | null
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | ''
-      indent: number
-      version: number
-    }
-    [k: string]: unknown
-  }
-  categoria: 'competicoes' | 'selecao' | 'filiacao' | 'arbitragem' | 'base' | 'institucional'
-  dataPublicacao: string
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  categoria: 'competicoes' | 'selecao' | 'filiacao' | 'arbitragem' | 'base' | 'institucional';
+  dataPublicacao: string;
   /**
    * A notícia destacada mais recente vira a manchete da home.
    */
-  destaque?: boolean | null
+  destaque?: boolean | null;
   /**
    * Gerado automaticamente a partir do título. Só altere se souber o que está fazendo.
    */
-  slug?: string | null
-  updatedAt: string
-  createdAt: string
-  _status?: ('draft' | 'published') | null
+  slug?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
-  id: number
+  id: number;
   /**
    * Descreva o que aparece na foto. Ex.: "Atleta no arremesso durante o Maranhense".
    */
-  alt: string
-  credito?: string | null
-  updatedAt: string
-  createdAt: string
-  url?: string | null
-  thumbnailURL?: string | null
-  filename?: string | null
-  mimeType?: string | null
-  filesize?: number | null
-  width?: number | null
-  height?: number | null
-  focalX?: number | null
-  focalY?: number | null
+  alt: string;
+  credito?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
   sizes?: {
     thumb?: {
-      url?: string | null
-      width?: number | null
-      height?: number | null
-      mimeType?: string | null
-      filesize?: number | null
-      filename?: string | null
-    }
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
     card?: {
-      url?: string | null
-      width?: number | null
-      height?: number | null
-      mimeType?: string | null
-      filesize?: number | null
-      filename?: string | null
-    }
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
     hero?: {
-      url?: string | null
-      width?: number | null
-      height?: number | null
-      mimeType?: string | null
-      filesize?: number | null
-      filename?: string | null
-    }
-  }
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "paginas".
  */
 export interface Pagina {
-  id: number
-  titulo: string
-  resumo?: string | null
+  id: number;
+  titulo: string;
+  resumo?: string | null;
   conteudo: {
     root: {
-      type: string
+      type: string;
       children: {
-        type: any
-        version: number
-        [k: string]: unknown
-      }[]
-      direction: ('ltr' | 'rtl') | null
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | ''
-      indent: number
-      version: number
-    }
-    [k: string]: unknown
-  }
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
   /**
    * Gerado automaticamente a partir do título. Só altere se souber o que está fazendo.
    */
-  slug?: string | null
-  updatedAt: string
-  createdAt: string
-  _status?: ('draft' | 'published') | null
+  slug?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "mensagens".
  */
 export interface Mensagem {
-  id: number
-  nome: string
-  email: string
-  telefone?: string | null
-  assunto: 'filiacao' | 'competicoes' | 'imprensa' | 'parcerias' | 'outros'
-  mensagem: string
-  status?: ('nova' | 'respondida' | 'arquivada') | null
-  updatedAt: string
-  createdAt: string
+  id: number;
+  nome: string;
+  email: string;
+  telefone?: string | null;
+  assunto: 'filiacao' | 'competicoes' | 'imprensa' | 'parcerias' | 'outros';
+  mensagem: string;
+  status?: ('nova' | 'respondida' | 'arquivada') | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "competicoes".
  */
 export interface Competicao {
-  id: number
-  nome: string
-  tipo: 'estadual' | 'regional' | 'nacional' | 'internacional' | 'curso' | 'evento'
+  id: number;
+  nome: string;
+  tipo: 'estadual' | 'regional' | 'nacional' | 'internacional' | 'curso' | 'evento';
   /**
    * Ex.: Arbitragem, Técnicos, Base.
    */
-  area?: string | null
+  area?: string | null;
   /**
    * Ex.: "Sub-15 a Sênior", "Sub-17", "Arbitragem".
    */
-  categorias?: string | null
-  dataInicio: string
-  dataFim?: string | null
-  inscricoesAte?: string | null
-  local?: string | null
-  cidade: string
-  uf?: string | null
+  categorias?: string | null;
+  dataInicio: string;
+  dataFim?: string | null;
+  inscricoesDe?: string | null;
+  inscricoesAte?: string | null;
+  local?: string | null;
+  cidade: string;
+  uf?: string | null;
   /**
    * Data, horário e local.
    */
-  pesagem?: string | null
-  imagem?: (number | null) | Media
+  pesagem?: string | null;
+  imagem?: (number | null) | Media;
   descricao?: {
     root: {
-      type: string
+      type: string;
       children: {
-        type: any
-        version: number
-        [k: string]: unknown
-      }[]
-      direction: ('ltr' | 'rtl') | null
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | ''
-      indent: number
-      version: number
-    }
-    [k: string]: unknown
-  } | null
-  regulamento?: (number | null) | Documento
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  regulamento?: (number | null) | Documento;
   /**
-   * Formulário externo ou página de inscrição.
+   * Só usado quando o evento NÃO tem formulário interno publicado. Com formulário, o site usa o interno.
    */
-  linkInscricao?: string | null
+  linkInscricao?: string | null;
   /**
    * Em "Automático", o site mostra Inscrições abertas / Em breve / Encerrado pelas datas.
    */
@@ -345,25 +374,45 @@ export interface Competicao {
         | 'adiado'
         | 'cancelado'
       )
-    | null
+    | null;
+  /**
+   * Desligado, ninguém se inscreve — nem por link direto. Ligado, vale a janela de datas.
+   */
+  inscricoesAbertas?: boolean | null;
+  /**
+   * Deixe vazio para não limitar.
+   */
+  limiteVagas?: number | null;
+  /**
+   * Aparece antes da abertura e depois do encerramento, no lugar do botão.
+   */
+  avisoForaDoPeriodo?: string | null;
+  /**
+   * Cadastrados em Inscrições › Formulários de inscrição.
+   */
+  formularios?: {
+    docs?: (number | FormularioInscricao)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   /**
    * Sem destaque marcado, a home mostra a próxima competição estadual.
    */
-  destaqueHome?: boolean | null
+  destaqueHome?: boolean | null;
   /**
    * Gerado automaticamente a partir do título. Só altere se souber o que está fazendo.
    */
-  slug?: string | null
-  updatedAt: string
-  createdAt: string
+  slug?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "documentos".
  */
 export interface Documento {
-  id: number
-  titulo: string
+  id: number;
+  titulo: string;
   categoria:
     | 'estatuto'
     | 'regulamento'
@@ -373,84 +422,468 @@ export interface Documento {
     | 'prestacao-contas'
     | 'convenio'
     | 'calendario'
-    | 'outros'
+    | 'outros';
   /**
    * Ano de referência (prestação de contas, temporada…)
    */
-  ano?: number | null
-  dataPublicacao?: string | null
-  descricao?: string | null
-  publico?: boolean | null
-  updatedAt: string
-  createdAt: string
-  url?: string | null
-  thumbnailURL?: string | null
-  filename?: string | null
-  mimeType?: string | null
-  filesize?: number | null
-  width?: number | null
-  height?: number | null
-  focalX?: number | null
-  focalY?: number | null
+  ano?: number | null;
+  dataPublicacao?: string | null;
+  descricao?: string | null;
+  publico?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * Cada formulário pertence a um evento. Quem libera a inscrição no site é o evento, não o formulário.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "formularios-inscricao".
+ */
+export interface FormularioInscricao {
+  id: number;
+  /**
+   * Ex.: "Inscrição — Maranhense Sub-15 a Sênior 2027".
+   */
+  titulo: string;
+  /**
+   * Aparece no topo do formulário: requisitos, documentos, categorias.
+   */
+  descricao?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * A identificação (nome, e-mail, CPF, nascimento) é automática e não precisa estar aqui.
+   */
+  campos: (
+    | {
+        /**
+         * Chave usada no banco e no export (sem espaços). Ex.: clube
+         */
+        nome: string;
+        rotulo: string;
+        /**
+         * Aparece abaixo do campo. Explique com exemplo, se ajudar.
+         */
+        ajuda?: string | null;
+        obrigatorio?: boolean | null;
+        /**
+         * Guarda cifrado, mascara no painel e exige consentimento específico. Use só quando indispensável.
+         */
+        sensivel?: boolean | null;
+        /**
+         * Opcional. Use para perguntas que só fazem sentido em certas respostas.
+         */
+        mostrarSe?: {
+          /**
+           * Nome técnico do outro campo.
+           */
+          campo?: string | null;
+          valor?: string | null;
+        };
+        minLength?: number | null;
+        maxLength?: number | null;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'texto';
+      }
+    | {
+        /**
+         * Chave usada no banco e no export (sem espaços). Ex.: observacoes
+         */
+        nome: string;
+        rotulo: string;
+        /**
+         * Aparece abaixo do campo. Explique com exemplo, se ajudar.
+         */
+        ajuda?: string | null;
+        obrigatorio?: boolean | null;
+        /**
+         * Guarda cifrado, mascara no painel e exige consentimento específico. Use só quando indispensável.
+         */
+        sensivel?: boolean | null;
+        /**
+         * Opcional. Use para perguntas que só fazem sentido em certas respostas.
+         */
+        mostrarSe?: {
+          /**
+           * Nome técnico do outro campo.
+           */
+          campo?: string | null;
+          valor?: string | null;
+        };
+        minLength?: number | null;
+        maxLength?: number | null;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'texto-longo';
+      }
+    | {
+        /**
+         * Chave usada no banco e no export (sem espaços). Ex.: email-contato
+         */
+        nome: string;
+        rotulo: string;
+        /**
+         * Aparece abaixo do campo. Explique com exemplo, se ajudar.
+         */
+        ajuda?: string | null;
+        obrigatorio?: boolean | null;
+        /**
+         * Guarda cifrado, mascara no painel e exige consentimento específico. Use só quando indispensável.
+         */
+        sensivel?: boolean | null;
+        /**
+         * Opcional. Use para perguntas que só fazem sentido em certas respostas.
+         */
+        mostrarSe?: {
+          /**
+           * Nome técnico do outro campo.
+           */
+          campo?: string | null;
+          valor?: string | null;
+        };
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'email';
+      }
+    | {
+        /**
+         * Chave usada no banco e no export (sem espaços). Ex.: telefone-responsavel
+         */
+        nome: string;
+        rotulo: string;
+        /**
+         * Aparece abaixo do campo. Explique com exemplo, se ajudar.
+         */
+        ajuda?: string | null;
+        obrigatorio?: boolean | null;
+        /**
+         * Guarda cifrado, mascara no painel e exige consentimento específico. Use só quando indispensável.
+         */
+        sensivel?: boolean | null;
+        /**
+         * Opcional. Use para perguntas que só fazem sentido em certas respostas.
+         */
+        mostrarSe?: {
+          /**
+           * Nome técnico do outro campo.
+           */
+          campo?: string | null;
+          valor?: string | null;
+        };
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'telefone';
+      }
+    | {
+        /**
+         * Chave usada no banco e no export (sem espaços). Ex.: data-exame
+         */
+        nome: string;
+        rotulo: string;
+        /**
+         * Aparece abaixo do campo. Explique com exemplo, se ajudar.
+         */
+        ajuda?: string | null;
+        obrigatorio?: boolean | null;
+        /**
+         * Guarda cifrado, mascara no painel e exige consentimento específico. Use só quando indispensável.
+         */
+        sensivel?: boolean | null;
+        /**
+         * Opcional. Use para perguntas que só fazem sentido em certas respostas.
+         */
+        mostrarSe?: {
+          /**
+           * Nome técnico do outro campo.
+           */
+          campo?: string | null;
+          valor?: string | null;
+        };
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'data';
+      }
+    | {
+        /**
+         * Chave usada no banco e no export (sem espaços). Ex.: peso-declarado
+         */
+        nome: string;
+        rotulo: string;
+        /**
+         * Aparece abaixo do campo. Explique com exemplo, se ajudar.
+         */
+        ajuda?: string | null;
+        obrigatorio?: boolean | null;
+        /**
+         * Guarda cifrado, mascara no painel e exige consentimento específico. Use só quando indispensável.
+         */
+        sensivel?: boolean | null;
+        /**
+         * Opcional. Use para perguntas que só fazem sentido em certas respostas.
+         */
+        mostrarSe?: {
+          /**
+           * Nome técnico do outro campo.
+           */
+          campo?: string | null;
+          valor?: string | null;
+        };
+        min?: number | null;
+        max?: number | null;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'numero';
+      }
+    | {
+        /**
+         * Chave usada no banco e no export (sem espaços). Ex.: categoria
+         */
+        nome: string;
+        rotulo: string;
+        /**
+         * Aparece abaixo do campo. Explique com exemplo, se ajudar.
+         */
+        ajuda?: string | null;
+        obrigatorio?: boolean | null;
+        /**
+         * Guarda cifrado, mascara no painel e exige consentimento específico. Use só quando indispensável.
+         */
+        sensivel?: boolean | null;
+        /**
+         * Opcional. Use para perguntas que só fazem sentido em certas respostas.
+         */
+        mostrarSe?: {
+          /**
+           * Nome técnico do outro campo.
+           */
+          campo?: string | null;
+          valor?: string | null;
+        };
+        opcoes: {
+          valor: string;
+          rotulo: string;
+          id?: string | null;
+        }[];
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'selecao';
+      }
+    | {
+        /**
+         * Chave usada no banco e no export (sem espaços). Ex.: provas
+         */
+        nome: string;
+        rotulo: string;
+        /**
+         * Aparece abaixo do campo. Explique com exemplo, se ajudar.
+         */
+        ajuda?: string | null;
+        obrigatorio?: boolean | null;
+        /**
+         * Guarda cifrado, mascara no painel e exige consentimento específico. Use só quando indispensável.
+         */
+        sensivel?: boolean | null;
+        /**
+         * Opcional. Use para perguntas que só fazem sentido em certas respostas.
+         */
+        mostrarSe?: {
+          /**
+           * Nome técnico do outro campo.
+           */
+          campo?: string | null;
+          valor?: string | null;
+        };
+        opcoes: {
+          valor: string;
+          rotulo: string;
+          id?: string | null;
+        }[];
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'multipla';
+      }
+    | {
+        /**
+         * Chave usada no banco e no export (sem espaços). Ex.: declaracao-idade
+         */
+        nome: string;
+        /**
+         * Ex.: "Declaro que li e aceito o regulamento da competição."
+         */
+        texto: string;
+        obrigatorio?: boolean | null;
+        /**
+         * Opcional. Use para perguntas que só fazem sentido em certas respostas.
+         */
+        mostrarSe?: {
+          /**
+           * Nome técnico do outro campo.
+           */
+          campo?: string | null;
+          valor?: string | null;
+        };
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'aceite';
+      }
+    | {
+        titulo: string;
+        descricao?: string | null;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'secao';
+      }
+  )[];
+  lgpd: {
+    /**
+     * Em linguagem simples: para que os dados são usados. Ex.: "Organizar a inscrição e a ordem de entrada na competição".
+     */
+    finalidade: string;
+    baseLegal:
+      | 'contrato'
+      | 'consentimento'
+      | 'obrigacao-legal'
+      | 'legitimo-interesse'
+      | 'exercicio-direitos'
+      | 'sensivel-consentimento';
+    prazoRetencaoMeses: number;
+    versaoAviso: string;
+    /**
+     * Ex.: "Prazo de defesa em processo disciplinar" ou "Guarda fiscal de 5 anos".
+     */
+    justificativaRetencao?: string | null;
+    /**
+     * Texto mostrado antes do envio, com finalidade, prazo, compartilhamento e direitos. A versão acima é gravada junto do aceite.
+     */
+    avisoPrivacidade: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
+  };
+  /**
+   * Cada item vira um checkbox separado, nunca pré-marcado. O texto aceito é congelado na inscrição (com hash).
+   */
+  consentimentos: {
+    /**
+     * Ex.: tratamento-inscricao
+     */
+    identificador: string;
+    finalidade: 'inscricao' | 'dados-sensiveis' | 'menor' | 'imagem' | 'comunicacoes';
+    obrigatorio?: boolean | null;
+    /**
+     * Sem termos vagos. Diga o que será feito e com o quê.
+     */
+    texto: string;
+    id?: string | null;
+  }[];
+  mensagens?: {
+    sucesso?: string | null;
+    /**
+     * Só é usada se o evento não tiver aviso próprio.
+     */
+    foraDoPeriodo?: string | null;
+  };
+  /**
+   * O formulário só aparece no site se este evento abrir as inscrições.
+   */
+  evento: number | Competicao;
+  versao?: number | null;
+  limitePorAtleta?: number | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "convocacoes".
  */
 export interface Convocacao {
-  id: number
-  titulo: string
-  tipo: 'atletas' | 'tecnicos' | 'arbitros'
-  dataPublicacao: string
+  id: number;
+  titulo: string;
+  tipo: 'atletas' | 'tecnicos' | 'arbitros';
+  dataPublicacao: string;
   /**
    * Linha de apoio. Ex.: "12 atletas · 2 técnicos".
    */
-  detalhe?: string | null
-  competicao?: (number | null) | Competicao
-  documento: number | Documento
-  prazoConfirmacao?: string | null
-  updatedAt: string
-  createdAt: string
+  detalhe?: string | null;
+  competicao?: (number | null) | Competicao;
+  documento: number | Documento;
+  prazoConfirmacao?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "resultados".
  */
 export interface Resultado {
-  id: number
-  titulo: string
-  competicao?: (number | null) | Competicao
-  data: string
-  cidade?: string | null
-  sumula?: (number | null) | Documento
-  observacoes?: string | null
+  id: number;
+  titulo: string;
+  competicao?: (number | null) | Competicao;
+  data: string;
+  cidade?: string | null;
+  sumula?: (number | null) | Documento;
+  observacoes?: string | null;
   /**
    * Uma linha por atleta. Marcas em kg; deixe 0 para tentativa sem sucesso (bomb out).
    */
   linhas?:
     | {
-        sexo: 'F' | 'M'
-        categoriaIdade: 'sub13' | 'sub15' | 'sub17' | 'sub20' | 'sub23' | 'senior' | 'master'
-        categoriaPeso: string
-        colocacao?: number | null
-        pesoCorporal?: number | null
-        atleta: string
-        clube?: string | null
-        arranco?: number | null
-        arremesso?: number | null
+        sexo: 'F' | 'M';
+        categoriaIdade: 'sub13' | 'sub15' | 'sub17' | 'sub20' | 'sub23' | 'senior' | 'master';
+        categoriaPeso: string;
+        colocacao?: number | null;
+        pesoCorporal?: number | null;
+        atleta: string;
+        clube?: string | null;
+        arranco?: number | null;
+        arremesso?: number | null;
         /**
          * Calculado se vazio.
          */
-        total?: number | null
-        id?: string | null
+        total?: number | null;
+        id?: string | null;
       }[]
-    | null
+    | null;
   /**
    * Gerado automaticamente a partir do título. Só altere se souber o que está fazendo.
    */
-  slug?: string | null
-  updatedAt: string
-  createdAt: string
+  slug?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * Cadastre apenas o recorde vigente de cada categoria/movimento. Ao ser quebrado, edite o registro.
@@ -459,841 +892,1295 @@ export interface Resultado {
  * via the `definition` "recordes".
  */
 export interface Recorde {
-  id: number
-  rotulo?: string | null
-  categoriaIdade: 'sub13' | 'sub15' | 'sub17' | 'sub20' | 'sub23' | 'senior' | 'master'
-  sexo: 'F' | 'M'
-  categoriaPeso: string
-  movimento: 'arranco' | 'arremesso' | 'total'
-  marca: number
-  atleta: string
-  clube?: string | null
-  data: string
-  competicao?: string | null
-  updatedAt: string
-  createdAt: string
+  id: number;
+  rotulo?: string | null;
+  categoriaIdade: 'sub13' | 'sub15' | 'sub17' | 'sub20' | 'sub23' | 'senior' | 'master';
+  sexo: 'F' | 'M';
+  categoriaPeso: string;
+  movimento: 'arranco' | 'arremesso' | 'total';
+  marca: number;
+  atleta: string;
+  clube?: string | null;
+  data: string;
+  competicao?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "centros".
  */
 export interface Centro {
-  id: number
-  nome: string
-  cidade: string
-  bairro?: string | null
-  cep?: string | null
-  endereco: string
+  id: number;
+  nome: string;
+  cidade: string;
+  bairro?: string | null;
+  cep?: string | null;
+  endereco: string;
   /**
    * Para o mapa. No Google Maps: clique com o botão direito no local e copie as coordenadas.
    */
-  latitude?: number | null
-  longitude?: number | null
-  tecnicoResponsavel?: string | null
-  cref?: string | null
-  tags?:
-    | ('iniciacao' | 'base' | 'alto-rendimento' | 'paradesporto' | 'projeto-social' | 'master')[]
-    | null
-  horarios?: string | null
-  telefone?: string | null
-  whatsapp?: string | null
-  instagram?: string | null
-  capa?: (number | null) | Media
-  galeria?: (number | Media)[] | null
+  latitude?: number | null;
+  longitude?: number | null;
+  tecnicoResponsavel?: string | null;
+  cref?: string | null;
+  tags?: ('iniciacao' | 'base' | 'alto-rendimento' | 'paradesporto' | 'projeto-social' | 'master')[] | null;
+  horarios?: string | null;
+  telefone?: string | null;
+  whatsapp?: string | null;
+  instagram?: string | null;
+  capa?: (number | null) | Media;
+  galeria?: (number | Media)[] | null;
   descricao?: {
     root: {
-      type: string
+      type: string;
       children: {
-        type: any
-        version: number
-        [k: string]: unknown
-      }[]
-      direction: ('ltr' | 'rtl') | null
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | ''
-      indent: number
-      version: number
-    }
-    [k: string]: unknown
-  } | null
-  ativo?: boolean | null
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  ativo?: boolean | null;
   /**
    * Gerado automaticamente a partir do título. Só altere se souber o que está fazendo.
    */
-  slug?: string | null
-  updatedAt: string
-  createdAt: string
+  slug?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "diretoria".
  */
 export interface Diretoria {
-  id: number
-  nome: string
-  cargo: string
-  grupo: 'diretoria' | 'conselho-fiscal' | 'arbitragem' | 'tecnica' | 'atletas'
-  foto?: (number | null) | Media
-  mandato?: string | null
-  email?: string | null
+  id: number;
+  nome: string;
+  cargo: string;
+  grupo: 'diretoria' | 'conselho-fiscal' | 'arbitragem' | 'tecnica' | 'atletas';
+  foto?: (number | null) | Media;
+  mandato?: string | null;
+  email?: string | null;
   /**
    * Menor aparece primeiro.
    */
-  ordem?: number | null
-  updatedAt: string
-  createdAt: string
+  ordem?: number | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
-  id: number
-  nome: string
+  id: number;
+  nome: string;
   /**
    * Editores publicam conteúdo; administradores também gerenciam usuários.
    */
-  role: 'admin' | 'editor'
-  updatedAt: string
-  createdAt: string
-  email: string
-  resetPasswordToken?: string | null
-  resetPasswordExpiration?: string | null
-  salt?: string | null
-  hash?: string | null
-  resetPasswordRequestedAt?: string | null
-  loginAttempts?: number | null
-  lockUntil?: string | null
+  role: 'admin' | 'editor';
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
   sessions?:
     | {
-        id: string
-        createdAt?: string | null
-        expiresAt: string
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
       }[]
-    | null
-  password?: string | null
-  collection: 'users'
+    | null;
+  password?: string | null;
+  collection: 'users';
+}
+/**
+ * Contas da área do filiado. Não têm acesso ao painel — só à área do atleta no site.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "atletas".
+ */
+export interface Atleta {
+  id: number;
+  nome: string;
+  cpf?: string | null;
+  cpfHash?: string | null;
+  /**
+   * Guardado cifrado. Revelação auditada na Fase 2.
+   */
+  cpfMascara?: string | null;
+  dataNascimento: string;
+  telefone?: string | null;
+  uf?: string | null;
+  cidade?: string | null;
+  /**
+   * Cadastros feitos pelo site entram como "Pendente". Abra um por um e mude para "Ativa" para liberar o acesso.
+   */
+  status?: ('pendente' | 'ativo' | 'bloqueado') | null;
+  aprovadoEm?: string | null;
+  aprovadoPor?: (number | null) | User;
+  /**
+   * Registro do consentimento dado no cadastro. Não é editável.
+   */
+  aceitePrivacidade?: {
+    versao?: string | null;
+    aceitoEm?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'atletas';
+}
+/**
+ * Dados pessoais: leia só o necessário e registre o motivo do acesso.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inscricoes".
+ */
+export interface Inscricao {
+  id: number;
+  protocolo: string;
+  status: 'recebida' | 'em-analise' | 'aprovada' | 'lista-espera' | 'rejeitada' | 'cancelada';
+  enviadaEm: string;
+  atleta: number | Atleta;
+  evento: number | Competicao;
+  formulario: number | FormularioInscricao;
+  formularioVersao: number;
+  idadeNaInscricao?: number | null;
+  /**
+   * Snapshot das perguntas e respostas no momento do envio (não muda se o formulário mudar).
+   */
+  respostas:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Texto, versão, hash, data/hora e origem de cada aceite.
+   */
+  consentimentos?:
+    | {
+        identificador?: string | null;
+        versao?: string | null;
+        finalidade?: string | null;
+        obrigatorio?: boolean | null;
+        textoHash?: string | null;
+        /**
+         * Cópia do consentimento como estava no dia do envio.
+         */
+        texto?: string | null;
+        aceito?: boolean | null;
+        aceitoEm?: string | null;
+        ipHash?: string | null;
+        revogadoEm?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Dados cifrados. Só aparecem quando a inscrição é de menor de 18 anos.
+   */
+  responsavel?: {
+    nome?: string | null;
+    parentesco?: string | null;
+    telefone?: string | null;
+    cpf?: string | null;
+  };
+  menorDeIdade?: boolean | null;
+  /**
+   * Calculado a partir do prazo do formulário. O expurgo automático entra na Fase 2.
+   */
+  retencaoAte?: string | null;
+  motivoRejeicao?: string | null;
+  /**
+   * Nunca aparece para o atleta.
+   */
+  observacoesInternas?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: number
-  key: string
+  id: number;
+  key: string;
   data:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
+    | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: number
+  id: number;
   document?:
     | ({
-        relationTo: 'noticias'
-        value: number | Noticia
+        relationTo: 'noticias';
+        value: number | Noticia;
       } | null)
     | ({
-        relationTo: 'paginas'
-        value: number | Pagina
+        relationTo: 'paginas';
+        value: number | Pagina;
       } | null)
     | ({
-        relationTo: 'mensagens'
-        value: number | Mensagem
+        relationTo: 'mensagens';
+        value: number | Mensagem;
       } | null)
     | ({
-        relationTo: 'competicoes'
-        value: number | Competicao
+        relationTo: 'competicoes';
+        value: number | Competicao;
       } | null)
     | ({
-        relationTo: 'convocacoes'
-        value: number | Convocacao
+        relationTo: 'convocacoes';
+        value: number | Convocacao;
       } | null)
     | ({
-        relationTo: 'resultados'
-        value: number | Resultado
+        relationTo: 'resultados';
+        value: number | Resultado;
       } | null)
     | ({
-        relationTo: 'recordes'
-        value: number | Recorde
+        relationTo: 'recordes';
+        value: number | Recorde;
       } | null)
     | ({
-        relationTo: 'centros'
-        value: number | Centro
+        relationTo: 'centros';
+        value: number | Centro;
       } | null)
     | ({
-        relationTo: 'diretoria'
-        value: number | Diretoria
+        relationTo: 'diretoria';
+        value: number | Diretoria;
       } | null)
     | ({
-        relationTo: 'documentos'
-        value: number | Documento
+        relationTo: 'documentos';
+        value: number | Documento;
       } | null)
     | ({
-        relationTo: 'media'
-        value: number | Media
+        relationTo: 'media';
+        value: number | Media;
       } | null)
     | ({
-        relationTo: 'users'
-        value: number | User
+        relationTo: 'users';
+        value: number | User;
       } | null)
-  globalSlug?: string | null
-  user: {
-    relationTo: 'users'
-    value: number | User
-  }
-  updatedAt: string
-  createdAt: string
+    | ({
+        relationTo: 'atletas';
+        value: number | Atleta;
+      } | null)
+    | ({
+        relationTo: 'formularios-inscricao';
+        value: number | FormularioInscricao;
+      } | null)
+    | ({
+        relationTo: 'inscricoes';
+        value: number | Inscricao;
+      } | null);
+  globalSlug?: string | null;
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'atletas';
+        value: number | Atleta;
+      };
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: number
-  user: {
-    relationTo: 'users'
-    value: number | User
-  }
-  key?: string | null
+  id: number;
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'atletas';
+        value: number | Atleta;
+      };
+  key?: string | null;
   value?:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  updatedAt: string
-  createdAt: string
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: number
-  name?: string | null
-  batch?: number | null
-  updatedAt: string
-  createdAt: string
+  id: number;
+  name?: string | null;
+  batch?: number | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "noticias_select".
  */
 export interface NoticiasSelect<T extends boolean = true> {
-  titulo?: T
-  resumo?: T
-  capa?: T
-  conteudo?: T
-  categoria?: T
-  dataPublicacao?: T
-  destaque?: T
-  slug?: T
-  updatedAt?: T
-  createdAt?: T
-  _status?: T
+  titulo?: T;
+  resumo?: T;
+  capa?: T;
+  conteudo?: T;
+  categoria?: T;
+  dataPublicacao?: T;
+  destaque?: T;
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "paginas_select".
  */
 export interface PaginasSelect<T extends boolean = true> {
-  titulo?: T
-  resumo?: T
-  conteudo?: T
-  slug?: T
-  updatedAt?: T
-  createdAt?: T
-  _status?: T
+  titulo?: T;
+  resumo?: T;
+  conteudo?: T;
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "mensagens_select".
  */
 export interface MensagensSelect<T extends boolean = true> {
-  nome?: T
-  email?: T
-  telefone?: T
-  assunto?: T
-  mensagem?: T
-  status?: T
-  updatedAt?: T
-  createdAt?: T
+  nome?: T;
+  email?: T;
+  telefone?: T;
+  assunto?: T;
+  mensagem?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "competicoes_select".
  */
 export interface CompeticoesSelect<T extends boolean = true> {
-  nome?: T
-  tipo?: T
-  area?: T
-  categorias?: T
-  dataInicio?: T
-  dataFim?: T
-  inscricoesAte?: T
-  local?: T
-  cidade?: T
-  uf?: T
-  pesagem?: T
-  imagem?: T
-  descricao?: T
-  regulamento?: T
-  linkInscricao?: T
-  status?: T
-  destaqueHome?: T
-  slug?: T
-  updatedAt?: T
-  createdAt?: T
+  nome?: T;
+  tipo?: T;
+  area?: T;
+  categorias?: T;
+  dataInicio?: T;
+  dataFim?: T;
+  inscricoesDe?: T;
+  inscricoesAte?: T;
+  local?: T;
+  cidade?: T;
+  uf?: T;
+  pesagem?: T;
+  imagem?: T;
+  descricao?: T;
+  regulamento?: T;
+  linkInscricao?: T;
+  status?: T;
+  inscricoesAbertas?: T;
+  limiteVagas?: T;
+  avisoForaDoPeriodo?: T;
+  formularios?: T;
+  destaqueHome?: T;
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "convocacoes_select".
  */
 export interface ConvocacoesSelect<T extends boolean = true> {
-  titulo?: T
-  tipo?: T
-  dataPublicacao?: T
-  detalhe?: T
-  competicao?: T
-  documento?: T
-  prazoConfirmacao?: T
-  updatedAt?: T
-  createdAt?: T
+  titulo?: T;
+  tipo?: T;
+  dataPublicacao?: T;
+  detalhe?: T;
+  competicao?: T;
+  documento?: T;
+  prazoConfirmacao?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "resultados_select".
  */
 export interface ResultadosSelect<T extends boolean = true> {
-  titulo?: T
-  competicao?: T
-  data?: T
-  cidade?: T
-  sumula?: T
-  observacoes?: T
+  titulo?: T;
+  competicao?: T;
+  data?: T;
+  cidade?: T;
+  sumula?: T;
+  observacoes?: T;
   linhas?:
     | T
     | {
-        sexo?: T
-        categoriaIdade?: T
-        categoriaPeso?: T
-        colocacao?: T
-        pesoCorporal?: T
-        atleta?: T
-        clube?: T
-        arranco?: T
-        arremesso?: T
-        total?: T
-        id?: T
-      }
-  slug?: T
-  updatedAt?: T
-  createdAt?: T
+        sexo?: T;
+        categoriaIdade?: T;
+        categoriaPeso?: T;
+        colocacao?: T;
+        pesoCorporal?: T;
+        atleta?: T;
+        clube?: T;
+        arranco?: T;
+        arremesso?: T;
+        total?: T;
+        id?: T;
+      };
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "recordes_select".
  */
 export interface RecordesSelect<T extends boolean = true> {
-  rotulo?: T
-  categoriaIdade?: T
-  sexo?: T
-  categoriaPeso?: T
-  movimento?: T
-  marca?: T
-  atleta?: T
-  clube?: T
-  data?: T
-  competicao?: T
-  updatedAt?: T
-  createdAt?: T
+  rotulo?: T;
+  categoriaIdade?: T;
+  sexo?: T;
+  categoriaPeso?: T;
+  movimento?: T;
+  marca?: T;
+  atleta?: T;
+  clube?: T;
+  data?: T;
+  competicao?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "centros_select".
  */
 export interface CentrosSelect<T extends boolean = true> {
-  nome?: T
-  cidade?: T
-  bairro?: T
-  cep?: T
-  endereco?: T
-  latitude?: T
-  longitude?: T
-  tecnicoResponsavel?: T
-  cref?: T
-  tags?: T
-  horarios?: T
-  telefone?: T
-  whatsapp?: T
-  instagram?: T
-  capa?: T
-  galeria?: T
-  descricao?: T
-  ativo?: T
-  slug?: T
-  updatedAt?: T
-  createdAt?: T
+  nome?: T;
+  cidade?: T;
+  bairro?: T;
+  cep?: T;
+  endereco?: T;
+  latitude?: T;
+  longitude?: T;
+  tecnicoResponsavel?: T;
+  cref?: T;
+  tags?: T;
+  horarios?: T;
+  telefone?: T;
+  whatsapp?: T;
+  instagram?: T;
+  capa?: T;
+  galeria?: T;
+  descricao?: T;
+  ativo?: T;
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "diretoria_select".
  */
 export interface DiretoriaSelect<T extends boolean = true> {
-  nome?: T
-  cargo?: T
-  grupo?: T
-  foto?: T
-  mandato?: T
-  email?: T
-  ordem?: T
-  updatedAt?: T
-  createdAt?: T
+  nome?: T;
+  cargo?: T;
+  grupo?: T;
+  foto?: T;
+  mandato?: T;
+  email?: T;
+  ordem?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "documentos_select".
  */
 export interface DocumentosSelect<T extends boolean = true> {
-  titulo?: T
-  categoria?: T
-  ano?: T
-  dataPublicacao?: T
-  descricao?: T
-  publico?: T
-  updatedAt?: T
-  createdAt?: T
-  url?: T
-  thumbnailURL?: T
-  filename?: T
-  mimeType?: T
-  filesize?: T
-  width?: T
-  height?: T
-  focalX?: T
-  focalY?: T
+  titulo?: T;
+  categoria?: T;
+  ano?: T;
+  dataPublicacao?: T;
+  descricao?: T;
+  publico?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
-  alt?: T
-  credito?: T
-  updatedAt?: T
-  createdAt?: T
-  url?: T
-  thumbnailURL?: T
-  filename?: T
-  mimeType?: T
-  filesize?: T
-  width?: T
-  height?: T
-  focalX?: T
-  focalY?: T
+  alt?: T;
+  credito?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
   sizes?:
     | T
     | {
         thumb?:
           | T
           | {
-              url?: T
-              width?: T
-              height?: T
-              mimeType?: T
-              filesize?: T
-              filename?: T
-            }
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
         card?:
           | T
           | {
-              url?: T
-              width?: T
-              height?: T
-              mimeType?: T
-              filesize?: T
-              filename?: T
-            }
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
         hero?:
           | T
           | {
-              url?: T
-              width?: T
-              height?: T
-              mimeType?: T
-              filesize?: T
-              filename?: T
-            }
-      }
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
-  nome?: T
-  role?: T
-  updatedAt?: T
-  createdAt?: T
-  email?: T
-  resetPasswordToken?: T
-  resetPasswordExpiration?: T
-  salt?: T
-  hash?: T
-  resetPasswordRequestedAt?: T
-  loginAttempts?: T
-  lockUntil?: T
+  nome?: T;
+  role?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  resetPasswordRequestedAt?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
   sessions?:
     | T
     | {
-        id?: T
-        createdAt?: T
-        expiresAt?: T
-      }
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "atletas_select".
+ */
+export interface AtletasSelect<T extends boolean = true> {
+  nome?: T;
+  cpf?: T;
+  cpfHash?: T;
+  cpfMascara?: T;
+  dataNascimento?: T;
+  telefone?: T;
+  uf?: T;
+  cidade?: T;
+  status?: T;
+  aprovadoEm?: T;
+  aprovadoPor?: T;
+  aceitePrivacidade?:
+    | T
+    | {
+        versao?: T;
+        aceitoEm?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  resetPasswordRequestedAt?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "formularios-inscricao_select".
+ */
+export interface FormulariosInscricaoSelect<T extends boolean = true> {
+  titulo?: T;
+  descricao?: T;
+  campos?:
+    | T
+    | {
+        texto?:
+          | T
+          | {
+              nome?: T;
+              rotulo?: T;
+              ajuda?: T;
+              obrigatorio?: T;
+              sensivel?: T;
+              mostrarSe?:
+                | T
+                | {
+                    campo?: T;
+                    valor?: T;
+                  };
+              minLength?: T;
+              maxLength?: T;
+              id?: T;
+              blockName?: T;
+            };
+        'texto-longo'?:
+          | T
+          | {
+              nome?: T;
+              rotulo?: T;
+              ajuda?: T;
+              obrigatorio?: T;
+              sensivel?: T;
+              mostrarSe?:
+                | T
+                | {
+                    campo?: T;
+                    valor?: T;
+                  };
+              minLength?: T;
+              maxLength?: T;
+              id?: T;
+              blockName?: T;
+            };
+        email?:
+          | T
+          | {
+              nome?: T;
+              rotulo?: T;
+              ajuda?: T;
+              obrigatorio?: T;
+              sensivel?: T;
+              mostrarSe?:
+                | T
+                | {
+                    campo?: T;
+                    valor?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        telefone?:
+          | T
+          | {
+              nome?: T;
+              rotulo?: T;
+              ajuda?: T;
+              obrigatorio?: T;
+              sensivel?: T;
+              mostrarSe?:
+                | T
+                | {
+                    campo?: T;
+                    valor?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        data?:
+          | T
+          | {
+              nome?: T;
+              rotulo?: T;
+              ajuda?: T;
+              obrigatorio?: T;
+              sensivel?: T;
+              mostrarSe?:
+                | T
+                | {
+                    campo?: T;
+                    valor?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        numero?:
+          | T
+          | {
+              nome?: T;
+              rotulo?: T;
+              ajuda?: T;
+              obrigatorio?: T;
+              sensivel?: T;
+              mostrarSe?:
+                | T
+                | {
+                    campo?: T;
+                    valor?: T;
+                  };
+              min?: T;
+              max?: T;
+              id?: T;
+              blockName?: T;
+            };
+        selecao?:
+          | T
+          | {
+              nome?: T;
+              rotulo?: T;
+              ajuda?: T;
+              obrigatorio?: T;
+              sensivel?: T;
+              mostrarSe?:
+                | T
+                | {
+                    campo?: T;
+                    valor?: T;
+                  };
+              opcoes?:
+                | T
+                | {
+                    valor?: T;
+                    rotulo?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        multipla?:
+          | T
+          | {
+              nome?: T;
+              rotulo?: T;
+              ajuda?: T;
+              obrigatorio?: T;
+              sensivel?: T;
+              mostrarSe?:
+                | T
+                | {
+                    campo?: T;
+                    valor?: T;
+                  };
+              opcoes?:
+                | T
+                | {
+                    valor?: T;
+                    rotulo?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        aceite?:
+          | T
+          | {
+              nome?: T;
+              texto?: T;
+              obrigatorio?: T;
+              mostrarSe?:
+                | T
+                | {
+                    campo?: T;
+                    valor?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        secao?:
+          | T
+          | {
+              titulo?: T;
+              descricao?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
+  lgpd?:
+    | T
+    | {
+        finalidade?: T;
+        baseLegal?: T;
+        prazoRetencaoMeses?: T;
+        versaoAviso?: T;
+        justificativaRetencao?: T;
+        avisoPrivacidade?: T;
+      };
+  consentimentos?:
+    | T
+    | {
+        identificador?: T;
+        finalidade?: T;
+        obrigatorio?: T;
+        texto?: T;
+        id?: T;
+      };
+  mensagens?:
+    | T
+    | {
+        sucesso?: T;
+        foraDoPeriodo?: T;
+      };
+  evento?: T;
+  versao?: T;
+  limitePorAtleta?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inscricoes_select".
+ */
+export interface InscricoesSelect<T extends boolean = true> {
+  protocolo?: T;
+  status?: T;
+  enviadaEm?: T;
+  atleta?: T;
+  evento?: T;
+  formulario?: T;
+  formularioVersao?: T;
+  idadeNaInscricao?: T;
+  respostas?: T;
+  consentimentos?:
+    | T
+    | {
+        identificador?: T;
+        versao?: T;
+        finalidade?: T;
+        obrigatorio?: T;
+        textoHash?: T;
+        texto?: T;
+        aceito?: T;
+        aceitoEm?: T;
+        ipHash?: T;
+        revogadoEm?: T;
+        id?: T;
+      };
+  responsavel?:
+    | T
+    | {
+        nome?: T;
+        parentesco?: T;
+        telefone?: T;
+        cpf?: T;
+      };
+  menorDeIdade?: T;
+  retencaoAte?: T;
+  motivoRejeicao?: T;
+  observacoesInternas?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
-  key?: T
-  data?: T
+  key?: T;
+  data?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents_select".
  */
 export interface PayloadLockedDocumentsSelect<T extends boolean = true> {
-  document?: T
-  globalSlug?: T
-  user?: T
-  updatedAt?: T
-  createdAt?: T
+  document?: T;
+  globalSlug?: T;
+  user?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-preferences_select".
  */
 export interface PayloadPreferencesSelect<T extends boolean = true> {
-  user?: T
-  key?: T
-  value?: T
-  updatedAt?: T
-  createdAt?: T
+  user?: T;
+  key?: T;
+  value?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-migrations_select".
  */
 export interface PayloadMigrationsSelect<T extends boolean = true> {
-  name?: T
-  batch?: T
-  updatedAt?: T
-  createdAt?: T
+  name?: T;
+  batch?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "home".
  */
 export interface PaginaInicial {
-  id: number
+  id: number;
   /**
    * Opcional. Sem escolha aqui, a home mostra a competição marcada como destaque ou a próxima competição estadual.
    */
-  destaque?: (number | null) | Competicao
-  textoDestaque?: string | null
-  fotoDestaque?: (number | null) | Media
+  destaque?: (number | null) | Competicao;
+  textoDestaque?: string | null;
+  fotoDestaque?: (number | null) | Media;
   chamadaFiliacao?: {
-    titulo?: string | null
-    texto?: string | null
-  }
-  updatedAt?: string | null
-  createdAt?: string | null
+    titulo?: string | null;
+    texto?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "filiacao".
  */
 export interface PaginaFiliacao {
-  id: number
-  introducao?: string | null
+  id: number;
+  introducao?: string | null;
   perfis?:
     | {
-        nome: string
-        anuidade?: number | null
+        nome: string;
+        anuidade?: number | null;
         /**
          * Formulário ou e-mail (mailto:).
          */
-        linkInscricao?: string | null
-        descricao?: string | null
+        linkInscricao?: string | null;
+        descricao?: string | null;
         documentos?:
           | {
-              item: string
-              id?: string | null
+              item: string;
+              id?: string | null;
             }[]
-          | null
-        formulario?: (number | null) | Documento
-        id?: string | null
+          | null;
+        formulario?: (number | null) | Documento;
+        id?: string | null;
       }[]
-    | null
+    | null;
   passos?:
     | {
-        titulo: string
-        texto?: string | null
-        id?: string | null
+        titulo: string;
+        texto?: string | null;
+        id?: string | null;
       }[]
-    | null
-  linkRenovacao?: string | null
+    | null;
+  linkRenovacao?: string | null;
   faq?:
     | {
-        pergunta: string
-        resposta: string
-        id?: string | null
+        pergunta: string;
+        resposta: string;
+        id?: string | null;
       }[]
-    | null
-  updatedAt?: string | null
-  createdAt?: string | null
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "federacao".
  */
 export interface PaginaFederacao {
-  id: number
-  apresentacao?: string | null
+  id: number;
+  apresentacao?: string | null;
   historia?: {
     root: {
-      type: string
+      type: string;
       children: {
-        type: any
-        version: number
-        [k: string]: unknown
-      }[]
-      direction: ('ltr' | 'rtl') | null
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | ''
-      indent: number
-      version: number
-    }
-    [k: string]: unknown
-  } | null
-  foto?: (number | null) | Media
-  missao?: string | null
-  visao?: string | null
-  valores?: string | null
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  foto?: (number | null) | Media;
+  missao?: string | null;
+  visao?: string | null;
+  valores?: string | null;
   /**
    * Ex.: "Fundada em" / "1998". Use apenas números reais.
    */
   numeros?:
     | {
-        valor: string
-        rotulo: string
-        id?: string | null
+        valor: string;
+        rotulo: string;
+        id?: string | null;
       }[]
-    | null
+    | null;
   /**
    * Confederação, comitês e entidades a que a federação é vinculada.
    */
   filiacoes?:
     | {
-        nome: string
-        url?: string | null
-        id?: string | null
+        nome: string;
+        url?: string | null;
+        id?: string | null;
       }[]
-    | null
-  transparenciaIntro?: string | null
+    | null;
+  transparenciaIntro?: string | null;
   /**
    * Ex.: processo eleitoral, ouvidoria, como solicitar informações.
    */
   transparenciaTexto?: {
     root: {
-      type: string
+      type: string;
       children: {
-        type: any
-        version: number
-        [k: string]: unknown
-      }[]
-      direction: ('ltr' | 'rtl') | null
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | ''
-      indent: number
-      version: number
-    }
-    [k: string]: unknown
-  } | null
-  emailOuvidoria?: string | null
-  updatedAt?: string | null
-  createdAt?: string | null
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  emailOuvidoria?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "configuracoes".
  */
 export interface ConfiguracoesSite {
-  id: number
-  sigla: string
-  nomeCompleto: string
-  logo?: (number | null) | Media
-  cnpj?: string | null
-  descricaoSite?: string | null
-  endereco?: string | null
-  cidade?: string | null
-  cep?: string | null
-  email?: string | null
-  telefone?: string | null
-  whatsapp?: string | null
-  horarioAtendimento?: string | null
-  instagram?: string | null
-  youtube?: string | null
-  facebook?: string | null
+  id: number;
+  sigla: string;
+  nomeCompleto: string;
+  logo?: (number | null) | Media;
+  cnpj?: string | null;
+  descricaoSite?: string | null;
+  endereco?: string | null;
+  cidade?: string | null;
+  cep?: string | null;
+  email?: string | null;
+  telefone?: string | null;
+  whatsapp?: string | null;
+  horarioAtendimento?: string | null;
+  instagram?: string | null;
+  youtube?: string | null;
+  facebook?: string | null;
   apoiadores?:
     | {
-        nome: string
-        logo?: (number | null) | Media
-        url?: string | null
-        id?: string | null
+        nome: string;
+        logo?: (number | null) | Media;
+        url?: string | null;
+        id?: string | null;
       }[]
-    | null
+    | null;
   /**
    * Deixe vazio para esconder o link até a área do filiado existir.
    */
-  linkAreaFiliado?: string | null
-  updatedAt?: string | null
-  createdAt?: string | null
+  linkAreaFiliado?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "home_select".
  */
 export interface HomeSelect<T extends boolean = true> {
-  destaque?: T
-  textoDestaque?: T
-  fotoDestaque?: T
+  destaque?: T;
+  textoDestaque?: T;
+  fotoDestaque?: T;
   chamadaFiliacao?:
     | T
     | {
-        titulo?: T
-        texto?: T
-      }
-  updatedAt?: T
-  createdAt?: T
-  globalType?: T
+        titulo?: T;
+        texto?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "filiacao_select".
  */
 export interface FiliacaoSelect<T extends boolean = true> {
-  introducao?: T
+  introducao?: T;
   perfis?:
     | T
     | {
-        nome?: T
-        anuidade?: T
-        linkInscricao?: T
-        descricao?: T
+        nome?: T;
+        anuidade?: T;
+        linkInscricao?: T;
+        descricao?: T;
         documentos?:
           | T
           | {
-              item?: T
-              id?: T
-            }
-        formulario?: T
-        id?: T
-      }
+              item?: T;
+              id?: T;
+            };
+        formulario?: T;
+        id?: T;
+      };
   passos?:
     | T
     | {
-        titulo?: T
-        texto?: T
-        id?: T
-      }
-  linkRenovacao?: T
+        titulo?: T;
+        texto?: T;
+        id?: T;
+      };
+  linkRenovacao?: T;
   faq?:
     | T
     | {
-        pergunta?: T
-        resposta?: T
-        id?: T
-      }
-  updatedAt?: T
-  createdAt?: T
-  globalType?: T
+        pergunta?: T;
+        resposta?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "federacao_select".
  */
 export interface FederacaoSelect<T extends boolean = true> {
-  apresentacao?: T
-  historia?: T
-  foto?: T
-  missao?: T
-  visao?: T
-  valores?: T
+  apresentacao?: T;
+  historia?: T;
+  foto?: T;
+  missao?: T;
+  visao?: T;
+  valores?: T;
   numeros?:
     | T
     | {
-        valor?: T
-        rotulo?: T
-        id?: T
-      }
+        valor?: T;
+        rotulo?: T;
+        id?: T;
+      };
   filiacoes?:
     | T
     | {
-        nome?: T
-        url?: T
-        id?: T
-      }
-  transparenciaIntro?: T
-  transparenciaTexto?: T
-  emailOuvidoria?: T
-  updatedAt?: T
-  createdAt?: T
-  globalType?: T
+        nome?: T;
+        url?: T;
+        id?: T;
+      };
+  transparenciaIntro?: T;
+  transparenciaTexto?: T;
+  emailOuvidoria?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "configuracoes_select".
  */
 export interface ConfiguracoesSelect<T extends boolean = true> {
-  sigla?: T
-  nomeCompleto?: T
-  logo?: T
-  cnpj?: T
-  descricaoSite?: T
-  endereco?: T
-  cidade?: T
-  cep?: T
-  email?: T
-  telefone?: T
-  whatsapp?: T
-  horarioAtendimento?: T
-  instagram?: T
-  youtube?: T
-  facebook?: T
+  sigla?: T;
+  nomeCompleto?: T;
+  logo?: T;
+  cnpj?: T;
+  descricaoSite?: T;
+  endereco?: T;
+  cidade?: T;
+  cep?: T;
+  email?: T;
+  telefone?: T;
+  whatsapp?: T;
+  horarioAtendimento?: T;
+  instagram?: T;
+  youtube?: T;
+  facebook?: T;
   apoiadores?:
     | T
     | {
-        nome?: T
-        logo?: T
-        url?: T
-        id?: T
-      }
-  linkAreaFiliado?: T
-  updatedAt?: T
-  createdAt?: T
-  globalType?: T
+        nome?: T;
+        logo?: T;
+        url?: T;
+        id?: T;
+      };
+  linkAreaFiliado?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1301,17 +2188,18 @@ export interface ConfiguracoesSelect<T extends boolean = true> {
  */
 export interface CollectionsWidget {
   data?: {
-    [k: string]: unknown
-  }
-  width: 'full'
+    [k: string]: unknown;
+  };
+  width: 'full';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "auth".
  */
 export interface Auth {
-  [k: string]: unknown
+  [k: string]: unknown;
 }
+
 
 declare module 'payload' {
   export interface GeneratedTypes extends Config {}

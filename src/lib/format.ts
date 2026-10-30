@@ -62,7 +62,7 @@ const STATUS: Record<string, StatusInfo> = {
 
 /** Status exibido: o manual, ou calculado pelas datas quando "auto". */
 export const statusCompeticao = (
-  c: Pick<Competicao, 'status' | 'dataInicio' | 'dataFim' | 'inscricoesAte'>,
+  c: Pick<Competicao, 'status' | 'dataInicio' | 'dataFim' | 'inscricoesAte' | 'inscricoesAbertas'>,
 ): StatusInfo => {
   if (c.status && c.status !== 'auto') return STATUS[c.status]
   const hoje = hojeISO().getTime()
@@ -70,7 +70,9 @@ export const statusCompeticao = (
   const inicio = new Date(c.dataInicio).getTime()
   if (fim < hoje) return STATUS.encerrado
   if (inicio <= hoje + 86_400_000 && fim >= hoje) return STATUS['em-andamento']
-  if (c.inscricoesAte && new Date(c.inscricoesAte).getTime() >= hoje)
+  // O evento pode estar no período mas com a chave de inscrição desligada:
+  // nesse caso nunca anunciamos "Inscrições abertas".
+  if (c.inscricoesAbertas !== false && c.inscricoesAte && new Date(c.inscricoesAte).getTime() >= hoje)
     return STATUS['inscricoes-abertas']
   return STATUS['em-breve']
 }

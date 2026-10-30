@@ -31,6 +31,8 @@ pnpm dev
 | Calendário | `/calendario`, `/calendario/[slug]` | Competições e eventos |
 | Feed de agenda | `/calendario.ics` | Assinável no Google Agenda, Outlook e iPhone |
 | Eventos e cursos | `/eventos` | Competições do tipo Curso/Evento |
+| Inscrições | `/inscricoes/[slug]` | Formulário de inscrição do evento (só com login) |
+| Área do atleta | `/area` | Conta do atleta: inscrições, consentimentos, privacidade |
 | Convocações | `/convocacoes` | Convocações (PDF obrigatório) |
 | Resultados | `/resultados`, `/resultados/[slug]` | Resultados (tabela por atleta e/ou súmula PDF) |
 | Recordes estaduais | `/recordes` | Recordes |
@@ -52,6 +54,68 @@ Também ficam disponíveis `sitemap.xml`, `robots.txt`, metadados de compartilha
 - **Botão de ação no calendário**: *Ver resultados* (se houver resultado ligado) → *Inscrever atleta* (se inscrições abertas e link preenchido) → *Ver convocação* → *Detalhes*.
 - **Total no resultado**: calculado sozinho (arranco + arremesso) quando fica vazio.
 - **Área do filiado**: o link só aparece quando preenchido em *Configurações do site › Links externos*.
+
+## Inscrições e área do atleta
+
+O módulo **Inscrições** fica no painel, ao lado de "Competições":
+
+- **Formulários de inscrição** — pertencem a um evento e são montados por blocos (texto,
+  e-mail, telefone, data, número, seleção, múltipla escolha, declaração e seção). Publicar
+  gera uma **versão** nova; cada inscrição guarda a versão e o snapshot das perguntas.
+- **Inscrições recebidas** — protocolo, respostas, consentimentos (texto + hash + data +
+  origem), responsável (quando menor) e observações internas.
+- **Contas de atleta** — a área do filiado Nível 1. Login próprio, separado do painel.
+
+**Quem manda na inscrição é o evento.** Na edição da competição, o grupo lateral
+*Inscrições* tem a chave "Permitir inscrições", a janela (`Inscrições de`/`até`), o limite de
+vagas e o aviso fora do período. A regra vive em `src/lib/inscricoes/estado.ts` e é aplicada
+na página, no formulário **e** na server action — link salvo não fura a janela.
+
+A área do atleta (`/area`) tem cadastro com **aprovação manual**, login, recuperação de senha,
+meus dados, consentimentos (revogáveis) e privacidade (exportar JSON ou excluir).
+
+**Cadastro novo entra como "Pendente de aprovação"** e não consegue entrar até ser liberado.
+No painel, o menu **Cadastros pendentes** (com contador) abre a lista de contas filtradas por
+`status = pendente`; abra a conta, mude a situação para **Ativa** e salve. A aprovação registra
+quem aprovou e quando. Enquanto não houver SMTP contrato, não há confirmação de e-mail — a
+aprovação do administrador é o controle de entrada.
+Ela **não** dá acesso ao `/admin`: `admin.user` é `users`, e os helpers de acesso exigem
+`user.collection === 'users'` (`src/access/index.ts`). Os endpoints de autenticação que o
+Payload criaria para `atletas` (`/api/atletas/login`, `/me`…) são bloqueados em `src/proxy.ts`.
+
+**LGPD:** CPF e dados marcados como sensíveis são gravados cifrados (AES-256-GCM) com índice
+cego (HMAC) para busca; o CPF aparece mascarado. Cada aceite guarda o texto exibido, a versão,
+o hash e a data, com IP pseudonimizado. O prazo de retenção é calculado por formulário no
+momento do envio (`retencaoAte`). O expurgo automático e a trilha de auditoria entram na Fase 2.
+
+### E-mail transacional (SMTP)
+
+Hoje só a **recuperação de senha** usa SMTP — o cadastro é liberado pela aprovação no painel.
+Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` e `SMTP_FROM_NOME`
+no `.env` quando o provedor estiver contratado.
+
+- **Sem SMTP:** o link "Esqueci minha senha" fica oculto e a página de recuperação explica que
+  o recurso ainda não está disponível — nada quebra.
+- **Com SMTP em desenvolvimento:** o link de recuperação aparece no terminal
+  (`[e-mail simulado] … link=…`).
+
+### Chaves de LGPD (obrigatórias em produção)
+
+- `LGPD_CHAVE_CAMPOS` — 32 bytes em base64 (`openssl rand -base64 32`). **Perder a chave é
+  perder os dados cifrados.** Guarde uma cópia fora do servidor.
+- `LGPD_HASH_SALT` — sal do índice cego (`openssl rand -hex 32`).
+
+Sem `LGPD_CHAVE_CAMPOS`, o app falha ao gravar dado pessoal em produção (de propósito).
+
+### Verificação rápida do módulo
+
+```bash
+pnpm verificar:inscricoes
+```
+
+Cria evento/formulário de teste, confere a cifra do CPF, a retenção e o isolamento de acesso
+(token de atleta não cria competição, não lista usuários do painel etc.). Precisa do site
+rodando.
 
 ## Estrutura do código
 
@@ -119,6 +183,9 @@ Nessas plataformas o disco não é persistente. Antes de publicar, configure um 
 - [ ] Preencher *Configurações do site*: logo, CNPJ, endereço, e-mail, redes sociais
 - [ ] Substituir todos os placeholders `[...]` e os PDFs de exemplo
 - [ ] Revisar a política de privacidade com a assessoria jurídica
+- [ ] Nomear o encarregado (DPO) e publicar o canal de atendimento
+- [ ] Gerar `LGPD_CHAVE_CAMPOS` e `LGPD_HASH_SALT` e guardar a chave fora do servidor
+- [ ] Configurar o SMTP (sem isso, só a recuperação de senha fica indisponível)
 - [ ] Configurar um adaptador de e-mail do Payload, para recuperação de senha do painel
 - [ ] Preencher `R2_*` + `HEALTHCHECK_URL` no `.env` do servidor e rodar `bash deploy/backup/test-restore.sh`
 
@@ -157,7 +224,9 @@ O `test-restore.sh` exige as envs `R2_*` no `.env` e a porta 55434 livre.
 
 ## Fora deste projeto (por enquanto)
 
-- **Área do filiado** (login de atletas, envio de documentos, pagamento, carteirinha)
+- **Área do filiado — Nível 2 e 3** (perfil esportivo, documentos pessoais, anuidade,
+  pagamento, carteirinha). O Nível 1 (login, inscrições, consentimentos, privacidade) está
+  em `/area`.
 - **Área da diretoria** (gestão interna)
 - **Ranking estadual** (pode ser calculado a partir dos resultados já cadastrados)
 

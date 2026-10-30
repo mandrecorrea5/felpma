@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { authenticated, isAdmin, isAdminField } from '../access'
+import { authenticated, doPainel, isAdmin, isAdminField, isAdminUser } from '../access'
 
 /** Usuários do painel (quem edita o site). Não é a área do filiado. */
 export const Users: CollectionConfig = {
@@ -15,8 +15,12 @@ export const Users: CollectionConfig = {
     read: authenticated,
     create: isAdmin,
     delete: isAdmin,
-    update: ({ req: { user }, id }) => user?.role === 'admin' || user?.id === id,
-    admin: ({ req: { user } }) => Boolean(user),
+    // `doPainel` não é redundante: sem ele, o id de um atleta que coincida com o
+    // id de um usuário do painel passaria no teste `user.id === id` (IDOR entre
+    // coleções de autenticação diferentes).
+    update: ({ req: { user }, id }) =>
+      isAdminUser(user) || (doPainel(user) && String(user?.id) === String(id)),
+    admin: ({ req: { user } }) => doPainel(user),
   },
   fields: [
     { name: 'nome', type: 'text', required: true },
