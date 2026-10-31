@@ -1,11 +1,11 @@
 #!/bin/sh
 # Gera o .env de produção da VPS sem que nenhum valor passe pelo terminal.
 #
-#   sh deploy/provision-env.sh [/opt/felpma]
+#   sh deploy/provision-env.sh [/srv/apps/felpma]
 #
 # POSTGRES_PASSWORD e PAYLOAD_SECRET NÃO EXISTIAM antes: são gerados aqui com
 # openssl. O script escreve no arquivo e nunca dá echo deles — quem precisar ver
-# um valor, na máquina, faz `nano /opt/felpma/.env`.
+# um valor, na máquina, faz `nano /srv/apps/felpma/.env`.
 #
 # Idempotente por omissão: se o .env já existe, ele se recusa a rodar. Recriar
 # um PAYLOAD_SECRET existente derruba as sessões do painel, e recriar a senha do
@@ -17,7 +17,7 @@
 # divergir e o site não achar mais o banco.
 set -eu
 
-DIR="${1:-/opt/felpma}"
+DIR="${1:-/srv/apps/felpma}"
 ENV="${DIR}/.env"
 
 test -d "${DIR}" || { echo "ERRO: ${DIR} não existe — clone o repositório antes."; exit 1; }
@@ -33,7 +33,7 @@ umask 077
 
 cat > "${ENV}" <<EOF
 # ===========================================================================
-# FELPMA — produção (/opt/felpma)
+# FELPMA — produção (/srv/apps/felpma)
 # Gerado por deploy/provision-env.sh em $(date -u '+%Y-%m-%d %H:%M:%S UTC')
 #
 # Este arquivo é a única fonte de segredo deste projeto na máquina.
@@ -71,7 +71,7 @@ NEXT_PUBLIC_APP_VERSION=
 
 # --- Backup ------------------------------------------------------------------
 # Com as quatro R2_* vazias o upload é pulado e o dump fica só no disco da VPS
-# — que é o disco que já carrega o ranking-lpo, ou seja: sem backup de fato.
+# — que é o disco da própria VPS, ou seja: sem backup de fato.
 # Preencha (Cloudflare R2 -> R2 -> Manage R2 API Tokens) com nano na máquina.
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=

@@ -147,17 +147,19 @@ Em produção, as migrations pendentes rodam automaticamente quando o servidor i
 O build não precisa de banco: as páginas são renderizadas a cada visita, então o que muda no painel aparece no site na hora.
 ### Em um servidor com Docker (VPS)
 
-A VPS já roda o stack do `ranking-lpo` (`weightlogx.com.br`), e o Caddy dele é
-quem segura as portas 80/443. Este projeto **não** sobe um proxy próprio: ele
-entra na network Docker `ingress` e o domínio é publicado no
-`ranking-lpo/deploy/caddy/Caddyfile`, que faz o TLS e o reverse proxy até o
-container `felpma-site:3000`.
+A VPS (187.41.102.127) tem um Caddy compartilhado (`ingress-caddy`, em
+`/srv/apps/ingress`) que segura as portas 80/443 e serve também outros projetos.
+Este projeto **não** sobe um proxy próprio: ele entra na network Docker `ingress`
+e o domínio é publicado pelo snippet `deploy/caddy/felpma.caddy`, que
+`sh deploy/reload-caddy.sh` instala em `/srv/apps/ingress/caddy/conf.d/`, valida
+e recarrega. O Caddy faz o TLS (Let's Encrypt) e o reverse proxy até o container
+`felpma-site:3000`.
 
 Uma vez na máquina:
 
 ```bash
-git clone git@github.com:mandrecorrea5/felpma.git /opt/felpma
-cd /opt/felpma
+git clone git@github.com:mandrecorrea5/felpma.git /srv/apps/felpma
+cd /srv/apps/felpma
 docker network create ingress          # idempotente, só na primeira vez
 cp .env.example .env                   # PAYLOAD_SECRET, POSTGRES_PASSWORD,
                                        # NEXT_PUBLIC_SERVER_URL=https://felpma.com.br
@@ -166,9 +168,8 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile produc
 
 O overlay de produção não publica porta nenhuma no host (nem o 5432) e trava os
 limites de CPU/memória. O deploy automático (`.github/workflows/ci.yml`) roda os
-mesmos comandos via SSH em `/opt/felpma` — precisa dos secrets `VPS_HOST`,
-`VPS_USER` e `VPS_SSH_KEY` no GitHub, os mesmos valores usados no
-`ranking-lpo`.
+mesmos comandos via SSH em `/srv/apps/felpma` — precisa dos secrets `VPS_HOST`,
+`VPS_USER` e `VPS_SSH_KEY` no GitHub, a chave deve ter acesso SSH root à VPS.
 
 DNS: `felpma.com.br` e `www.felpma.com.br` apontando para o IP da VPS. O `www` é
 redirecionado para a raiz.

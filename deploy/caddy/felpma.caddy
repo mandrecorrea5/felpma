@@ -1,30 +1,21 @@
 # ============================================================================
 # felpma.com.br — portal institucional da FELPMA
 #
-# Este arquivo NÃO pertence ao ranking-lpo. Ele mora no repositório
-# mandrecorrea5/felpma e é montado dentro do container ranking-caddy, em
-# read-only, como /etc/caddy/sites/felpma.caddy (ver o volume `caddy` em
-# docker-compose.prod.yml do projeto vizinho).
+# Snippet do INGRESS COMPARTILHADO da VPS 187.41.102.127 (container
+# ingress-caddy). Vive neste repo e é instalado em
+# /srv/apps/ingress/caddy/conf.d/felpma.caddy:
 #
-# Consequência prática: mexeu aqui, commitou, e o deploy do felpma faz
+#   sh deploy/reload-caddy.sh
 #
-#   docker exec ranking-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
-#   docker exec ranking-caddy caddy reload   --config /etc/caddy/Caddyfile --adapter caddyfile
+# O script copia o arquivo, roda `caddy validate` e só então `caddy reload`
+# (sem reiniciar o container; vizinhos como elama e ndovu continuam no ar).
 #
-# `reload` relê este arquivo e aplica sem reiniciar o container, sem derrubar
-# weightlogx.com.br e sem tocar no compose do outro projeto. É por isso que o
-# arquivo existe em vez de o bloco ir direto no Caddyfile dele.
+# Contrato do conf.d (ver README.md da pasta no ingress): domínio LITERAL,
+# `reverse_proxy dynamic a` por nome de container e o app na network `ingress`.
 #
-# O domínio aqui é LITERAL, não {$CADDY_FELPMA_HOST}: o container ranking-caddy
-# só recebe as variáveis do .env do ranking-lpo, e obrigar aquele .env a carregar
-# uma variável deste projeto (ou pior: exigir a presença dela com `:?`, que faz o
-# deploy do vizinho falhar se alguém esquecer) é exatamente o acoplamento que a
-# gente quer eliminar.
-#
-# DNS: nuvem CINZA na Cloudflare, obrigatório. O Caddy emite e renova o próprio
-# certificado via TLS-ALPN/HTTP-01, e a imagem caddy:2.8-alpine não traz o módulo
-# dns.cloudflare — com a nuvem laranja a renovação ia falhar em silêncio e o
-# certificado venceria. Mesmo modelo já em uso por weightlogx.com.br.
+# DNS: nuvem CINZA (DNS only) na Cloudflare, obrigatório. O Caddy emite e
+# renova o certificado via HTTP-01 e a imagem não traz o módulo dns.cloudflare;
+# com a nuvem laranja a renovação falharia em silêncio.
 # ============================================================================
 
 # O www só redireciona. Precisa do próprio certificado, então o registro existe

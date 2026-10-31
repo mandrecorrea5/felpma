@@ -59,13 +59,13 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script_stop: true
-          # Mesma disciplina do ranking-lpo: recria tudo, depois espera o
+          # Recria tudo, depois espera o
           # healthcheck do site ficar healthy antes de dar verde no job.
           # O `if` explícito é obrigatório — `[ ... ] && exit 0` com `set -e`
           # mata o script no sh/dash quando o test falha.
           script: |
             set -e
-            cd /opt/felpma
+            cd /srv/apps/felpma
             docker network inspect ingress >/dev/null 2>&1 || docker network create ingress
             git fetch --quiet origin main
             # SHA deste run, nao a ponta de origin/main. Com CD automatico dois

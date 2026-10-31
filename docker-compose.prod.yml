@@ -1,12 +1,12 @@
 # =============================================================================
-# Overlay de produção (VPS) — divide a máquina com o stack do ranking-lpo.
+# Overlay de produção (VPS) — divide a máquina com outros stacks (elama, ndovu).
 #
 # Uso:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile producao up -d --build
 #
 # Diferenças em relação ao docker-compose.yml de dev:
 #   - Nenhuma porta publicada no host. Quem fala com a internet é o Caddy que já
-#     roda em /opt/ranking-lpo (ele atinge este container pela network `ingress`).
+#     roda em /srv/apps/ingress (ele atinge este container pela network `ingress`).
 #     Um segundo Caddy/nginx na mesma VPS não é possível: 80/443 já estão tomados.
 #   - A network externa `ingress` precisa existir antes do primeiro up:
 #       docker network create ingress
@@ -85,7 +85,7 @@ services:
   # escreve no dado original não é backup.
   #
   # Os artefatos ficam em ./deploy/backup/backups (bind mount) — some isso ao
-  # disco que o stack do ranking-lpo já ocupa na VPS. Daí a retenção curta local
+  # disco da VPS. Daí a retenção curta local
   # (14d) com o R2 segurando 30d.
   # ---------------------------------------------------------------------------
   backup:
