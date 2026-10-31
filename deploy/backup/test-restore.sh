@@ -59,7 +59,7 @@ docker run --rm \
     --include "felpma-*"
 
 pick() {
-    ls -1t "${WORK}"/"$1" 2>/dev/null | head -1 || true
+    ls -1t "${WORK}"/$1 2>/dev/null | head -1 || true
 }
 
 DUMP="$(pick 'felpma-*.dump')"
