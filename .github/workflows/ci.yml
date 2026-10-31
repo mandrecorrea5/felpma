@@ -52,45 +52,30 @@ jobs:
       group: deploy-felpma
       cancel-in-progress: false
     steps:
-      - name: SSH and redeploy
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script_stop: true
-          # Recria tudo, depois espera o
-          # healthcheck do site ficar healthy antes de dar verde no job.
-          # O `if` explícito é obrigatório — `[ ... ] && exit 0` com `set -e`
-          # mata o script no sh/dash quando o test falha.
-          script: |
-            set -e
-            cd /srv/apps/felpma
-            docker network inspect ingress >/dev/null 2>&1 || docker network create ingress
-            git fetch --quiet origin main
-            # SHA deste run, nao a ponta de origin/main. Com CD automatico dois
-            # pushes em sequencia entram na fila, e o `concurrency` acima so
-            # serializa: o segundo ainda leria a ponta de main (ja mais adiantada
-            # que ele) e publicaria codigo que nao passou pelo quality daquele
-            # run. Assim cada deploy publica exatamente o commit que ele validou.
-            git reset --hard ${{ github.sha }}
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile producao up -d --build --force-recreate --remove-orphans
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile producao ps --format "table {{.Name}}\t{{.Status}}"
-            echo "waiting site healthy..."
-            for i in $(seq 1 60); do
-              s=$(docker inspect felpma-site --format '{{.State.Health.Status}}' 2>/dev/null || echo "starting")
-              echo "attempt $i: $s"
-              if [ "$s" = "healthy" ]; then
-                # Site de pé antes do proxy apontar pra ele: se o reload do
-                # Caddy vier antes, o primeiro pedido público pega 502.
-                sh deploy/reload-caddy.sh
-                exit 0
-              fi
-              sleep 5
-            done
-            echo "::error::site never became healthy after redeploy"
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile producao logs --tail=100 site
-            exit 1
+      # A chave do CI é travada no servidor (`restrict,command=`): só consegue
+      # rodar /usr/local/bin/felpma-deploy, que aceita apenas "deploy <sha>".
+      # Instalação e detalhes em deploy/remote-deploy.sh.
+      - name: Chave SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      # SHA deste run, não a ponta de origin/main. Com CD automático dois
+      # pushes em sequência entram na fila e o `concurrency` acima só
+      # serializa: cada deploy publica exatamente o commit que ele validou.
+      - name: Publicar
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes \
+            "$USER@$HOST" "deploy ${{ github.sha }}"
 
   smoke:
     name: Smoke test (prod)

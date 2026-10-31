@@ -167,9 +167,21 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile produc
 ```
 
 O overlay de produção não publica porta nenhuma no host (nem o 5432) e trava os
-limites de CPU/memória. O deploy automático (`.github/workflows/ci.yml`) roda os
-mesmos comandos via SSH em `/srv/apps/felpma` — precisa dos secrets `VPS_HOST`,
-`VPS_USER` e `VPS_SSH_KEY` no GitHub, a chave deve ter acesso SSH root à VPS.
+limites de CPU/memória.
+
+**Deploy automático** (`.github/workflows/ci.yml`): o CI entra por SSH como o
+usuário `deploy` (compartilhado com os outros sites da VPS, grupo `docker`), com
+uma chave **travada em `/usr/local/bin/felpma-deploy`** (`restrict,command=`):
+ela só aceita `deploy <sha>`, não abre shell. O script é `deploy/remote-deploy.sh`
+(reinstale em `/usr/local/bin` como root quando mudar): faz backup, posiciona o
+repo no SHA, sobe a stack, espera o healthcheck, recarrega o Caddy e volta ao SHA
+anterior se falhar. Secrets do GitHub: `VPS_HOST`, `VPS_USER` (`deploy`),
+`VPS_SSH_KEY` (privada) e `VPS_KNOWN_HOSTS` (saída de `ssh-keyscan -t ed25519 <host>`).
+O `git fetch` do `deploy` usa uma deploy key só de leitura deste repositório
+(`~deploy/.ssh/github_felpma`, host `github-felpma`).
+
+Outro site na mesma VPS segue o mesmo modelo: uma chave própria no
+`~deploy/.ssh/authorized_keys` apontando para o seu `<site>-deploy`.
 
 DNS: `felpma.com.br` e `www.felpma.com.br` apontando para o IP da VPS. O `www` é
 redirecionado para a raiz.
