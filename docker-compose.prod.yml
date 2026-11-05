@@ -43,6 +43,9 @@ services:
 
   site:
     container_name: felpma-site
+    labels:
+      logging: promtail
+      service: felpma-site
     build:
       context: .
       # Next embute NEXT_PUBLIC_* no momento do build. Sem passar o valor como
