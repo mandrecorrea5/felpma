@@ -103,7 +103,9 @@ export function initNdovu(): NdovuSdk | null {
       captureGlobals: true,
       captureWebVitals: true,
       breadcrumbs: true,
-      captureSnapshots: true,
+      // Site institucional: captura o DOM em cada pageView (além do erro).
+      // Conteúdo público; inputs seguem mascarados pelo SDK.
+      captureSnapshots: 'screen',
     })
     observarMutacoes(inst)
   } catch (e) {

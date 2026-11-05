@@ -98,7 +98,7 @@ export interface NdovuConfig {
   captureGlobals?: boolean
   captureWebVitals?: boolean
   breadcrumbs?: boolean
-  captureSnapshots?: boolean
+  captureSnapshots?: boolean | 'error' | 'screen' | 'off'
   release?: string
 }
 
