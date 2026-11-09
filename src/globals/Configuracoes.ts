@@ -91,10 +91,11 @@ export const Configuracoes: GlobalConfig = {
           fields: [
             {
               name: 'linkAreaFiliado',
-              label: 'Link da Área do filiado',
+              label: 'Link externo da Área do filiado',
               type: 'text',
               admin: {
-                description: 'Deixe vazio para esconder o link até a área do filiado existir.',
+                description:
+                  'Opcional. Deixe vazio para usar a área do atleta interna (/area). Preencha só se quiser apontar o cabeçalho e o rodapé para outro endereço (ex.: um SSO).',
               },
             },
           ],

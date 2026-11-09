@@ -15,6 +15,8 @@ import { pontosDosCentros } from '@/lib/centros'
 import { CATEGORIAS_NOTICIA, ROTULO_TIPO, TAGS_CENTRO, labelOf } from '@/lib/constants'
 import { dataCurta, diasAte, isDocumento, periodo, statusCompeticao } from '@/lib/format'
 import { getConfiguracoes, getPayloadClient } from '@/lib/payload'
+import { formularioPublicado, inscritosNoEvento } from '@/lib/inscricoes/consultas'
+import { estadoInscricao } from '@/lib/inscricoes/estado'
 import {
   cidadesComCentro,
   competicaoDestaque,
@@ -99,6 +101,21 @@ export default async function HomePage() {
   const dias = competicao ? diasAte(competicao.inscricoesAte ?? competicao.dataInicio) : null
   const foto = home.fotoDestaque ?? competicao?.imagem
 
+  // O destaque da home é a primeira porta de entrada para o formulário: se o
+  // evento tem formulário interno aberto, o botão leva direto para ele.
+  const [formularioDestaque, inscritosDestaque] = competicao
+    ? await Promise.all([
+        formularioPublicado(competicao.id),
+        competicao.limiteVagas ? inscritosNoEvento(competicao.id) : Promise.resolve(0),
+      ])
+    : [null, 0]
+  const estadoDestaque = competicao
+    ? estadoInscricao(competicao, {
+        temFormulario: Boolean(formularioDestaque),
+        inscritos: inscritosDestaque,
+      })
+    : null
+
   return (
     <>
       {/* Destaque: próxima competição */}
@@ -127,7 +144,14 @@ export default async function HomePage() {
                 </span>
               </div>
               <div className="acoes">
-                {competicao.linkInscricao ? (
+                {estadoDestaque?.podeInscrever ? (
+                  <Link href={`/inscricoes/${competicao.slug}`} className="btn btn--azul">
+                    {competicao.tipo === 'curso' || competicao.tipo === 'evento'
+                      ? 'Inscrever-se'
+                      : 'Inscrever atleta'}
+                    <Icon name="seta" size={18} strokeWidth={2.2} />
+                  </Link>
+                ) : competicao.linkInscricao ? (
                   <a href={competicao.linkInscricao} className="btn btn--azul">
                     Inscrever atleta
                     <Icon name="seta" size={18} strokeWidth={2.2} />

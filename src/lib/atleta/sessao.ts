@@ -88,7 +88,7 @@ export async function entrar(email: string, senha: string): Promise<ResultadoLog
         ok: false,
         erro:
           atleta?.status === 'pendente'
-            ? 'Seu cadastro está em análise. Um administrador da federação precisa aprovar antes do primeiro acesso.'
+            ? 'Sua conta ainda não foi ativada. Abra o e-mail que enviamos e clique no link de ativação.'
             : 'Sua conta está bloqueada. Fale com a federação pelo canal de contato.',
       }
     }
@@ -99,7 +99,7 @@ export async function entrar(email: string, senha: string): Promise<ResultadoLog
     if (e instanceof UnverifiedEmail) {
       return {
         ok: false,
-        erro: 'Confirme seu e-mail antes de entrar. Verifique a caixa de entrada e o spam.',
+        erro: 'Ative sua conta pelo link que enviamos por e-mail. Confira também a caixa de spam.',
       }
     }
     if (e instanceof LockedAuth) {

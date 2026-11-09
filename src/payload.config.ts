@@ -65,8 +65,9 @@ export default buildConfig({
     Inscricoes,
   ],
   globals: [Home, Filiacao, Federacao, Configuracoes],
-  // SMTP por variáveis de ambiente. Sem credenciais, em dev o link sai no terminal;
-  // em produção o cadastro fica bloqueado até configurar (ver src/lib/email.ts).
+  // Resend por variáveis de ambiente. Sem credenciais, em dev o link sai no
+  // terminal; em produção o cadastro fica bloqueado até configurar
+  // (ver src/lib/email.ts).
   email: emailAdapter,
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

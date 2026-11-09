@@ -69,6 +69,14 @@ NEXT_PUBLIC_NDOVU_API_KEY=
 NEXT_PUBLIC_NDOVU_APP=felpma
 NEXT_PUBLIC_APP_VERSION=
 
+# --- E-mail transacional (Resend) --------------------------------------------
+# Sem RESEND_API_KEY + EMAIL_FROM_ADDRESS, o cadastro de atleta fica bloqueado
+# em produção (o site avisa e não cria cadastro órfão). O domínio do remetente
+# precisa estar verificado no Resend (registros SPF/DKIM).
+RESEND_API_KEY=
+EMAIL_FROM_ADDRESS=
+EMAIL_FROM_NAME=FELPMA
+
 # --- Backup ------------------------------------------------------------------
 # Com as quatro R2_* vazias o upload é pulado e o dump fica só no disco da VPS
 # — que é o disco da própria VPS, ou seja: sem backup de fato.

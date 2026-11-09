@@ -26,6 +26,7 @@ import {
   type Respostas,
 } from '@/lib/inscricoes/validacao'
 import { getPayloadClient } from '@/lib/payload'
+import { enviarConfirmacaoInscricao } from '@/lib/inscricoes/confirmacao'
 import { gerarProtocolo } from '@/lib/inscricoes/protocolo'
 
 /**
@@ -129,7 +130,8 @@ export async function enviarInscricao(
   )
 
   // ------------------------------------------------------ snapshot + cifra
-  const snapshot = montarSnapshot(campos, validacao.valores).map((item) => {
+  const respostasSnapshot = montarSnapshot(campos, validacao.valores)
+  const snapshot = respostasSnapshot.map((item) => {
     if (!item.sensivel) return item
     return { ...item, cifrado: true, valor: cifrar(JSON.stringify(item.valor)) }
   })
@@ -165,6 +167,16 @@ export async function enviarInscricao(
       collection: 'inscricoes',
       overrideAccess: true,
       data: dados,
+    })
+
+    // Confirmação com os dados do evento e as respostas (sem dados sensíveis).
+    // A função engole o erro: inscrição gravada não pode falhar por e-mail.
+    await enviarConfirmacaoInscricao({
+      atleta,
+      evento,
+      inscricao: criada,
+      payload,
+      respostas: respostasSnapshot,
     })
 
     redirect(`/area/inscricoes/${criada.protocolo}?enviada=1`)

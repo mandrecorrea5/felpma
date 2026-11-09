@@ -7,7 +7,7 @@ import { APIError } from 'payload'
 import { atletaOuPainel, isAdmin, isAdminField } from '../access'
 import { cifrar, ehCifrado, hashBusca } from '../lib/crypto/campos'
 import { cpfValido, mascararCpf, normalizarCpf } from '../lib/cpf'
-import { emailRecuperacaoSenha } from '../lib/email-templates'
+import { emailAtivacaoConta, emailRecuperacaoSenha } from '../lib/email-templates'
 
 /**
  * Conta do atleta — o "filiado" do site.
@@ -40,15 +40,21 @@ const preparaCpf: CollectionBeforeValidateHook = ({ data }) => {
 }
 
 /**
- * Registra quem aprovou o cadastro e quando. Só conta como aprovação a transição
- * para "ativo" — reabrir o documento de uma conta já ativa não reescreve a data.
+ * Registra quando o acesso foi liberado — pela ativação por e-mail ou por um
+ * administrador. Reabrir o documento de uma conta já ativa não reescreve a data.
+ *
+ * A liberação manual no painel também marca `_verified`; sem isso o login
+ * continuaria barrado pelo `UnverifiedEmail` do Payload.
  */
 const registraAprovacao: CollectionBeforeChangeHook = ({ data, originalDoc, req }) => {
   if (data?.status !== 'ativo' || originalDoc?.status === 'ativo') return data
 
   data.aprovadoEm = new Date().toISOString()
   const ator = req.user
-  if (ator?.collection === 'users' && ator.id) data.aprovadoPor = ator.id
+  if (ator?.collection === 'users' && ator.id) {
+    data.aprovadoPor = ator.id
+    data._verified = true
+  }
   return data
 }
 
@@ -70,8 +76,13 @@ export const Atletas: CollectionConfig = {
     lockTime: 10 * 60 * 1000,
     useSessions: true,
     cookies: { sameSite: 'Lax' },
-    // Sem `verify`: enquanto não houver SMTP, quem libera o acesso é a aprovação
-    // manual no painel. A recuperação de senha continua dependendo de e-mail.
+    // Cadastro novo só entra depois de clicar no link enviado por e-mail.
+    // O token é gerado pelo Payload no create; o link aponta para a página
+    // pública `/area/ativar`, que confirma o e-mail e libera o `status`.
+    verify: {
+      generateEmailHTML: (args) => emailAtivacaoConta(args?.token ?? '', args?.user?.nome),
+      generateEmailSubject: () => 'Ative sua conta — FELPMA',
+    },
     forgotPassword: {
       expiration: 60 * 60 * 1000,
       minRequestInterval: 60 * 1000,
@@ -140,9 +151,9 @@ export const Atletas: CollectionConfig = {
       name: 'status',
       label: 'Situação',
       type: 'select',
-      defaultValue: 'ativo',
+      defaultValue: 'pendente',
       options: [
-        { label: 'Pendente de aprovação', value: 'pendente' },
+        { label: 'Pendente de ativação', value: 'pendente' },
         { label: 'Ativa', value: 'ativo' },
         { label: 'Bloqueada', value: 'bloqueado' },
       ],
@@ -150,7 +161,7 @@ export const Atletas: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description:
-          'Cadastros feitos pelo site entram como "Pendente". Abra um por um e mude para "Ativa" para liberar o acesso.',
+          'Cadastros feitos pelo site ficam "Pendente" até o atleta clicar no link de ativação que recebe por e-mail. Mude para "Ativa" apenas para liberar manualmente quando o e-mail não chegar.',
       },
     },
     {
@@ -158,7 +169,7 @@ export const Atletas: CollectionConfig = {
       fields: [
         {
           name: 'aprovadoEm',
-          label: 'Aprovado em',
+          label: 'Ativado em',
           type: 'date',
           admin: {
             width: '50%',
@@ -168,7 +179,7 @@ export const Atletas: CollectionConfig = {
         },
         {
           name: 'aprovadoPor',
-          label: 'Aprovado por',
+          label: 'Ativado por',
           type: 'relationship',
           relationTo: 'users',
           admin: { width: '50%', readOnly: true },

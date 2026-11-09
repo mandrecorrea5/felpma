@@ -27,6 +27,10 @@ export function Brand({ config }: { config: ConfiguracoesSite }) {
 }
 
 export function Header({ config }: { config: ConfiguracoesSite }) {
+  // A área do filiado é interna desde que as inscrições ganharam login próprio.
+  // O campo do painel continua valendo como override (ex.: um SSO futuro).
+  const linkAreaFiliado = config.linkAreaFiliado?.trim() || null
+
   return (
     <>
       <a href="#conteudo" className="skip-link">
@@ -42,12 +46,17 @@ export function Header({ config }: { config: ConfiguracoesSite }) {
                 {l.label}
               </Link>
             ))}
-            {config.linkAreaFiliado ? (
-              <a href={config.linkAreaFiliado} className="topbar__filiado">
+            {linkAreaFiliado ? (
+              <a href={linkAreaFiliado} className="topbar__filiado">
                 <Icon name="usuario" size={16} />
                 Área do filiado
               </a>
-            ) : null}
+            ) : (
+              <Link href="/area" className="topbar__filiado">
+                <Icon name="usuario" size={16} />
+                Área do atleta
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -55,7 +64,7 @@ export function Header({ config }: { config: ConfiguracoesSite }) {
         <div className="container header__inner">
           <Brand config={config} />
           <NavDesktop />
-          <HeaderActions linkAreaFiliado={config.linkAreaFiliado} />
+          <HeaderActions linkAreaFiliado={linkAreaFiliado} />
         </div>
       </header>
     </>

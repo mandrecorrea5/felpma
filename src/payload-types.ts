@@ -1024,7 +1024,7 @@ export interface Atleta {
   uf?: string | null;
   cidade?: string | null;
   /**
-   * Cadastros feitos pelo site entram como "Pendente". Abra um por um e mude para "Ativa" para liberar o acesso.
+   * Cadastros feitos pelo site ficam "Pendente" até o atleta clicar no link de ativação que recebe por e-mail. Mude para "Ativa" apenas para liberar manualmente quando o e-mail não chegar.
    */
   status?: ('pendente' | 'ativo' | 'bloqueado') | null;
   aprovadoEm?: string | null;
@@ -1044,6 +1044,8 @@ export interface Atleta {
   salt?: string | null;
   hash?: string | null;
   resetPasswordRequestedAt?: string | null;
+  _verified?: boolean | null;
+  _verificationToken?: string | null;
   loginAttempts?: number | null;
   lockUntil?: string | null;
   sessions?:
@@ -1574,6 +1576,8 @@ export interface AtletasSelect<T extends boolean = true> {
   salt?: T;
   hash?: T;
   resetPasswordRequestedAt?: T;
+  _verified?: T;
+  _verificationToken?: T;
   loginAttempts?: T;
   lockUntil?: T;
   sessions?:
@@ -2052,7 +2056,7 @@ export interface ConfiguracoesSite {
       }[]
     | null;
   /**
-   * Deixe vazio para esconder o link até a área do filiado existir.
+   * Opcional. Deixe vazio para usar a área do atleta interna (/area). Preencha só se quiser apontar o cabeçalho e o rodapé para outro endereço (ex.: um SSO).
    */
   linkAreaFiliado?: string | null;
   updatedAt?: string | null;

@@ -1,12 +1,13 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import type { Atleta } from '@/payload-types'
 import { getPayloadClient } from '@/lib/payload'
 import { atletaAtual, entrar, limparSessao, revogarTodasAsSessoes, sair } from '@/lib/atleta/sessao'
 import { cpfValido, normalizarCpf } from '@/lib/cpf'
 import { hashBusca } from '@/lib/crypto/campos'
-import { smtpConfigurado } from '@/lib/email'
-import { caminhoInterno } from '@/lib/atleta/caminho'
+import { emailDisponivel, enviarEmailAtivacao } from '@/lib/email'
+import { caminhoInterno, destinoPosLogin } from '@/lib/atleta/caminho'
 import type { ErroDeCampo, EstadoFormulario } from '@/lib/atleta/tipos'
 
 
@@ -70,6 +71,16 @@ export async function criarConta(_prev: EstadoFormulario, form: FormData): Promi
     return { ok: false, erro: 'Confira os campos destacados.', erros, campos }
   }
 
+  // Em produção, cadastro sem e-mail configurado ficaria "pendente" para sempre.
+  // Melhor bloquear antes de gravar do que criar uma conta órfã.
+  if (!emailDisponivel()) {
+    return {
+      ok: false,
+      erro: 'O envio de e-mails ainda não está configurado. Fale com a federação pelo canal de contato.',
+      campos,
+    }
+  }
+
   const payload = await getPayloadClient()
   const cpfHash = hashBusca(campos.cpf)
 
@@ -85,10 +96,16 @@ export async function criarConta(_prev: EstadoFormulario, form: FormData): Promi
     return { ok: false, erro: 'Já existe uma conta com este e-mail ou CPF.', campos }
   }
 
+  let criada: Atleta & { _verificationToken?: null | string }
   try {
-    await payload.create({
+    criada = (await payload.create({
       collection: 'atletas',
       overrideAccess: true,
+      // O e-mail de ativação é enviado logo abaixo, em try/catch próprio: uma
+      // falha do Resend não pode derrubar a criação da conta (o Payload envia
+      // a verificação depois de gravar, e o erro deixaria um cadastro órfão).
+      disableVerificationEmail: true,
+      showHiddenFields: true,
       data: {
         nome: campos.nome.slice(0, 120),
         email: campos.email.slice(0, 200),
@@ -104,7 +121,7 @@ export async function criarConta(_prev: EstadoFormulario, form: FormData): Promi
           aceitoEm: new Date().toISOString(),
         },
       },
-    })
+    })) as Atleta & { _verificationToken?: null | string }
   } catch (e) {
     console.error('Falha ao criar conta de atleta', e)
     return {
@@ -114,7 +131,20 @@ export async function criarConta(_prev: EstadoFormulario, form: FormData): Promi
     }
   }
 
-  redirect('/area/entrar?pendente=1')
+  const token = criada._verificationToken
+  if (!token) {
+    console.error('Conta de atleta criada sem token de ativação', criada.id)
+    redirect('/area/entrar?criada=1&envio=falhou')
+  }
+
+  try {
+    await enviarEmailAtivacao(payload, { email: campos.email, nome: campos.nome, token })
+  } catch (e) {
+    console.error('Falha ao enviar o e-mail de ativação', e)
+    redirect('/area/entrar?criada=1&envio=falhou')
+  }
+
+  redirect('/area/entrar?criada=1')
 }
 
 // ---------------------------------------------------------------------------
@@ -135,7 +165,7 @@ export async function entrarAction(_prev: EstadoFormulario, form: FormData): Pro
   const resultado = await entrar(email, senha)
   if (!resultado.ok) return { ok: false, erro: resultado.erro, campos: { email } }
 
-  redirect(retorno)
+  redirect(destinoPosLogin(retorno))
 }
 
 export async function sairAction(): Promise<void> {
@@ -147,7 +177,7 @@ export async function sairAction(): Promise<void> {
 // Senha
 // ---------------------------------------------------------------------------
 export async function recuperarSenhaAction(_prev: EstadoFormulario, form: FormData): Promise<EstadoFormulario> {
-  if (!smtpConfigurado()) {
+  if (!emailDisponivel()) {
     return {
       ok: false,
       erro: 'A recuperação por e-mail ainda não está disponível. Fale com a federação pelo contato.',

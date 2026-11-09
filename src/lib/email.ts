@@ -1,71 +1,79 @@
-import type { EmailAdapter } from 'payload'
-import nodemailer, { type Transporter } from 'nodemailer'
+import type { EmailAdapter, Payload } from 'payload'
+import { resendAdapter } from '@payloadcms/email-resend'
+import { emailAtivacaoConta } from './email-templates'
 
 /**
- * E-mail transacional por SMTP.
+ * E-mail transacional pelo Resend (API HTTP).
  *
- * A federação ainda não tem o provedor contratado, então as credenciais entram
- * só por variável de ambiente (`SMTP_*`). Até lá:
- *  - desenvolvimento: em vez de enviar, o link de verificação/recuperação é
- *    impresso no terminal — dá para testar o fluxo inteiro;
- *  - produção sem SMTP: o envio falha de forma explícita e o cadastro é
- *    bloqueado antes de chegar aqui (ver `smtpConfigurado`).
+ * As credenciais entram só por variável de ambiente:
+ *  - `RESEND_API_KEY` — chave criada em Resend → API Keys;
+ *  - `EMAIL_FROM_ADDRESS` — remetente de um domínio verificado no Resend;
+ *  - `EMAIL_FROM_NAME` — nome exibido na caixa de entrada.
+ *
+ * Sem as duas primeiras, o site continua funcionando em desenvolvimento: em vez
+ * de enviar, o link de ativação/recuperação é impresso no terminal. Em produção,
+ * o cadastro é bloqueado antes de chegar aqui (ver `emailDisponivel`) e o envio
+ * falha de forma explícita — melhor do que uma conta criada sem e-mail nenhum.
  */
 
-export const smtpConfigurado = (): boolean =>
-  Boolean(process.env.SMTP_HOST?.trim() && process.env.SMTP_FROM?.trim())
+export const emailConfigurado = (): boolean =>
+  Boolean(process.env.RESEND_API_KEY?.trim() && process.env.EMAIL_FROM_ADDRESS?.trim())
 
-let transporte: null | Transporter = null
+/**
+ * O envio está operacional? Em produção exige as credenciais do Resend; em
+ * desenvolvimento o adaptador simulado imprime o link no terminal.
+ */
+export const emailDisponivel = (): boolean =>
+  emailConfigurado() || process.env.NODE_ENV !== 'production'
 
-const getTransporte = (): Transporter => {
-  if (transporte) return transporte
-  const porta = Number(process.env.SMTP_PORT ?? 587)
-  transporte = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: porta,
-    secure: porta === 465,
-    auth: process.env.SMTP_USER
-      ? { pass: process.env.SMTP_PASS, user: process.env.SMTP_USER }
-      : undefined,
-  })
-  return transporte
-}
+const remetente = (): string =>
+  process.env.EMAIL_FROM_ADDRESS?.trim() || 'nao-responda@felpma.com.br'
+
+const nomeRemetente = (): string => process.env.EMAIL_FROM_NAME?.trim() || 'FELPMA'
 
 /** Extrai o primeiro link do HTML para o log de desenvolvimento. */
 const primeiroLink = (html?: null | string): string | undefined =>
   typeof html === 'string' ? html.match(/https?:\/\/[^\s"'<>]+/)?.[0] : undefined
 
-export const emailAdapter: EmailAdapter = ({ payload }) => {
-  const defaultFromAddress = process.env.SMTP_FROM?.trim() || 'nao-responda@felpma.org.br'
-  const defaultFromName = process.env.SMTP_FROM_NOME?.trim() || 'FELPMA'
+const adapterSimulado: EmailAdapter = ({ payload }) => ({
+  name: 'simulado-dev',
+  defaultFromAddress: remetente(),
+  defaultFromName: nomeRemetente(),
+  async sendEmail(message) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'Resend não configurado: defina RESEND_API_KEY e EMAIL_FROM_ADDRESS no ambiente.',
+      )
+    }
 
-  return {
-    name: 'smtp-felpma',
-    defaultFromAddress,
-    defaultFromName,
-    async sendEmail(message) {
-      const para = Array.isArray(message.to)
-        ? message.to.join(', ')
-        : String(message.to ?? '')
+    const para = Array.isArray(message.to) ? message.to.join(', ') : String(message.to ?? '')
+    payload.logger.info(
+      `[e-mail simulado] para=${para} assunto=${String(message.subject ?? '')} link=${
+        primeiroLink(message.html as string) ?? '(sem link)'
+      }`,
+    )
+    return { simulado: true }
+  },
+})
 
-      if (!smtpConfigurado()) {
-        if (process.env.NODE_ENV !== 'production') {
-          payload.logger.info(
-            `[e-mail simulado] para=${para} assunto=${String(message.subject ?? '')} link=${
-              primeiroLink(message.html as string) ?? '(sem link)'
-            }`,
-          )
-          return { simulado: true }
-        }
-        throw new Error(
-          'SMTP não configurado: defina SMTP_HOST, SMTP_PORT, SMTP_FROM e as credenciais.',
-        )
-      }
+export const emailAdapter: EmailAdapter = (args) => {
+  if (!emailConfigurado()) return adapterSimulado(args)
 
-      return getTransporte().sendMail({
-        ...message,
-        from: message.from ?? `"${defaultFromName}" <${defaultFromAddress}>`,
-      })
-    },
-  }
+  return resendAdapter({
+    apiKey: process.env.RESEND_API_KEY as string,
+    defaultFromAddress: remetente(),
+    defaultFromName: nomeRemetente(),
+  })(args)
+}
+
+/** Envia o link de ativação da conta de atleta recém-criada. */
+export async function enviarEmailAtivacao(
+  payload: Payload,
+  args: { email: string; nome?: null | string; token: string },
+): Promise<void> {
+  await payload.sendEmail({
+    to: args.email,
+    subject: 'Ative sua conta — FELPMA',
+    html: emailAtivacaoConta(args.token, args.nome),
+  })
 }

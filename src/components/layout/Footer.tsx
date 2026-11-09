@@ -98,7 +98,11 @@ export function Footer({ config }: { config: ConfiguracoesSite }) {
             <Link href="/filiacao">Filiação</Link>
             <Link href="/convocacoes">Convocações</Link>
             <Link href="/centros">Centros de Treinamento</Link>
-            {config.linkAreaFiliado ? <a href={config.linkAreaFiliado}>Área do filiado</a> : null}
+            {config.linkAreaFiliado ? (
+              <a href={config.linkAreaFiliado}>Área do filiado</a>
+            ) : (
+              <Link href="/area">Área do atleta</Link>
+            )}
           </nav>
           <nav className="footer__col" aria-labelledby="f-fed">
             <h2 id="f-fed">A Federação</h2>

@@ -32,7 +32,7 @@ pnpm dev
 | Feed de agenda | `/calendario.ics` | Assinável no Google Agenda, Outlook e iPhone |
 | Eventos e cursos | `/eventos` | Competições do tipo Curso/Evento |
 | Inscrições | `/inscricoes/[slug]` | Formulário de inscrição do evento (só com login) |
-| Área do atleta | `/area` | Conta do atleta: inscrições, consentimentos, privacidade |
+| Área do atleta | `/area` | Formulários disponíveis e já preenchidos, consentimentos, privacidade |
 | Convocações | `/convocacoes` | Convocações (PDF obrigatório) |
 | Resultados | `/resultados`, `/resultados/[slug]` | Resultados (tabela por atleta e/ou súmula PDF) |
 | Recordes estaduais | `/recordes` | Recordes |
@@ -51,9 +51,9 @@ Também ficam disponíveis `sitemap.xml`, `robots.txt`, metadados de compartilha
 
 - **Status das competições**: no modo "Automático", o site mostra *Inscrições abertas*, *Em breve*, *Em andamento* ou *Encerrado* conforme as datas. Para *Convocação publicada*, *Adiado* ou *Cancelado*, escolha manualmente.
 - **Destaque da home**: a competição escolhida em *Página inicial*; se não houver, a marcada como "Destaque" ou, por último, a próxima competição estadual.
-- **Botão de ação no calendário**: *Ver resultados* (se houver resultado ligado) → *Inscrever atleta* (se inscrições abertas e link preenchido) → *Ver convocação* → *Detalhes*.
+- **Botão de ação no calendário**: *Ver resultados* (se houver resultado ligado) → *Inscrever atleta* (se inscrições abertas; usa o formulário interno publicado ou, na falta dele, o link externo) → *Ver convocação* → *Detalhes*.
 - **Total no resultado**: calculado sozinho (arranco + arremesso) quando fica vazio.
-- **Área do filiado**: o link só aparece quando preenchido em *Configurações do site › Links externos*.
+- **Área do atleta**: o cabeçalho e o rodapé apontam para `/area`; *Configurações do site › Links externos* permite sobrescrever com um endereço externo (ex.: SSO).
 
 ## Inscrições e área do atleta
 
@@ -71,14 +71,21 @@ O módulo **Inscrições** fica no painel, ao lado de "Competições":
 vagas e o aviso fora do período. A regra vive em `src/lib/inscricoes/estado.ts` e é aplicada
 na página, no formulário **e** na server action — link salvo não fura a janela.
 
-A área do atleta (`/area`) tem cadastro com **aprovação manual**, login, recuperação de senha,
-meus dados, consentimentos (revogáveis) e privacidade (exportar JSON ou excluir).
+A área do atleta (`/area`) tem cadastro com **ativação por e-mail**, login, recuperação de
+senha, meus dados, consentimentos (revogáveis) e privacidade (exportar JSON ou excluir).
 
-**Cadastro novo entra como "Pendente de aprovação"** e não consegue entrar até ser liberado.
-No painel, o menu **Cadastros pendentes** (com contador) abre a lista de contas filtradas por
-`status = pendente`; abra a conta, mude a situação para **Ativa** e salve. A aprovação registra
-quem aprovou e quando. Enquanto não houver SMTP contrato, não há confirmação de e-mail — a
-aprovação do administrador é o controle de entrada.
+Ao entrar, o atleta cai na lista de **formulários disponíveis** (cada um com botão que abre o
+formulário em um clique) e de **formulários preenchidos** (protocolo, evento e situação). Quem
+clicou em "Preencher" antes de entrar volta para essa lista com o formulário de origem em
+destaque, pronto para continuar — sem precisar procurar o evento no calendário.
+
+**Cadastro novo entra como "Pendente de ativação"** e recebe um e-mail com o link
+`/area/ativar?token=…`. Ao clicar, o e-mail é confirmado e a conta vira **Ativa** — o atleta já
+entra com e-mail e senha, sem esperar aprovação manual. O link é de uso único e não expira
+enquanto não for usado. No painel, o menu **Cadastros aguardando ativação** (com contador) abre
+a lista de contas `status = pendente`; se o e-mail não chegar, o administrador pode mudar a
+situação para **Ativa** para liberar manualmente (a liberação também marca o e-mail como
+confirmado). Cada ativação registra data e, quando manual, quem liberou.
 Ela **não** dá acesso ao `/admin`: `admin.user` é `users`, e os helpers de acesso exigem
 `user.collection === 'users'` (`src/access/index.ts`). Os endpoints de autenticação que o
 Payload criaria para `atletas` (`/api/atletas/login`, `/me`…) são bloqueados em `src/proxy.ts`.
@@ -88,16 +95,23 @@ cego (HMAC) para busca; o CPF aparece mascarado. Cada aceite guarda o texto exib
 o hash e a data, com IP pseudonimizado. O prazo de retenção é calculado por formulário no
 momento do envio (`retencaoAte`). O expurgo automático e a trilha de auditoria entram na Fase 2.
 
-### E-mail transacional (SMTP)
+### E-mail transacional (Resend)
 
-Hoje só a **recuperação de senha** usa SMTP — o cadastro é liberado pela aprovação no painel.
-Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` e `SMTP_FROM_NOME`
-no `.env` quando o provedor estiver contratado.
+O site usa o adaptador oficial `@payloadcms/email-resend` (`src/lib/email.ts`). Com ele saem:
 
-- **Sem SMTP:** o link "Esqueci minha senha" fica oculto e a página de recuperação explica que
-  o recurso ainda não está disponível — nada quebra.
-- **Com SMTP em desenvolvimento:** o link de recuperação aparece no terminal
-  (`[e-mail simulado] … link=…`).
+- o **link de ativação** da conta de atleta (cadastro);
+- a **recuperação de senha** da área do atleta;
+- a **confirmação de inscrição**, com evento, protocolo, respostas e link da inscrição.
+
+Configure `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS` e `EMAIL_FROM_NAME` no `.env` (e no ambiente
+de produção). O domínio do remetente precisa estar verificado no Resend com os registros SPF e
+DKIM. A chave começa com `re_` e é criada em **API Keys**.
+
+- **Sem as credenciais em produção:** o cadastro de atleta é bloqueado com uma mensagem clara
+  (melhor do que criar uma conta que nunca poderá ser ativada); a recuperação de senha fica
+  oculta. A confirmação de inscrição apenas registra o erro no log — a inscrição já foi feita.
+- **Sem as credenciais em desenvolvimento:** nada quebra. O link de ativação/recuperação é
+  impresso no terminal (`[e-mail simulado] … link=…`).
 
 ### Chaves de LGPD (obrigatórias em produção)
 
@@ -198,8 +212,8 @@ Nessas plataformas o disco não é persistente. Antes de publicar, configure um 
 - [ ] Revisar a política de privacidade com a assessoria jurídica
 - [ ] Nomear o encarregado (DPO) e publicar o canal de atendimento
 - [ ] Gerar `LGPD_CHAVE_CAMPOS` e `LGPD_HASH_SALT` e guardar a chave fora do servidor
-- [ ] Configurar o SMTP (sem isso, só a recuperação de senha fica indisponível)
-- [ ] Configurar um adaptador de e-mail do Payload, para recuperação de senha do painel
+- [ ] Configurar o Resend (`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`) e verificar o domínio no DNS
+- [ ] Testar ativação de conta, recuperação de senha e confirmação de inscrição em produção
 - [ ] Preencher `R2_*` + `HEALTHCHECK_URL` no `.env` do servidor e rodar `bash deploy/backup/test-restore.sh`
 
 ## Backup

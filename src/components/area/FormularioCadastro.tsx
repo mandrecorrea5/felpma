@@ -294,6 +294,10 @@ export function FormularioCadastro({
       <button type="submit" className="btn btn--azul" disabled={pendente}>
         {pendente ? 'Criando conta…' : 'Criar conta'}
       </button>
+      <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+        Depois de criar a conta, enviamos um e-mail com o link de ativação. Só é possível entrar
+        depois de clicar nele.
+      </p>
     </form>
   )
 }

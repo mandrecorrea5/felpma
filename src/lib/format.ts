@@ -5,11 +5,30 @@ export const TZ = 'America/Fortaleza'
 const fmt = (opts: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat('pt-BR', { timeZone: TZ, ...opts })
 
+/**
+ * Data sem hora (`YYYY-MM-DD`, como as respostas de formulário) é meia-noite
+ * UTC: formatar direto no fuso de Fortaleza mostraria o dia anterior. Ao
+ * meio-dia local, o dia exibido é o que a pessoa escolheu.
+ */
+const paraData = (iso: string): Date =>
+  new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00-03:00` : iso)
+
 export const dataCurta = (iso?: string | null) =>
   iso ? fmt({ day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso)) : ''
 
+export const dataHora = (iso?: string | null) =>
+  iso
+    ? fmt({
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }).format(new Date(iso))
+    : ''
+
 export const dataLonga = (iso?: string | null) =>
-  iso ? fmt({ day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso)) : ''
+  iso ? fmt({ day: 'numeric', month: 'long', year: 'numeric' }).format(paraData(iso)) : ''
 
 export const dia = (iso?: string | null) =>
   iso ? fmt({ day: '2-digit' }).format(new Date(iso)) : '--'

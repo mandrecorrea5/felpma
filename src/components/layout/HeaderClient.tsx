@@ -190,7 +190,16 @@ export function HeaderActions({ linkAreaFiliado }: { linkAreaFiliado?: string | 
               <a href={linkAreaFiliado} className="btn btn--contorno" style={{ marginTop: 8 }}>
                 Área do filiado
               </a>
-            ) : null}
+            ) : (
+              <Link
+                href="/area"
+                className="btn btn--contorno"
+                style={{ marginTop: 8, display: 'inline-flex', gap: 8, alignItems: 'center' }}
+              >
+                <Icon name="usuario" size={16} />
+                Área do atleta
+              </Link>
+            )}
           </nav>
         </div>
       ) : null}

@@ -2,14 +2,14 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { FormularioAcao } from '@/components/area/FormularioAcao'
 import { PageHero } from '@/components/ui'
-import { smtpConfigurado } from '@/lib/email'
+import { emailDisponivel } from '@/lib/email'
 import { recuperarSenhaAction } from '../actions'
 
 export const metadata: Metadata = { title: 'Recuperar senha', robots: { index: false } }
 export const dynamic = 'force-dynamic'
 
 export default function RecuperarSenhaPage() {
-  const disponivel = smtpConfigurado()
+  const disponivel = emailDisponivel()
 
   return (
     <>

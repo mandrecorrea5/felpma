@@ -2604,3 +2604,91 @@ p {
 .textarea[aria-invalid='true']:focus {
   box-shadow: 0 0 0 3px rgba(215, 0, 15, 0.15);
 }
+
+/* ---------- Área do atleta: formulários ---------- */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.form-card {
+  gap: 14px;
+}
+.form-card__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.form-card__topo .kicker {
+  flex: 1 1 160px;
+}
+.form-card__titulo {
+  font-family: var(--f-display);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 4px;
+}
+.form-card__meta {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--texto-3);
+}
+.form-card__prazo {
+  margin: 0;
+  font-size: 14px;
+  color: var(--texto-2);
+}
+.form-card__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+}
+.form-card__acoes .btn {
+  flex: 1 1 140px;
+  justify-content: center;
+}
+.form-card--destaque {
+  border-color: var(--azul);
+  box-shadow: 0 10px 30px rgba(28, 10, 150, 0.14);
+}
+.em-breve-lista {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+.em-breve-lista__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--borda);
+}
+.em-breve-lista__item:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.em-breve-lista__item strong {
+  flex: 1 1 220px;
+}
+.inscricao-lista {
+  display: grid;
+  gap: 16px;
+}
+.inscricao-lista__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.inscricao-lista__item + .inscricao-lista__item {
+  border-top: 1px solid var(--borda);
+  padding-top: 16px;
+}
+.inscricao-lista__txt {
+  flex: 1 1 260px;
+}

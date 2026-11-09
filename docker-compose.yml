@@ -35,13 +35,11 @@ services:
       # Gere uma vez e guarde a chave fora do servidor — perdê-la é perder os dados cifrados.
       LGPD_CHAVE_CAMPOS: ${LGPD_CHAVE_CAMPOS:?defina LGPD_CHAVE_CAMPOS no .env}
       LGPD_HASH_SALT: ${LGPD_HASH_SALT:?defina LGPD_HASH_SALT no .env}
-      # SMTP é opcional: sem ele só a recuperação de senha fica indisponível.
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-}
-      SMTP_FROM_NOME: ${SMTP_FROM_NOME:-FELPMA}
+      # Resend: sem as duas primeiras variáveis o cadastro fica bloqueado em
+      # produção (em dev o link de ativação sai no terminal).
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-FELPMA}
     ports:
       - '3000:3000'
     volumes:

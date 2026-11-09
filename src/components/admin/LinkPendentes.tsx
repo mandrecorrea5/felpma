@@ -2,11 +2,12 @@ import Link from 'next/link'
 import { getPayloadClient } from '@/lib/payload'
 
 /**
- * Atalho no menu do painel para a fila de aprovação.
+ * Atalho no menu do painel para as contas que ainda não ativaram o e-mail.
  *
  * A "área" é a própria lista de contas filtrada por `status = pendente`: o
- * administrador vê quem se cadastrou, abre a conta e muda a situação para
- * "Ativa". Contador no link evita que a fila passe despercebida.
+ * administrador vê quem se cadastrou e, se o e-mail não chegou, abre a conta e
+ * muda a situação para "Ativa" (a liberação manual também marca o e-mail como
+ * confirmado). Contador no link evita que a fila passe despercebida.
  */
 export async function LinkPendentes() {
   let total = 0
@@ -37,7 +38,7 @@ export async function LinkPendentes() {
         textDecoration: 'none',
       }}
     >
-      <span>Cadastros pendentes</span>
+      <span>Cadastros aguardando ativação</span>
       {total > 0 ? (
         <span
           style={{
