@@ -1246,7 +1246,7 @@ export interface Atleta {
   collection: 'atletas';
 }
 /**
- * Dados pessoais: leia só o necessário e registre o motivo do acesso.
+ * Dados pessoais: leia só o necessário e registre o motivo do acesso. Use o bloco "Exportar inscrições" no topo para baixar o CSV de um evento.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "inscricoes".

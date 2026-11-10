@@ -1,11 +1,12 @@
 import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 import { APIError } from 'payload'
-import { donoDaInscricao, doPainel, isAdmin } from '../access'
+import { donoDaInscricao, doPainel, isAdmin, isAdminUser } from '../access'
 import { cifrar, ehCifrado } from '../lib/crypto/campos'
 import { normalizarCpf } from '../lib/cpf'
 import { STATUS_INSCRICAO } from '../lib/constants'
+import { gerarCsvInscricoes, respostaCsv } from '../lib/inscricoes/exportacao'
 import { gerarProtocolo } from '../lib/inscricoes/protocolo'
-import { auditarAcesso } from '../lib/lgpd/auditoria'
+import { auditarAcesso, registrarAcesso } from '../lib/lgpd/auditoria'
 
 /** Soma meses a uma data sem escorregar de mês (31/01 + 1 mês = 28/02). */
 const somarMeses = (data: Date, meses: number): Date => {
@@ -70,7 +71,11 @@ export const Inscricoes: CollectionConfig = {
     group: 'Inscrições',
     defaultColumns: ['protocolo', 'atleta', 'evento', 'status', 'enviadaEm'],
     listSearchableFields: ['protocolo'],
-    description: 'Dados pessoais: leia só o necessário e registre o motivo do acesso.',
+    description:
+      'Dados pessoais: leia só o necessário e registre o motivo do acesso. Use o bloco "Exportar inscrições" no topo para baixar o CSV de um evento.',
+    components: {
+      beforeListTable: ['/components/admin/ExportarInscricoesEvento#ExportarInscricoesEvento'],
+    },
   },
   access: {
     create: () => false,
@@ -78,6 +83,80 @@ export const Inscricoes: CollectionConfig = {
     update: ({ req: { user } }) => doPainel(user),
     delete: isAdmin,
   },
+  endpoints: [
+    {
+      path: '/exportar',
+      method: 'get',
+      handler: async (req) => {
+        // Exportar em massa é uma operação de administrador: o arquivo tem CPF,
+        // telefone e todas as respostas, inclusive as marcadas como sensíveis.
+        if (!isAdminUser(req.user)) {
+          return Response.json(
+            { erro: 'Apenas administradores podem exportar os inscritos.' },
+            { status: 403 },
+          )
+        }
+
+        const eventoId = req.searchParams.get('evento')
+        if (!eventoId) {
+          return Response.json({ erro: 'Informe o evento a exportar.' }, { status: 400 })
+        }
+
+        try {
+          const evento = await req.payload.findByID({
+            collection: 'competicoes',
+            id: eventoId,
+            depth: 0,
+            overrideAccess: true,
+          })
+
+          const [{ docs: formularios }, { docs: inscricoes }] = await Promise.all([
+            req.payload.find({
+              collection: 'formularios-inscricao',
+              where: { evento: { equals: evento.id } },
+              sort: 'createdAt',
+              depth: 0,
+              pagination: false,
+              overrideAccess: true,
+            }),
+            req.payload.find({
+              collection: 'inscricoes',
+              where: { evento: { equals: evento.id } },
+              sort: 'enviadaEm',
+              depth: 2,
+              pagination: false,
+              overrideAccess: true,
+            }),
+          ])
+
+          const exportacao = gerarCsvInscricoes(formularios, inscricoes, {
+            incluirFormulario: formularios.length > 1,
+            nomeBase: `${evento.id}-${evento.nome}`,
+          })
+          req.payload.logger.info(
+            `[exportacao] evento ${evento.id}: ${exportacao.linhas} inscrições exportadas por ${req.user?.email ?? req.user?.id}`,
+          )
+          registrarAcesso({
+            acao: 'leitura',
+            colecao: 'inscricoes',
+            documento: evento.id,
+            detalhe: {
+              evento: evento.id,
+              formato: 'csv',
+              formularios: formularios.length,
+              registros: exportacao.linhas,
+            },
+            ...(req.user?.id != null ? { usuario: req.user.id } : {}),
+          })
+
+          return respostaCsv(exportacao)
+        } catch (erro) {
+          req.payload.logger.error({ err: erro, msg: 'Falha ao exportar inscrições do evento' })
+          return Response.json({ erro: 'Não foi possível gerar a exportação.' }, { status: 500 })
+        }
+      },
+    },
+  ],
   hooks: { afterOperation: [auditarAcesso('inscricoes')], beforeChange: [preparaInscricao] },
   defaultSort: '-enviadaEm',
   fields: [
@@ -212,7 +291,12 @@ export const Inscricoes: CollectionConfig = {
               type: 'date',
               admin: { width: '35%', date: { pickerAppearance: 'dayAndTime' } },
             },
-            { name: 'ipHash', label: 'Origem (IP pseudonimizado)', type: 'text', admin: { width: '40%' } },
+            {
+              name: 'ipHash',
+              label: 'Origem (IP pseudonimizado)',
+              type: 'text',
+              admin: { width: '40%' },
+            },
           ],
         },
         {
@@ -257,7 +341,8 @@ export const Inscricoes: CollectionConfig = {
         position: 'sidebar',
         readOnly: true,
         date: { pickerAppearance: 'dayOnly' },
-        description: 'Calculado a partir do prazo do formulário. O expurgo automático entra na Fase 2.',
+        description:
+          'Calculado a partir do prazo do formulário. O expurgo automático entra na Fase 2.',
       },
     },
     {

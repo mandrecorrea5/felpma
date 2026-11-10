@@ -104,20 +104,28 @@ exclusão em `inscricoes`, `arquivos-inscricao` e `atletas` pelo painel. É log,
 schema é aplicado por migrations e criar coleção nova exigiria uma migration gerada contra o
 banco de produção; trocar por tabela é um passo separado.
 
-### Exportar inscritos de um formulário
+### Exportar inscritos de um evento ou formulário
 
-No painel, abra **Inscrições › Formulários de inscrição** e entre no formulário. No topo da
-tela, o botão **Exportar inscritos (N)** baixa um CSV com uma linha por inscrição e uma coluna
-por pergunta.
+Há dois caminhos, ambos só para **administradores**:
 
-- O CSV traz protocolo, situação, data de envio, versão do formulário, nome, e-mail, CPF,
-  nascimento, telefone, cidade/UF, idade, responsável (quando menor) e consentimentos aceitos,
-  além de **todas as respostas** — inclusive as de versões anteriores do formulário (entram no
-  fim, com o rótulo congelado no snapshot).
+- **Por evento (o mais direto):** abra **Inscrições › Inscrições recebidas**. No topo da lista,
+  o bloco **Exportar inscrições** lista os eventos que já receberam inscrições; escolha o evento
+  e clique em **Exportar CSV**. O arquivo reúne as inscrições de **todos os formulários daquele
+  evento** e, quando há mais de um, ganha a coluna **Formulário** para diferenciá-las.
+- **Por formulário:** abra **Inscrições › Formulários de inscrição** e entre no formulário. No
+  topo da tela, o botão **Exportar inscritos (N)** baixa o CSV daquele formulário.
+
+O CSV tem uma linha por inscrição e uma coluna por pergunta:
+
+- Traz protocolo, situação, data de envio, versão do formulário, nome, e-mail, CPF, nascimento,
+  telefone, cidade/UF, idade, responsável (quando menor) e consentimentos aceitos, além de
+  **todas as respostas** — inclusive as de versões anteriores do formulário (entram no fim, com
+  o rótulo congelado no snapshot).
 - Abre direto no Excel em português: UTF-8 com BOM, separador `;` e valores entre aspas.
-- **Só administradores** veem o botão e podem chamar o endpoint. A exportação é registrada no
-  log do servidor; dados marcados como sensíveis são decifrados apenas nesse arquivo.
-- O endpoint é `GET /api/formularios-inscricao/:id/exportar` (exige sessão de administrador).
+- A exportação é registrada na trilha de auditoria (`audit="acesso_dado_pessoal"`); dados
+  marcados como sensíveis são decifrados apenas nesse arquivo.
+- Endpoints: `GET /api/inscricoes/exportar?evento=:id` e
+  `GET /api/formularios-inscricao/:id/exportar` (exigem sessão de administrador).
 
 ### Arquivo no formulário (upload privado)
 

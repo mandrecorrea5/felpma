@@ -24,6 +24,7 @@ import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0
 import { BaixarEdital as BaixarEdital_632fd4f3febcc921631de04b552ccf54 } from '../../../components/admin/BaixarEdital'
 import { ResultadoRowLabel as ResultadoRowLabel_d741eb13e517cca6350fc18096b2bed7 } from '@/components/admin/ResultadoRowLabel'
 import { ExportarInscritos as ExportarInscritos_087c1f27e736daf284699048456a401d } from '../../../components/admin/ExportarInscritos'
+import { ExportarInscricoesEvento as ExportarInscricoesEvento_404fed73f468ae124891cb1f5ec86a37 } from '../../../components/admin/ExportarInscricoesEvento'
 import { LinkPendentes as LinkPendentes_56ea925ca220f8f1ff4e0b4f989a07cc } from '../../../components/admin/LinkPendentes'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
@@ -55,6 +56,7 @@ export const importMap = {
   "/components/admin/BaixarEdital#BaixarEdital": BaixarEdital_632fd4f3febcc921631de04b552ccf54,
   "@/components/admin/ResultadoRowLabel#ResultadoRowLabel": ResultadoRowLabel_d741eb13e517cca6350fc18096b2bed7,
   "/components/admin/ExportarInscritos#ExportarInscritos": ExportarInscritos_087c1f27e736daf284699048456a401d,
+  "/components/admin/ExportarInscricoesEvento#ExportarInscricoesEvento": ExportarInscricoesEvento_404fed73f468ae124891cb1f5ec86a37,
   "/components/admin/LinkPendentes#LinkPendentes": LinkPendentes_56ea925ca220f8f1ff4e0b4f989a07cc,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

@@ -105,19 +105,24 @@ export const celulaCsv = (valor: string): string => {
 }
 
 const montaColunas = (
-  formulario: Pick<FormularioInscricao, 'campos'>,
+  formularios: Pick<FormularioInscricao, 'campos'>[],
   inscricoes: Inscricao[],
+  incluirFormulario: boolean,
 ): Coluna[] => {
-  const colunas = [...FIXAS]
+  const colunas = incluirFormulario
+    ? [...FIXAS.slice(0, 4), { chave: 'formulario', titulo: 'Formulário' }, ...FIXAS.slice(4)]
+    : [...FIXAS]
   const porCampo = new Set<string>()
 
-  const atuais = (formulario.campos ?? []) as CampoFormulario[]
-  for (const campo of atuais) {
-    if (campo.blockType === 'secao') continue
-    const chave = campo.nome?.trim()
-    if (!chave || porCampo.has(chave)) continue
-    porCampo.add(chave)
-    colunas.push({ chave: `resposta:${chave}`, titulo: campo.rotulo?.trim() || chave })
+  for (const formulario of formularios) {
+    const atuais = (formulario.campos ?? []) as CampoFormulario[]
+    for (const campo of atuais) {
+      if (campo.blockType === 'secao') continue
+      const chave = campo.nome?.trim()
+      if (!chave || porCampo.has(chave)) continue
+      porCampo.add(chave)
+      colunas.push({ chave: `resposta:${chave}`, titulo: campo.rotulo?.trim() || chave })
+    }
   }
 
   // Perguntas de versões antigas (ou removidas) que ainda existem nos snapshots.
@@ -143,14 +148,22 @@ const montaColunas = (
   return colunas
 }
 
-const linhaDe = (inscricao: Inscricao): Linha => {
+const linhaDe = (
+  inscricao: Inscricao,
+  formulariosPorId: Map<string, Pick<FormularioInscricao, 'id' | 'titulo'>>,
+): Linha => {
   const atleta = typeof inscricao.atleta === 'object' ? inscricao.atleta : null
   const responsavel = inscricao.responsavel ?? {}
+  const formulario =
+    typeof inscricao.formulario === 'object'
+      ? inscricao.formulario
+      : formulariosPorId.get(String(inscricao.formulario))
   const linha: Linha = {
     protocolo: inscricao.protocolo,
     status: labelOf(STATUS_INSCRICAO, inscricao.status),
     enviadaEm: dataHora(inscricao.enviadaEm),
     formularioVersao: String(inscricao.formularioVersao ?? ''),
+    formulario: formulario?.titulo ?? '',
     atleta: atleta?.nome ?? texto(inscricao.atleta),
     email: atleta?.email ?? '',
     cpf: cpfDe(atleta),
@@ -179,19 +192,33 @@ const linhaDe = (inscricao: Inscricao): Linha => {
 
 export type CsvInscricoes = { arquivo: string; csv: string; linhas: number }
 
+export type OpcoesExportacao = {
+  /** Usado no nome do arquivo; sem ele, usa o título do primeiro formulário. */
+  nomeBase?: string
+  /** Força a coluna "Formulário"; por padrão só aparece com mais de um formulário. */
+  incluirFormulario?: boolean
+}
+
 export function gerarCsvInscricoes(
-  formulario: Pick<FormularioInscricao, 'campos' | 'titulo'> & { id: number },
+  formularios: FormularioInscricao | FormularioInscricao[],
   inscricoes: Inscricao[],
+  opcoes: OpcoesExportacao = {},
 ): CsvInscricoes {
-  const colunas = montaColunas(formulario, inscricoes)
-  const linhas = inscricoes.map(linhaDe)
+  const lista = Array.isArray(formularios) ? formularios : [formularios]
+  const incluirFormulario = opcoes.incluirFormulario ?? lista.length > 1
+  const colunas = montaColunas(lista, inscricoes, incluirFormulario)
+  const formulariosPorId = new Map<string, Pick<FormularioInscricao, 'id' | 'titulo'>>(
+    lista.map((formulario) => [String(formulario.id), formulario]),
+  )
+  const linhas = inscricoes.map((inscricao) => linhaDe(inscricao, formulariosPorId))
 
   const csv = [
     colunas.map((c) => celulaCsv(c.titulo)).join(';'),
     ...linhas.map((linha) => colunas.map((c) => celulaCsv(linha[c.chave] ?? '')).join(';')),
   ].join('\r\n')
 
-  const slug = formulario.titulo
+  const base = opcoes.nomeBase ?? lista[0]?.titulo ?? 'formulario'
+  const slug = base
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
@@ -199,11 +226,24 @@ export function gerarCsvInscricoes(
     .replace(/^-+|-+$/g, '')
     .slice(0, 60)
   const hoje = new Date().toISOString().slice(0, 10)
+  const idArquivo = opcoes.nomeBase ? '' : `-${lista[0]?.id ?? 'formulario'}`
 
   return {
     // O BOM faz o Excel reconhecer UTF-8 sem pedir importação manual.
     csv: `\uFEFF${csv}\r\n`,
-    arquivo: `inscricoes-${slug || 'formulario'}-${formulario.id}-${hoje}.csv`,
+    arquivo: `inscricoes-${slug || 'formulario'}${idArquivo}-${hoje}.csv`,
     linhas: linhas.length,
   }
 }
+
+/** Resposta HTTP padrão de download do CSV, com os headers que o navegador espera. */
+export const respostaCsv = ({ csv, arquivo }: CsvInscricoes): Response =>
+  new Response(csv, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${arquivo}"`,
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  })

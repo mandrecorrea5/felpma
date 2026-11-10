@@ -3,7 +3,8 @@ import { APIError } from 'payload'
 import { authenticated, doPainel, isAdmin, isAdminUser } from '../access'
 import { camposFormulario } from '../blocks/campos-formulario'
 import { BASES_LEGAIS, FINALIDADES_CONSENTIMENTO } from '../lib/constants'
-import { gerarCsvInscricoes } from '../lib/inscricoes/exportacao'
+import { gerarCsvInscricoes, respostaCsv } from '../lib/inscricoes/exportacao'
+import { registrarAcesso } from '../lib/lgpd/auditoria'
 
 /** Nomes que a inscrição já usa na identificação — não podem ser repetidos nos campos. */
 const NOMES_RESERVADOS = new Set(['nome', 'email', 'cpf', 'nascimento', 'telefone', 'responsavel'])
@@ -180,20 +181,24 @@ export const FormulariosInscricao: CollectionConfig = {
             overrideAccess: true,
           })
 
-          const { arquivo, csv, linhas } = gerarCsvInscricoes(formulario, inscricoes)
+          const exportacao = gerarCsvInscricoes(formulario, inscricoes)
           req.payload.logger.info(
-            `[exportacao] formulário ${formulario.id}: ${linhas} inscrições exportadas por ${req.user?.email ?? req.user?.id}`,
+            `[exportacao] formulário ${formulario.id}: ${exportacao.linhas} inscrições exportadas por ${req.user?.email ?? req.user?.id}`,
           )
-
-          return new Response(csv, {
-            status: 200,
-            headers: {
-              'Content-Type': 'text/csv; charset=utf-8',
-              'Content-Disposition': `attachment; filename="${arquivo}"`,
-              'Cache-Control': 'no-store',
-              'X-Content-Type-Options': 'nosniff',
+          registrarAcesso({
+            acao: 'leitura',
+            colecao: 'inscricoes',
+            documento: formulario.id,
+            detalhe: {
+              evento: formulario.evento,
+              formato: 'csv',
+              formulario: formulario.id,
+              registros: exportacao.linhas,
             },
+            ...(req.user?.id != null ? { usuario: req.user.id } : {}),
           })
+
+          return respostaCsv(exportacao)
         } catch (erro) {
           req.payload.logger.error({ err: erro, msg: 'Falha ao exportar inscrições' })
           return Response.json({ erro: 'Não foi possível gerar a exportação.' }, { status: 500 })
