@@ -137,6 +137,22 @@ comprovante de pagamento, declaração do responsável etc.
 - Limite de upload: o Server Action usa `bodySizeLimit: '12mb'` em `next.config.ts` — sem isso
   o padrão de 1 MB do Next corta a requisição antes da validação.
 
+### Coerência entre campos (grupos de opções)
+
+Campos de seleção podem depender de outro campo para não aceitar combinações impossíveis — por
+exemplo, **Master 40+** com **Infantil 35 kg**.
+
+- Em cada opção de **Seleção única** ou **Múltipla escolha** existe o campo **Grupo**. Opções
+  que pertencem à mesma faixa recebem o mesmo grupo (ex.: `infantil`, `sub15_sub17`,
+  `sub20_adulto_master`).
+- No campo que deve ser filtrado (ex.: **Categoria de peso**), preencha **Filtrar opções pelo
+  campo** com o nome técnico do campo que define o grupo (ex.: `categoria_idade`).
+- O atleta só vê as opções do grupo da categoria escolhida; ao trocar a categoria, uma opção
+  incompatível é limpa automaticamente. O servidor repete a regra na validação, então um
+  payload forjado também é rejeitado.
+- Opções sem grupo continuam sempre visíveis. Sem o campo de referência preenchido, as opções
+  com grupo ficam ocultas.
+
 ### Modal de confirmação com o edital
 
 Na aba **Mensagens › Modal antes do envio**, o formulário pode exibir um modal quando o atleta

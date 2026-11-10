@@ -22,6 +22,7 @@ import {
   type CampoFormulario,
   camposVisiveis,
   ehSecao,
+  opcoesDisponiveis,
   type Respostas,
   validarRespostas,
 } from '@/lib/inscricoes/validacao'
@@ -199,8 +200,39 @@ export function FormularioInscricao({
   }
 
   const definir = (nome: string, valor: boolean | string | string[]) => {
-    setRespostas((atual) => ({ ...atual, [nome]: valor }))
-    setErros((atual) => atual.filter((e) => e.campo !== nome))
+    const dependentes = campos
+      .filter((c) => c.filtrarPor?.trim() === nome && c.nome)
+      .map((c) => c.nome as string)
+
+    setRespostas((atual) => {
+      const proximo: Respostas = { ...atual, [nome]: valor }
+
+      // Quem depende deste campo não pode continuar com uma opção que deixou
+      // de existir (ex.: trocar Master 40+ por Infantil e manter 110 kg).
+      for (const dependente of campos) {
+        const referencia = dependente.filtrarPor?.trim()
+        if (!referencia || referencia !== nome || !dependente.nome) continue
+
+        const disponiveis = opcoesDisponiveis(dependente, campos, proximo)
+        const valorAtual = proximo[dependente.nome]
+        if (
+          typeof valorAtual === 'string' &&
+          valorAtual &&
+          !disponiveis.some((o) => o.valor === valorAtual)
+        ) {
+          proximo[dependente.nome] = ''
+        } else if (Array.isArray(valorAtual)) {
+          proximo[dependente.nome] = valorAtual.filter((v) =>
+            disponiveis.some((o) => o.valor === v),
+          )
+        }
+      }
+
+      return proximo
+    })
+    setErros((atual) =>
+      atual.filter((e) => e.campo !== nome && !dependentes.includes(e.campo)),
+    )
     void formulario
   }
 
@@ -466,7 +498,7 @@ export function FormularioInscricao({
                           aria-invalid={Boolean(erro)}
                         >
                           <option value="">Selecione…</option>
-                          {(campo.opcoes ?? []).map((o) => (
+                          {opcoesDisponiveis(campo, campos, respostas).map((o) => (
                             <option key={o.valor} value={o.valor ?? ''}>
                               {o.rotulo}
                             </option>
@@ -478,7 +510,7 @@ export function FormularioInscricao({
                           style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}
                         >
                           <legend className="sr-only">{campo.rotulo}</legend>
-                          {(campo.opcoes ?? []).map((o) => {
+                          {opcoesDisponiveis(campo, campos, respostas).map((o) => {
                             const lista = Array.isArray(valor) ? valor : []
                             const marcado = lista.includes(o.valor ?? '')
                             return (

@@ -164,9 +164,39 @@ export const camposFormulario: Block[] = [
         minRows: 1,
         labels: { singular: 'Opção', plural: 'Opções' },
         fields: [
-          { name: 'valor', label: 'Valor', type: 'text', required: true, admin: { width: '50%' } },
-          { name: 'rotulo', label: 'Texto exibido', type: 'text', required: true, admin: { width: '50%' } },
+          {
+            type: 'row',
+            fields: [
+              { name: 'valor', label: 'Valor', type: 'text', required: true, admin: { width: '35%' } },
+              {
+                name: 'rotulo',
+                label: 'Texto exibido',
+                type: 'text',
+                required: true,
+                admin: { width: '35%' },
+              },
+              {
+                name: 'grupo',
+                label: 'Grupo',
+                type: 'text',
+                admin: {
+                  width: '30%',
+                  description:
+                    'Opcional. Opções com o mesmo grupo aparecem juntas quando este campo é filtrado por outro.',
+                },
+              },
+            ],
+          },
         ],
+      },
+      {
+        name: 'filtrarPor',
+        label: 'Filtrar opções pelo campo',
+        type: 'text',
+        admin: {
+          description:
+            'Opcional. Nome técnico de outro campo de seleção cujas opções têm "Grupo" (ex.: categoria_idade). Sem ele, todas as opções aparecem sempre.',
+        },
       },
     ],
   },
@@ -183,9 +213,39 @@ export const camposFormulario: Block[] = [
         minRows: 1,
         labels: { singular: 'Opção', plural: 'Opções' },
         fields: [
-          { name: 'valor', label: 'Valor', type: 'text', required: true, admin: { width: '50%' } },
-          { name: 'rotulo', label: 'Texto exibido', type: 'text', required: true, admin: { width: '50%' } },
+          {
+            type: 'row',
+            fields: [
+              { name: 'valor', label: 'Valor', type: 'text', required: true, admin: { width: '35%' } },
+              {
+                name: 'rotulo',
+                label: 'Texto exibido',
+                type: 'text',
+                required: true,
+                admin: { width: '35%' },
+              },
+              {
+                name: 'grupo',
+                label: 'Grupo',
+                type: 'text',
+                admin: {
+                  width: '30%',
+                  description:
+                    'Opcional. Opções com o mesmo grupo aparecem juntas quando este campo é filtrado por outro.',
+                },
+              },
+            ],
+          },
         ],
+      },
+      {
+        name: 'filtrarPor',
+        label: 'Filtrar opções pelo campo',
+        type: 'text',
+        admin: {
+          description:
+            'Opcional. Nome técnico de outro campo de seleção cujas opções têm "Grupo" (ex.: categoria_idade). Sem ele, todas as opções aparecem sempre.',
+        },
       },
     ],
   },

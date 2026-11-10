@@ -22,7 +22,12 @@ export type CampoFormulario = {
   mostrarSe?: null | { campo?: null | string; valor?: null | string }
   nome?: null | string
   obrigatorio?: boolean | null
-  opcoes?: null | { rotulo?: null | string; valor?: null | string }[]
+  filtrarPor?: null | string
+  opcoes?: null | {
+    grupo?: null | string
+    rotulo?: null | string
+    valor?: null | string
+  }[]
   rotulo?: null | string
   sensivel?: boolean | null
   texto?: null | string
@@ -91,6 +96,37 @@ export const camposVisiveis = (
   campos: CampoFormulario[],
   respostas: Respostas,
 ): CampoFormulario[] => campos.filter((c) => !ehSecao(c) && estaVisivel(c, respostas))
+
+/**
+ * Opções que podem ser escolhidas agora.
+ *
+ * Um campo com `filtrarPor` só aceita as opções cujo `grupo` seja igual ao
+ * grupo da opção escolhida no campo de referência (ex.: categoria de peso
+ * filtrada pela categoria de idade). Opções sem grupo continuam sempre
+ * visíveis; sem a referência escolhida, as opções com grupo somem — o que
+ * impede escolher “Infantil 35 kg” antes de dizer a categoria de idade.
+ */
+export const opcoesDisponiveis = (
+  campo: CampoFormulario,
+  campos: CampoFormulario[],
+  respostas: Respostas,
+): NonNullable<CampoFormulario['opcoes']> => {
+  const todas = campo.opcoes ?? []
+  const referencia = campo.filtrarPor?.trim()
+  if (!referencia) return todas
+
+  const campoDeReferencia = campos.find((c) => c.nome?.trim() === referencia)
+  const valorDeReferencia = respostas[referencia]
+  const grupoDeReferencia =
+    typeof valorDeReferencia === 'string'
+      ? campoDeReferencia?.opcoes?.find((o) => o.valor === valorDeReferencia)?.grupo
+      : undefined
+
+  return todas.filter(
+    (opcao) =>
+      !opcao.grupo || (Boolean(grupoDeReferencia) && opcao.grupo === grupoDeReferencia),
+  )
+}
 
 const rotuloDe = (campo: CampoFormulario, valor: string): string => {
   const opcao = campo.opcoes?.find((o) => o.valor === valor)
@@ -203,9 +239,14 @@ export function validarRespostas(
 
       case 'selecao': {
         const valor = texto(bruto)
-        const existe = campo.opcoes?.some((o) => o.valor === valor)
+        const existe = opcoesDisponiveis(campo, campos, respostas).some((o) => o.valor === valor)
         if (!existe) {
-          erros.push({ campo: nome, mensagem: 'Escolha uma das opções.' })
+          erros.push({
+            campo: nome,
+            mensagem: campo.filtrarPor
+              ? 'Escolha uma opção compatível com as respostas anteriores.'
+              : 'Escolha uma das opções.',
+          })
           break
         }
         valores[nome] = valor
@@ -216,9 +257,14 @@ export function validarRespostas(
         const lista = (Array.isArray(bruto) ? bruto : [bruto])
           .map((v) => texto(v))
           .filter(Boolean)
-        const validos = new Set(campo.opcoes?.map((o) => o.valor) ?? [])
+        const validos = new Set(
+          opcoesDisponiveis(campo, campos, respostas).map((o) => o.valor),
+        )
         if (lista.some((v) => !validos.has(v))) {
-          erros.push({ campo: nome, mensagem: 'Uma das opções escolhidas é inválida.' })
+          erros.push({
+            campo: nome,
+            mensagem: 'Uma das opções escolhidas não está disponível para as respostas anteriores.',
+          })
           break
         }
         valores[nome] = lista

@@ -729,8 +729,16 @@ export interface FormularioInscricao {
         opcoes: {
           valor: string;
           rotulo: string;
+          /**
+           * Opcional. Opções com o mesmo grupo aparecem juntas quando este campo é filtrado por outro.
+           */
+          grupo?: string | null;
           id?: string | null;
         }[];
+        /**
+         * Opcional. Nome técnico de outro campo de seleção cujas opções têm "Grupo" (ex.: categoria_idade). Sem ele, todas as opções aparecem sempre.
+         */
+        filtrarPor?: string | null;
         id?: string | null;
         blockName?: string | null;
         blockType: 'selecao';
@@ -763,8 +771,16 @@ export interface FormularioInscricao {
         opcoes: {
           valor: string;
           rotulo: string;
+          /**
+           * Opcional. Opções com o mesmo grupo aparecem juntas quando este campo é filtrado por outro.
+           */
+          grupo?: string | null;
           id?: string | null;
         }[];
+        /**
+         * Opcional. Nome técnico de outro campo de seleção cujas opções têm "Grupo" (ex.: categoria_idade). Sem ele, todas as opções aparecem sempre.
+         */
+        filtrarPor?: string | null;
         id?: string | null;
         blockName?: string | null;
         blockType: 'multipla';
@@ -2041,8 +2057,10 @@ export interface FormulariosInscricaoSelect<T extends boolean = true> {
                 | {
                     valor?: T;
                     rotulo?: T;
+                    grupo?: T;
                     id?: T;
                   };
+              filtrarPor?: T;
               id?: T;
               blockName?: T;
             };
@@ -2065,8 +2083,10 @@ export interface FormulariosInscricaoSelect<T extends boolean = true> {
                 | {
                     valor?: T;
                     rotulo?: T;
+                    grupo?: T;
                     id?: T;
                   };
+              filtrarPor?: T;
               id?: T;
               blockName?: T;
             };

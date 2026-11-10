@@ -5,6 +5,7 @@ import * as migration_20261030_154227_aprovacao_cadastro from './20261030_154227
 import * as migration_20261109_214014_ativacao_email from './20261109_214014_ativacao_email';
 import * as migration_20261110_033447_add_editais from './20261110_033447_add_editais';
 import * as migration_20261110_041139_add_arquivos_e_confirmacao from './20261110_041139_add_arquivos_e_confirmacao';
+import * as migration_20261110_111621_add_grupos_opcoes from './20261110_111621_add_grupos_opcoes';
 
 export const migrations = [
   {
@@ -40,6 +41,11 @@ export const migrations = [
   {
     up: migration_20261110_041139_add_arquivos_e_confirmacao.up,
     down: migration_20261110_041139_add_arquivos_e_confirmacao.down,
-    name: '20261110_041139_add_arquivos_e_confirmacao'
+    name: '20261110_041139_add_arquivos_e_confirmacao',
+  },
+  {
+    up: migration_20261110_111621_add_grupos_opcoes.up,
+    down: migration_20261110_111621_add_grupos_opcoes.down,
+    name: '20261110_111621_add_grupos_opcoes'
   },
 ];

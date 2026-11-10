@@ -1,9 +1,14 @@
-import 'server-only'
 import type { CollectionConfig, PayloadRequest } from 'payload'
 import { pseudonimizar } from '@/lib/crypto/campos'
 
 /**
  * Trilha de auditoria de acesso a dado pessoal (LGPD art. 46, §2º).
+ *
+ * Sem `import 'server-only'` de propósito: este módulo é importado pela config
+ * da coleção `Atletas`, e a CLI do Payload (`migrate:create`, `payload run`)
+ * roda fora do runtime do Next — ali o marcador `server-only` lança e quebra
+ * a geração de migrations. O módulo só usa `console` e o hash de campos, sem
+ * segredo que justifique a barreira de build.
  *
  * O dado sensível já está cifrado no banco, mas cifra não responde "quem abriu
  * o atestado do atleta X na terça". A resposta sai daqui: uma linha JSON por
