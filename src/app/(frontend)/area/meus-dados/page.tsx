@@ -25,19 +25,19 @@ export default async function MeusDadosPage() {
             <li>
               <div>
                 <small>E-mail da conta</small>
-                {atleta.email}
+                <span data-ndovu-mask>{atleta.email}</span>
               </div>
             </li>
             <li>
               <div>
                 <small>CPF</small>
-                {atleta.cpfMascara ?? '***.***.***-**'}
+                <span data-ndovu-mask>{atleta.cpfMascara ?? '***.***.***-**'}</span>
               </div>
             </li>
             <li>
               <div>
                 <small>Data de nascimento</small>
-                {dataCurta(atleta.dataNascimento)}
+                <span data-ndovu-mask>{dataCurta(atleta.dataNascimento)}</span>
               </div>
             </li>
           </ul>

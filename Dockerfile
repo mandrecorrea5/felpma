@@ -37,7 +37,7 @@ RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-RUN mkdir -p media documentos && chown nextjs:nodejs media documentos
+RUN mkdir -p media documentos arquivos-inscricao && chown nextjs:nodejs media documentos arquivos-inscricao
 USER nextjs
 EXPOSE 3000
 # As migrations do banco rodam automaticamente ao iniciar (prodMigrations no payload.config.ts).

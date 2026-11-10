@@ -1,9 +1,10 @@
 #!/bin/sh
-# Backup do que existe de dado neste projeto, em três artefatos por execução:
+# Backup do que existe de dado neste projeto, em quatro artefatos por execução:
 #
 #   felpma-<stamp>.dump              pg_dump custom-format do banco
 #   felpma-media-<stamp>.tar.gz      volume de imagens enviadas pelo painel
 #   felpma-documentos-<stamp>.tar.gz volume de PDFs
+#   felpma-arquivos-inscricao-<stamp>.tar.gz  volume de documentos privados das inscrições
 #
 # Mantém N dias localmente e (se R2 estiver configurado) sobe pro Cloudflare R2
 # com retenção própria. Os uploads vivem SÓ em volumes Docker: sem estes tar.gz,
@@ -26,7 +27,7 @@ pg_dump -Fc -Z 6 -f "${DUMP}" \
 
 # Uploads. Vazios é plausível (site recém-instalado), mas ausentes é erro de
 # montagem de volume — daí o test -d antes do tar.
-for name in media documentos; do
+for name in media documentos arquivos-inscricao; do
     DIR="/uploads/${name}"
     ARCHIVE="/backups/felpma-${name}-${STAMP}.tar.gz"
 

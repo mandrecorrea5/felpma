@@ -7,6 +7,7 @@ import { RichText } from '@/components/RichText'
 import { DocRow, Midia, PageHero, StatusBadge } from '@/components/ui'
 import { ROTULO_TIPO, TIPOS_CONVOCACAO, labelOf } from '@/lib/constants'
 import { dataCurta, dataLonga, isDocumento, isMedia, mediaUrl, periodo } from '@/lib/format'
+import { jsonParaScript } from '@/lib/json-ld'
 import { getPayloadClient } from '@/lib/payload'
 import { formularioPublicado } from '@/lib/inscricoes/consultas'
 import { estadoInscricao, type EventoParaInscricao } from '@/lib/inscricoes/estado'
@@ -83,7 +84,7 @@ export default async function CompeticaoPage({ params }: Props) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventoJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonParaScript(eventoJsonLd) }}
       />
       <PageHero
         titulo={c.nome}

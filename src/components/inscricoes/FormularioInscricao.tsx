@@ -1,8 +1,23 @@
 'use client'
 
-import { type FormEvent, type ReactNode, useMemo, useState, useTransition } from 'react'
+import {
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
+import { Icon } from '@/components/Icon'
 import type { EstadoFormulario } from '@/lib/atleta/tipos'
 import { dataLonga } from '@/lib/format'
+import {
+  acceptDoCampo,
+  erroDoArquivo,
+  formatarTamanhoArquivo,
+  LIMITE_ARQUIVO_MB,
+} from '@/lib/inscricoes/arquivo'
 import {
   type CampoFormulario,
   camposVisiveis,
@@ -28,6 +43,12 @@ type Props = {
     nome: string
   }
   aviso: ReactNode
+  /** Modal do último passo. Sem arquivo/texto, o envio acontece direto. */
+  confirmacao?: null | {
+    arquivo?: null | { href: string; nome: string }
+    texto?: null | string
+    titulo: string
+  }
   evento: { nome: string; prazo: string; slug: string }
   formulario: {
     campos: CampoFormulario[]
@@ -49,6 +70,7 @@ export function FormularioInscricao({
   acao,
   atleta,
   aviso,
+  confirmacao,
   evento,
   formulario,
 }: Props) {
@@ -62,16 +84,47 @@ export function FormularioInscricao({
     telefone: '',
     cpf: '',
   })
+  const [arquivos, setArquivos] = useState<Record<string, File>>({})
+  const [modalAberto, setModalAberto] = useState(false)
   const [erros, setErros] = useState<Array<{ campo: string; mensagem: string }>>([])
   const [estado, setEstado] = useState<EstadoFormulario>({ ok: false })
   const [enviando, iniciarTransicao] = useTransition()
+  const formRef = useRef<HTMLFormElement>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
+
+  const precisaConfirmar = Boolean(confirmacao?.arquivo || confirmacao?.texto)
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    if (modalAberto && !dialog.open) dialog.showModal()
+    if (!modalAberto && dialog.open) dialog.close()
+  }, [modalAberto])
 
   /**
    * Envio manual (sem `action={}`): o React 19 resetaria o formulário depois da
    * action, desmarcando consentimentos e apagando o que a pessoa preencheu quando
    * o servidor devolvesse erro de validação.
+   *
+   * Os arquivos vivem em estado, não no input: o passo 1 é desmontado na revisão
+   * e um `<input type="file">` desmontado não entra no FormData.
    */
-  const enviar = (evento: FormEvent<HTMLFormElement>) => {
+  const enviarDados = () => {
+    if (enviando) return
+    const form = formRef.current
+    if (!form) return
+
+    const dados = new FormData(form)
+    for (const [nome, arquivo] of Object.entries(arquivos)) {
+      dados.set(`arquivo:${nome}`, arquivo)
+    }
+
+    iniciarTransicao(async () => {
+      setEstado(await acao(estado, dados))
+    })
+  }
+
+  const aoSubmeter = (evento: FormEvent<HTMLFormElement>) => {
     evento.preventDefault()
 
     const falhas = formulario.consentimentos
@@ -86,10 +139,52 @@ export function FormularioInscricao({
       return
     }
 
-    const dados = new FormData(evento.currentTarget)
-    iniciarTransicao(async () => {
-      setEstado(await acao(estado, dados))
-    })
+    if (precisaConfirmar) {
+      setModalAberto(true)
+      return
+    }
+
+    enviarDados()
+  }
+
+  const confirmarEnvio = () => {
+    setModalAberto(false)
+    enviarDados()
+  }
+
+  const escolherArquivo = (campo: CampoFormulario, arquivo: File | null) => {
+    const nome = campo.nome ?? ''
+    if (!nome) return
+
+    if (!arquivo) {
+      setArquivos((atual) => {
+        const copia = { ...atual }
+        delete copia[nome]
+        return copia
+      })
+      setRespostas((atual) => ({ ...atual, [nome]: '' }))
+      setErros((atual) => atual.filter((e) => e.campo !== nome))
+      return
+    }
+
+    const erro = erroDoArquivo(arquivo, campo.aceita)
+    if (erro) {
+      setArquivos((atual) => {
+        const copia = { ...atual }
+        delete copia[nome]
+        return copia
+      })
+      setRespostas((atual) => ({ ...atual, [nome]: '' }))
+      setErros((atual) => [
+        ...atual.filter((e) => e.campo !== nome),
+        { campo: nome, mensagem: erro },
+      ])
+      return
+    }
+
+    setArquivos((atual) => ({ ...atual, [nome]: arquivo }))
+    setRespostas((atual) => ({ ...atual, [nome]: arquivo.name }))
+    setErros((atual) => atual.filter((e) => e.campo !== nome))
   }
 
   const visiveis = useMemo(() => camposVisiveis(campos, respostas), [campos, respostas])
@@ -148,6 +243,11 @@ export function FormularioInscricao({
   }
 
   const exibir = (campo: CampoFormulario): string => {
+    if (campo.blockType === 'arquivo') {
+      const arquivo = arquivos[campo.nome ?? '']
+      return arquivo ? `${arquivo.name} · ${formatarTamanhoArquivo(arquivo.size)}` : '—'
+    }
+
     const valor = respostas[campo.nome ?? '']
     if (valor === undefined || valor === '' || (Array.isArray(valor) && valor.length === 0))
       return '—'
@@ -171,6 +271,7 @@ export function FormularioInscricao({
 
   return (
     <form
+      ref={formRef}
       className="form"
       noValidate
       data-ndovu-manual
@@ -187,7 +288,7 @@ export function FormularioInscricao({
           evento.preventDefault()
         }
       }}
-      onSubmit={enviar}
+      onSubmit={aoSubmeter}
     >
       {erroGeral}
 
@@ -287,6 +388,7 @@ export function FormularioInscricao({
               const erro = erroDe(nome)
               const id = `campo-${nome}`
               const valor = respostas[nome]
+              const arquivoSelecionado = arquivos[nome]
 
               return (
                 <div className="field" key={nome}>
@@ -319,6 +421,41 @@ export function FormularioInscricao({
                           aria-invalid={Boolean(erro)}
                           aria-describedby={erro ? `${id}-erro` : undefined}
                         />
+                      ) : campo.blockType === 'arquivo' ? (
+                        <div className="arquivo-campo">
+                          <input
+                            id={id}
+                            className="input arquivo-campo__input"
+                            type="file"
+                            accept={acceptDoCampo(campo.aceita)}
+                            onChange={(e) => escolherArquivo(campo, e.target.files?.[0] ?? null)}
+                            aria-invalid={Boolean(erro)}
+                            aria-describedby={
+                              erro
+                                ? `${id}-erro`
+                                : campo.ajuda || !arquivoSelecionado
+                                  ? `${id}-ajuda`
+                                  : undefined
+                            }
+                          />
+                          {arquivoSelecionado ? (
+                            <div className="arquivo-selecionado">
+                              <span className="tag tag--cinza">
+                                {formatarTamanhoArquivo(arquivoSelecionado.size)}
+                              </span>
+                              <span className="arquivo-selecionado__nome">
+                                {arquivoSelecionado.name}
+                              </span>
+                              <button
+                                type="button"
+                                className="btn btn--sm btn--contorno"
+                                onClick={() => escolherArquivo(campo, null)}
+                              >
+                                Remover
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
                       ) : campo.blockType === 'selecao' ? (
                         <select
                           id={id}
@@ -396,6 +533,10 @@ export function FormularioInscricao({
                       {campo.ajuda ? (
                         <small id={`${id}-ajuda`} className="muted">
                           {campo.ajuda}
+                        </small>
+                      ) : campo.blockType === 'arquivo' && !arquivoSelecionado ? (
+                        <small id={`${id}-ajuda`} className="muted">
+                          PDF ou foto (JPG/PNG), até {LIMITE_ARQUIVO_MB} MB.
                         </small>
                       ) : null}
                     </>
@@ -582,6 +723,73 @@ export function FormularioInscricao({
         <div className="alerta alerta--erro" role="alert">
           {estado.erro}
         </div>
+      ) : null}
+
+      {precisaConfirmar ? (
+        <dialog
+          ref={dialogRef}
+          className="modal"
+          aria-labelledby="modal-confirmacao-titulo"
+          onCancel={(evento) => {
+            // Esc fecha o modal, nunca envia.
+            evento.preventDefault()
+            setModalAberto(false)
+          }}
+          onClose={() => setModalAberto(false)}
+          onClick={(evento) => {
+            if (evento.target === dialogRef.current) setModalAberto(false)
+          }}
+        >
+          <div className="modal__caixa">
+            <h2 id="modal-confirmacao-titulo">
+              {confirmacao?.titulo?.trim() || 'Confirme sua inscrição'}
+            </h2>
+
+            {confirmacao?.texto ? <p style={{ margin: 0 }}>{confirmacao.texto}</p> : null}
+
+            {confirmacao?.arquivo ? (
+              <div className="modal__arquivo">
+                <div>
+                  <small className="muted">Leia antes de confirmar</small>
+                  <strong style={{ display: 'block' }}>{confirmacao.arquivo.nome}</strong>
+                </div>
+                <a
+                  href={confirmacao.arquivo.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn--sm btn--contorno"
+                >
+                  <Icon name="download" size={16} />
+                  Abrir arquivo
+                </a>
+              </div>
+            ) : null}
+
+            <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+              Ao confirmar, a inscrição é enviada para a federação. Depois do envio, alterações
+              dependem da comissão de inscrições.
+            </p>
+
+            <div className="inscricao-acoes">
+              <button
+                type="button"
+                className="btn btn--contorno"
+                onClick={() => setModalAberto(false)}
+                disabled={enviando}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn--azul"
+                onClick={confirmarEnvio}
+                disabled={enviando}
+              >
+                {enviando ? 'Enviando…' : 'Confirmar e enviar'}
+              </button>
+            </div>
+          </div>
+        </dialog>
       ) : null}
     </form>
   )

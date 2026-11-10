@@ -5,6 +5,7 @@ import { cifrar, ehCifrado } from '../lib/crypto/campos'
 import { normalizarCpf } from '../lib/cpf'
 import { STATUS_INSCRICAO } from '../lib/constants'
 import { gerarProtocolo } from '../lib/inscricoes/protocolo'
+import { auditarAcesso } from '../lib/lgpd/auditoria'
 
 /** Soma meses a uma data sem escorregar de mês (31/01 + 1 mês = 28/02). */
 const somarMeses = (data: Date, meses: number): Date => {
@@ -77,7 +78,7 @@ export const Inscricoes: CollectionConfig = {
     update: ({ req: { user } }) => doPainel(user),
     delete: isAdmin,
   },
-  hooks: { beforeChange: [preparaInscricao] },
+  hooks: { afterOperation: [auditarAcesso('inscricoes')], beforeChange: [preparaInscricao] },
   defaultSort: '-enviadaEm',
   fields: [
     {
@@ -167,6 +168,17 @@ export const Inscricoes: CollectionConfig = {
       admin: {
         description:
           'Snapshot das perguntas e respostas no momento do envio (não muda se o formulário mudar).',
+      },
+    },
+    {
+      name: 'arquivosEnviados',
+      label: 'Arquivos enviados',
+      type: 'join',
+      collection: 'arquivos-inscricao',
+      on: 'inscricao',
+      admin: {
+        description:
+          'Atestados, comprovantes e documentos anexados pelo atleta. Privados: o download exige sessão do painel.',
       },
     },
     {

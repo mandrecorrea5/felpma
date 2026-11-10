@@ -20,11 +20,15 @@ import {
   inscritosNoEvento,
 } from '@/lib/inscricoes/consultas'
 import {
+  type ArquivoSnapshot,
   type CampoFormulario,
+  camposVisiveis,
   montarSnapshot,
   validarRespostas,
   type Respostas,
 } from '@/lib/inscricoes/validacao'
+import { LIMITE_ARQUIVO_BYTES, nomeArmazenado } from '@/lib/inscricoes/arquivo'
+import { type ArquivoPreparado, prepararArquivo } from '@/lib/inscricoes/arquivo-servidor'
 import { getPayloadClient } from '@/lib/payload'
 import { enviarConfirmacaoInscricao } from '@/lib/inscricoes/confirmacao'
 import { gerarProtocolo } from '@/lib/inscricoes/protocolo'
@@ -83,6 +87,53 @@ export async function enviarInscricao(
   }
 
   const campos = (formulario.campos ?? []) as CampoFormulario[]
+
+  // ------------------------------------------------------------- arquivos
+  // O navegador manda cada arquivo em `arquivo:<nome do campo>`. Antes de validar
+  // as respostas, o upload é conferido (tipo e tamanho reais) e o nome entra na
+  // resposta para a revisão; o binário só é gravado depois, junto da inscrição.
+  type Preparado = Extract<ArquivoPreparado, { ok: true }>
+  const arquivos = new Map<string, { nome: string; preparado: Preparado }>()
+  let bytesEnviados = 0
+
+  for (const campo of camposVisiveis(campos, respostas)) {
+    if (campo.blockType !== 'arquivo' || !campo.nome) continue
+    const enviado = form.get(`arquivo:${campo.nome}`)
+    const arquivo = enviado instanceof File ? enviado : null
+    const rotulo = campo.rotulo ?? campo.nome
+
+    if (!arquivo || arquivo.size === 0) {
+      if (campo.obrigatorio) {
+        return {
+          ok: false,
+          erro: `Envie o arquivo em "${rotulo}".`,
+          erros: [{ campo: campo.nome, mensagem: 'Arquivo obrigatório.' }],
+        }
+      }
+      continue
+    }
+
+    const preparado = await prepararArquivo(arquivo, campo.aceita)
+    if (!preparado.ok) {
+      return {
+        ok: false,
+        erro: preparado.erro,
+        erros: [{ campo: campo.nome, mensagem: preparado.erro }],
+      }
+    }
+
+    bytesEnviados += preparado.tamanho
+    if (bytesEnviados > LIMITE_ARQUIVO_BYTES * 5) {
+      return {
+        ok: false,
+        erro: 'Os arquivos somam mais de 10 MB. Envie menos arquivos ou reduza o tamanho.',
+      }
+    }
+
+    arquivos.set(campo.nome, { nome: arquivo.name, preparado })
+    respostas[campo.nome] = arquivo.name
+  }
+
   const validacao = validarRespostas(campos, respostas)
   if (!validacao.ok) {
     return { ok: false, erro: 'Confira os campos destacados.', erros: validacao.erros }
@@ -130,44 +181,97 @@ export async function enviarInscricao(
   )
 
   // ------------------------------------------------------ snapshot + cifra
-  const respostasSnapshot = montarSnapshot(campos, validacao.valores)
-  const snapshot = respostasSnapshot.map((item) => {
-    if (!item.sensivel) return item
-    return { ...item, cifrado: true, valor: cifrar(JSON.stringify(item.valor)) }
-  })
-
   const payload = await getPayloadClient()
+  const protocolo = gerarProtocolo()
+  const respostasSnapshot = montarSnapshot(campos, validacao.valores)
 
-  const dados: RequiredDataFromCollectionSlug<'inscricoes'> = {
-    protocolo: gerarProtocolo(),
-    enviadaEm: new Date().toISOString(),
-    atleta: atleta.id,
-    evento: evento.id,
-    formulario: formulario.id,
-    formularioVersao: formulario.versao ?? 1,
-    status: 'recebida',
-    respostas: snapshot,
-    consentimentos: provas,
-    menorDeIdade: menor,
-    idadeNaInscricao: idade,
-    ...(menor
-      ? {
-          responsavel: {
-            nome: responsavel.nome,
-            parentesco: responsavel.parentesco,
-            telefone: responsavel.telefone || undefined,
-            cpf: responsavel.cpf,
-          },
-        }
-      : {}),
-  }
+  const arquivosPorCampo = new Map<string, ArquivoSnapshot>()
+  const arquivosGravados: Array<number | string> = []
+  let inscricaoCriada = false
 
   try {
+    // Os uploads vêm antes da inscrição: se um falhar, nada fica pela metade.
+    for (const [campo, { nome, preparado }] of arquivos) {
+      const rotulo = campos.find((c) => c.nome === campo)?.rotulo ?? campo
+      const criado = await payload.create({
+        collection: 'arquivos-inscricao',
+        data: {
+          titulo: nome,
+          campo,
+          rotulo,
+          atleta: atleta.id,
+          formulario: formulario.id,
+        },
+        file: {
+          data: preparado.buffer,
+          mimetype: preparado.mimetype,
+          name: nomeArmazenado(protocolo, campo, preparado.extensao),
+          size: preparado.tamanho,
+        },
+        overrideAccess: true,
+      })
+
+      arquivosGravados.push(criado.id)
+      arquivosPorCampo.set(campo, {
+        id: criado.id,
+        mimetype: preparado.mimetype,
+        nome,
+        tamanho: preparado.tamanho,
+      })
+    }
+
+    const snapshot = respostasSnapshot.map((item) => {
+      const arquivo = arquivosPorCampo.get(item.campo)
+      const comArquivo = arquivo ? { ...item, arquivo, valor: arquivo.nome } : item
+      if (!comArquivo.sensivel) return comArquivo
+      return { ...comArquivo, cifrado: true, valor: cifrar(JSON.stringify(comArquivo.valor)) }
+    })
+
+    const dados: RequiredDataFromCollectionSlug<'inscricoes'> = {
+      protocolo,
+      enviadaEm: new Date().toISOString(),
+      atleta: atleta.id,
+      evento: evento.id,
+      formulario: formulario.id,
+      formularioVersao: formulario.versao ?? 1,
+      status: 'recebida',
+      respostas: snapshot,
+      consentimentos: provas,
+      menorDeIdade: menor,
+      idadeNaInscricao: idade,
+      ...(menor
+        ? {
+            responsavel: {
+              nome: responsavel.nome,
+              parentesco: responsavel.parentesco,
+              telefone: responsavel.telefone || undefined,
+              cpf: responsavel.cpf,
+            },
+          }
+        : {}),
+    }
+
     const criada = await payload.create({
       collection: 'inscricoes',
       overrideAccess: true,
       data: dados,
     })
+    inscricaoCriada = true
+
+    // Vincula os uploads à inscrição — é o vínculo que a área do atleta usa
+    // para liberar o download. Falhar aqui não derruba a inscrição já gravada.
+    for (const id of arquivosGravados) {
+      try {
+        await payload.update({
+          collection: 'arquivos-inscricao',
+          id,
+          data: { inscricao: criada.id },
+          overrideAccess: true,
+        })
+      } catch (erro) {
+        console.error('Falha ao vincular arquivo à inscrição', id, erro)
+      }
+    }
 
     // Confirmação com os dados do evento e as respostas (sem dados sensíveis).
     // A função engole o erro: inscrição gravada não pode falhar por e-mail.
@@ -183,7 +287,25 @@ export async function enviarInscricao(
   } catch (e) {
     // `redirect` lança um erro especial do Next — não pode cair no catch como falha.
     if (e && typeof e === 'object' && 'digest' in e) throw e
+    // Sem inscrição gravada, os uploads seriam órfãos e continuariam ocupando disco.
+    if (!inscricaoCriada) {
+      for (const id of arquivosGravados) {
+        try {
+          await payload.delete({ collection: 'arquivos-inscricao', id, overrideAccess: true })
+        } catch {
+          // O arquivo órfão é um problema menor do que mascarar o erro original.
+        }
+      }
+    }
     console.error('Falha ao gravar inscrição', e)
+    // O Payload valida o conteúdo do arquivo (não só a extensão). Um PDF
+    // corrompido ou uma foto que não abre merece uma mensagem acionável.
+    if (e && typeof e === 'object' && 'name' in e && e.name === 'ValidationError') {
+      return {
+        ok: false,
+        erro: 'Não foi possível anexar um dos arquivos. Verifique se ele abre e envie de novo.',
+      }
+    }
     return { ok: false, erro: 'Não foi possível enviar agora. Tente novamente em instantes.' }
   }
 }

@@ -60,7 +60,9 @@ export default async function AreaPage({ searchParams }: Props) {
           <span className="tag">
             {painel.inscricoes.length} preenchido{painel.inscricoes.length === 1 ? '' : 's'}
           </span>
-          <span className="tag tag--cinza">{atleta.email}</span>
+          <span className="tag tag--cinza" data-ndovu-mask>
+            {atleta.email}
+          </span>
         </div>
       </PageHero>
 

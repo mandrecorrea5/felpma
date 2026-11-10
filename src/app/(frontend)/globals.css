@@ -2567,6 +2567,75 @@ p {
   margin-top: 4px;
 }
 
+/* Upload de arquivo (privado) dentro do formulário de inscrição. */
+.arquivo-campo {
+  display: grid;
+  gap: 8px;
+}
+.arquivo-campo__input {
+  font-size: 14px;
+  padding: 9px 12px;
+}
+.arquivo-selecionado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--fundo-2);
+  border: 1px solid var(--borda);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+}
+.arquivo-selecionado__nome {
+  flex: 1 1 180px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+/* Modal de confirmação do envio (elemento <dialog> nativo). */
+.modal {
+  width: min(520px, calc(100vw - 32px));
+  max-width: 520px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--texto);
+}
+.modal::backdrop {
+  background: rgba(14, 14, 18, 0.55);
+}
+.modal__caixa {
+  display: grid;
+  gap: 16px;
+  background: var(--fundo);
+  border-radius: var(--r-lg);
+  box-shadow: 0 24px 60px rgba(14, 14, 18, 0.28);
+  padding: 24px;
+}
+.modal__caixa h2 {
+  font-family: var(--f-display);
+  font-size: 21px;
+  margin: 0;
+}
+.modal__caixa p {
+  line-height: 1.55;
+}
+.modal__arquivo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--azul-claro);
+  border: 1px solid #d8d4f5;
+  border-radius: var(--r);
+  padding: 12px 14px;
+}
+.modal__arquivo strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
 .inscricao-acoes {
   display: flex;
   gap: 12px;

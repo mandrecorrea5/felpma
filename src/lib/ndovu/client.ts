@@ -11,9 +11,12 @@
  *    prévio (docs/INTEGRACAO_NDOVU.txt §12), liga-se por `liberar()` e nenhum ponto
  *    de chamada muda.
  *
- * PII: este site não tem login, então `getUserId` devolve `null` sempre — nenhum
- * evento sai identificado. E as mutações não têm corpo registrado (ver
- * `observarMutacoes`), porque o formulário de contato é exatamente PII.
+ * PII: `getUserId` devolve `null` sempre — nenhum evento sai identificado a uma
+ * conta. Só que a área do atleta existe: fora dos inputs (que o SDK mascara), a
+ * tela mostra nome, e-mail e respostas de saúde como texto. Por isso o snapshot
+ * de DOM é barrado em rota privada por `bloquearSnapshotsPrivados`, e a exibição
+ * da área marca o dado com `data-ndovu-mask`. As mutações seguem sem corpo
+ * registrado (ver `observarMutacoes`), porque o formulário de contato é PII.
  */
 
 'use client'
@@ -34,6 +37,7 @@ export type FuncaoApp =
   | 'institucional'
   | 'documentos'
   | 'mapa'
+  | 'area'
   | 'admin'
   | 'nao_mapeado'
 
@@ -103,16 +107,57 @@ export function initNdovu(): NdovuSdk | null {
       captureGlobals: true,
       captureWebVitals: true,
       breadcrumbs: true,
-      // Site institucional: captura o DOM em cada pageView (além do erro).
-      // Conteúdo público; inputs seguem mascarados pelo SDK.
+      // Snapshot do DOM em cada pageView — útil no conteúdo público, onde a tela
+      // não tem dado pessoal. Em rota privada o envio é descartado antes de sair:
+      // ver `bloquearSnapshotsPrivados` logo abaixo.
       captureSnapshots: 'screen',
     })
     observarMutacoes(inst)
+    bloquearSnapshotsPrivados()
   } catch (e) {
     falhaInterna = descrever(e)
     inst = null
   }
   return inst
+}
+
+/**
+ * Rotas em que a tela carrega dado pessoal do titular logado.
+ *
+ * `/admin` não passa por este layout (o painel tem o seu), mas fica na lista
+ * como cinto e suspensório caso um dia passe.
+ */
+const ROTAS_PRIVADAS = ['/area', '/admin'] as const
+
+export function rotaPrivada(caminho: string): boolean {
+  const limpo = caminho.length > 1 ? caminho.replace(/\/+$/, '') || '/' : caminho
+  return ROTAS_PRIVADAS.some((base) => limpo === base || limpo.startsWith(`${base}/`))
+}
+
+/**
+ * Barreira de saída do snapshot de tela.
+ *
+ * O SDK decide sozinho quando capturar (`captureSnapshots: 'screen'`) e não tem
+ * a noção de "área logada". Desligar o replay do site inteiro perderia o que ele
+ * tem de melhor — depurar o conteúdo público —, então a regra fica aqui: nenhum
+ * POST para `/v1/snapshots` sai enquanto a URL for de rota privada.
+ *
+ * Não é a única linha: a exibição da área também marca o dado com
+ * `data-ndovu-mask`, que continua valendo se o SDK mudar o formato do envio.
+ * O `204` é de propósito: `sendSnapshot` só loga aviso quando `!res.ok`, então a
+ * supressão é silenciosa em vez de poluir o console a cada tela.
+ */
+function bloquearSnapshotsPrivados(): void {
+  if (typeof window === 'undefined' || typeof window.fetch !== 'function') return
+
+  const anterior = window.fetch.bind(window)
+  window.fetch = async (input: RequestInfo | URL, init: RequestInit = {}) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+    if (url.includes('/v1/snapshots') && rotaPrivada(window.location.pathname)) {
+      return new Response(null, { status: 204 })
+    }
+    return anterior(input, init)
+  }
 }
 
 function comSdk<T>(fn: (sdk: NdovuSdk) => T): T | undefined {

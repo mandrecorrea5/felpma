@@ -8,6 +8,8 @@ import { cpfValido, normalizarCpf } from '@/lib/cpf'
 import { hashBusca } from '@/lib/crypto/campos'
 import { emailDisponivel, enviarEmailAtivacao } from '@/lib/email'
 import { caminhoInterno, destinoPosLogin } from '@/lib/atleta/caminho'
+import { origemDaRequisicao } from '@/lib/inscricoes/consentimento'
+import { limitar } from '@/lib/rate-limit'
 import type { ErroDeCampo, EstadoFormulario } from '@/lib/atleta/tipos'
 
 
@@ -36,6 +38,14 @@ const anosDesde = (iso: string, hoje = new Date()): number => {
 // Cadastro
 // ---------------------------------------------------------------------------
 export async function criarConta(_prev: EstadoFormulario, form: FormData): Promise<EstadoFormulario> {
+  // Este formulário faz duas coisas caras: revela se e-mail/CPF já existem e
+  // dispara e-mail de ativação para qualquer endereço. 10 cadastros por hora
+  // por origem é folgado para gente e caro para script de enumeração.
+  const origem = await origemDaRequisicao()
+  if (origem.ipHash && !limitar(`cadastro:${origem.ipHash}`, 10, 60 * 60 * 1000)) {
+    return { ok: false, erro: 'Muitas tentativas em pouco tempo. Aguarde alguns minutos.' }
+  }
+
   const campos = {
     nome: texto(form, 'nome'),
     email: texto(form, 'email').toLowerCase(),
@@ -93,7 +103,14 @@ export async function criarConta(_prev: EstadoFormulario, form: FormData): Promi
   })
 
   if (existente.totalDocs > 0) {
-    return { ok: false, erro: 'Já existe uma conta com este e-mail ou CPF.', campos }
+    // Não diz QUAL dos dois bateu: dizer "e-mail já existe" transformava o
+    // formulário num oráculo de CPF/e-mail. O teto por origem acima é o que
+    // torna a sondagem cara; a mensagem só evita entregar de graça qual campo.
+    return {
+      ok: false,
+      erro: 'Já existe um cadastro com estes dados. Se for seu, entre ou recupere a senha.',
+      campos,
+    }
   }
 
   let criada: Atleta & { _verificationToken?: null | string }
@@ -151,6 +168,13 @@ export async function criarConta(_prev: EstadoFormulario, form: FormData): Promi
 // Entrar / sair
 // ---------------------------------------------------------------------------
 export async function entrarAction(_prev: EstadoFormulario, form: FormData): Promise<EstadoFormulario> {
+  // O Payload já trava a conta após 5 erros, mas esse contador é por conta. Sem
+  // um teto por origem, credential stuffing troca de alvo a cada tentativa.
+  const origem = await origemDaRequisicao()
+  if (origem.ipHash && !limitar(`login:${origem.ipHash}`, 30, 10 * 60 * 1000)) {
+    return { ok: false, erro: 'Muitas tentativas em pouco tempo. Aguarde alguns minutos.' }
+  }
+
   const email = texto(form, 'email').toLowerCase()
   const senha = texto(form, 'senha')
   const retorno = caminhoInterno(texto(form, 'retorno'))
@@ -177,6 +201,13 @@ export async function sairAction(): Promise<void> {
 // Senha
 // ---------------------------------------------------------------------------
 export async function recuperarSenhaAction(_prev: EstadoFormulario, form: FormData): Promise<EstadoFormulario> {
+  // Dispara e-mail: sem teto, vira bombardeio de caixa alheia e queima de cota
+  // do Resend.
+  const origem = await origemDaRequisicao()
+  if (origem.ipHash && !limitar(`senha:${origem.ipHash}`, 5, 15 * 60 * 1000)) {
+    return { ok: false, erro: 'Muitas tentativas em pouco tempo. Aguarde alguns minutos.' }
+  }
+
   if (!emailDisponivel()) {
     return {
       ok: false,
@@ -308,6 +339,15 @@ export async function excluirContaAction(_prev: EstadoFormulario, form: FormData
 
   try {
     const payload = await getPayloadClient()
+    // Documento privado da inscrição é dado de saúde (atestado): sai do disco
+    // junto com a conta. Vem antes das inscrições porque é ele que aponta para
+    // elas — e porque apagar a inscrição sem o arquivo deixaria o titular sem
+    // o direito de eliminação (LGPD art. 18, VI).
+    await payload.delete({
+      collection: 'arquivos-inscricao',
+      where: { atleta: { equals: atleta.id } },
+      overrideAccess: true,
+    })
     await payload.delete({
       collection: 'inscricoes',
       where: { atleta: { equals: atleta.id } },

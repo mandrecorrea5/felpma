@@ -1,6 +1,8 @@
 'use server'
 
 import { getPayloadClient } from '@/lib/payload'
+import { origemDaRequisicao } from '@/lib/inscricoes/consentimento'
+import { limitar } from '@/lib/rate-limit'
 
 export type EstadoContato = {
   ok: boolean
@@ -16,6 +18,13 @@ export type EstadoContato = {
 const ASSUNTOS = ['filiacao', 'competicoes', 'imprensa', 'parcerias', 'outros'] as const
 
 export async function enviarContato(_prev: EstadoContato, form: FormData): Promise<EstadoContato> {
+  // Honeypot pega robô burro; este teto pega o que preenche o formulário de
+  // verdade. Sem ele, a coleção de mensagens vira depósito de spam.
+  const origem = await origemDaRequisicao()
+  if (origem.ipHash && !limitar(`contato:${origem.ipHash}`, 5, 10 * 60 * 1000)) {
+    return { ok: false, erro: 'Muitas mensagens em pouco tempo. Aguarde alguns minutos.' }
+  }
+
   const campos = {
     nome: String(form.get('nome') ?? '').trim(),
     email: String(form.get('email') ?? '').trim(),

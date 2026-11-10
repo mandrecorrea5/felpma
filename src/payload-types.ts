@@ -73,6 +73,7 @@ export interface Config {
     mensagens: Mensagem;
     competicoes: Competicao;
     convocacoes: Convocacao;
+    editais: Edital;
     resultados: Resultado;
     recordes: Recorde;
     centros: Centro;
@@ -83,6 +84,7 @@ export interface Config {
     atletas: Atleta;
     'formularios-inscricao': FormularioInscricao;
     inscricoes: Inscricao;
+    'arquivos-inscricao': ArquivoInscricao;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -91,6 +93,10 @@ export interface Config {
   collectionsJoins: {
     competicoes: {
       formularios: 'formularios-inscricao';
+      editais: 'editais';
+    };
+    inscricoes: {
+      arquivosEnviados: 'arquivos-inscricao';
     };
   };
   collectionsSelect: {
@@ -99,6 +105,7 @@ export interface Config {
     mensagens: MensagensSelect<false> | MensagensSelect<true>;
     competicoes: CompeticoesSelect<false> | CompeticoesSelect<true>;
     convocacoes: ConvocacoesSelect<false> | ConvocacoesSelect<true>;
+    editais: EditaisSelect<false> | EditaisSelect<true>;
     resultados: ResultadosSelect<false> | ResultadosSelect<true>;
     recordes: RecordesSelect<false> | RecordesSelect<true>;
     centros: CentrosSelect<false> | CentrosSelect<true>;
@@ -109,6 +116,7 @@ export interface Config {
     atletas: AtletasSelect<false> | AtletasSelect<true>;
     'formularios-inscricao': FormulariosInscricaoSelect<false> | FormulariosInscricaoSelect<true>;
     inscricoes: InscricoesSelect<false> | InscricoesSelect<true>;
+    'arquivos-inscricao': ArquivosInscricaoSelect<false> | ArquivosInscricaoSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -396,6 +404,14 @@ export interface Competicao {
     totalDocs?: number;
   };
   /**
+   * Cadastrados em Competições › Editais. O PDF publicado aparece em Documentos.
+   */
+  editais?: {
+    docs?: (number | Edital)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  /**
    * Sem destaque marcado, a home mostra a próxima competição estadual.
    */
   destaqueHome?: boolean | null;
@@ -443,7 +459,7 @@ export interface Documento {
   focalY?: number | null;
 }
 /**
- * Cada formulário pertence a um evento. Quem libera a inscrição no site é o evento, não o formulário.
+ * Cada formulário pertence a um evento. Quem libera a inscrição no site é o evento, não o formulário. Abra um formulário para exportar os inscritos em CSV.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "formularios-inscricao".
@@ -537,6 +553,35 @@ export interface FormularioInscricao {
         id?: string | null;
         blockName?: string | null;
         blockType: 'texto-longo';
+      }
+    | {
+        /**
+         * Chave usada no banco e no export (sem espaços). Ex.: atestado-medico
+         */
+        nome: string;
+        rotulo: string;
+        /**
+         * Aparece abaixo do campo. Explique com exemplo, se ajudar.
+         */
+        ajuda?: string | null;
+        /**
+         * Limite de 2 MB por arquivo. O atleta e a federação veem o arquivo; ninguém mais.
+         */
+        aceita: 'pdf' | 'pdf-imagem' | 'imagem';
+        obrigatorio?: boolean | null;
+        /**
+         * Opcional. Use para perguntas que só fazem sentido em certas respostas.
+         */
+        mostrarSe?: {
+          /**
+           * Nome técnico do outro campo.
+           */
+          campo?: string | null;
+          valor?: string | null;
+        };
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'arquivo';
       }
     | {
         /**
@@ -817,6 +862,20 @@ export interface FormularioInscricao {
     foraDoPeriodo?: string | null;
   };
   /**
+   * Abre quando o atleta clica em "Enviar inscrição", no último passo. Serve para ele ler o edital/regulamento e confirmar. Deixe em branco para enviar direto, sem modal.
+   */
+  confirmacao?: {
+    titulo?: string | null;
+    /**
+     * Opcional. Ex.: "Confira os dados e leia o edital antes de confirmar. Depois do envio, alterações dependem da federação."
+     */
+    texto?: string | null;
+    /**
+     * Ex.: o edital da competição. Precisa estar com "Visível no site" marcado — o PDF dos editais publicados aparece em Documentos › Editais e notas oficiais.
+     */
+    arquivo?: (number | null) | Documento;
+  };
+  /**
    * O formulário só aparece no site se este evento abrir as inscrições.
    */
   evento: number | Competicao;
@@ -825,6 +884,118 @@ export interface FormularioInscricao {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * Cadastre o edital uma vez. O PDF no padrão da federação é gerado ao salvar e, com "Publicado", entra em Documentos.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "editais".
+ */
+export interface Edital {
+  id: number;
+  /**
+   * Ex.: 01. O PDF mostra "Edital 01/2025".
+   */
+  numero: string;
+  ano: number;
+  dataEvento: string;
+  /**
+   * Ex.: a partir das 8h.
+   */
+  horario?: string | null;
+  /**
+   * Ex.: "I ETAPA DO CAMPEONATO ESTADUAL DE LEVANTAMENTO DE PESOS — COPA DIMAS".
+   */
+  titulo: string;
+  /**
+   * Ex.: SPORT VILLAGE — espaço CTLPO-MA.
+   */
+  local: string;
+  endereco: string;
+  /**
+   * Opcional. Ex.: "A pesagem acontece das 7h às 8h, na sala ao lado do ginásio."
+   */
+  pesagem?: string | null;
+  /**
+   * Opcional. Serve para ligar o edital ao evento no calendário.
+   */
+  competicao?: (number | null) | Competicao;
+  /**
+   * Texto abaixo do título. Use {titulo}, {ano}, {local} e {cidade} para preencher automaticamente.
+   */
+  abertura?: string | null;
+  disposicoes?: string | null;
+  inscricoesDe: string;
+  inscricoesAte: string;
+  emailInscricao?: string | null;
+  /**
+   * Use {inscricoesDe}, {inscricoesAte} e {emailInscricao} para preencher automaticamente.
+   */
+  inscricoesTexto?: string | null;
+  /**
+   * Cada linha vira uma linha da tabela no PDF.
+   */
+  taxas?:
+    | {
+        categoria?: string | null;
+        federado?: string | null;
+        naoFederado?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  observacaoTaxas?: string | null;
+  inscricoesRegras?:
+    | {
+        texto: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Use {ano} para o ano do edital.
+   */
+  categoriasIdade?:
+    | {
+        nome: string;
+        descricao?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Ex.: uma tabela para Sub-12 e outra para as demais categorias.
+   */
+  categoriasPeso?:
+    | {
+        titulo: string;
+        linhas?:
+          | {
+              masculino?: string | null;
+              feminino?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  requisitos?:
+    | {
+        texto: string;
+        id?: string | null;
+      }[]
+    | null;
+  regras?: string | null;
+  direitosImagem?: string | null;
+  observacoesFinais?: string | null;
+  /**
+   * Ao marcar, o PDF é gerado no padrão e aparece em Documentos › Editais e notas oficiais.
+   */
+  publicado?: boolean | null;
+  /**
+   * Gerado automaticamente. Não precisa anexar nada aqui.
+   */
+  documento?: (number | null) | Documento;
+  cidadeAssinatura?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1087,6 +1258,14 @@ export interface Inscricao {
     | boolean
     | null;
   /**
+   * Atestados, comprovantes e documentos anexados pelo atleta. Privados: o download exige sessão do painel.
+   */
+  arquivosEnviados?: {
+    docs?: (number | ArquivoInscricao)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  /**
    * Texto, versão, hash, data/hora e origem de cada aceite.
    */
   consentimentos?:
@@ -1128,6 +1307,47 @@ export interface Inscricao {
   observacoesInternas?: string | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Arquivos privados enviados pelo atleta no formulário. Ficam fora do site público; o download é auditável pela sessão.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "arquivos-inscricao".
+ */
+export interface ArquivoInscricao {
+  id: number;
+  /**
+   * Nome original enviado pelo atleta, para ele reconhecer o documento.
+   */
+  titulo: string;
+  /**
+   * Nome técnico do campo (ex.: atestado-medico).
+   */
+  campo: string;
+  /**
+   * Como a pergunta aparecia para o atleta.
+   */
+  rotulo?: string | null;
+  atleta: number | Atleta;
+  /**
+   * Preenchida após a inscrição ser gravada.
+   */
+  inscricao?: (number | null) | Inscricao;
+  /**
+   * Versão do formulário em que o arquivo foi enviado.
+   */
+  formulario?: (number | null) | FormularioInscricao;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1174,6 +1394,10 @@ export interface PayloadLockedDocument {
         value: number | Convocacao;
       } | null)
     | ({
+        relationTo: 'editais';
+        value: number | Edital;
+      } | null)
+    | ({
         relationTo: 'resultados';
         value: number | Resultado;
       } | null)
@@ -1212,6 +1436,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'inscricoes';
         value: number | Inscricao;
+      } | null)
+    | ({
+        relationTo: 'arquivos-inscricao';
+        value: number | ArquivoInscricao;
       } | null);
   globalSlug?: string | null;
   user:
@@ -1335,6 +1563,7 @@ export interface CompeticoesSelect<T extends boolean = true> {
   limiteVagas?: T;
   avisoForaDoPeriodo?: T;
   formularios?: T;
+  editais?: T;
   destaqueHome?: T;
   slug?: T;
   updatedAt?: T;
@@ -1352,6 +1581,76 @@ export interface ConvocacoesSelect<T extends boolean = true> {
   competicao?: T;
   documento?: T;
   prazoConfirmacao?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "editais_select".
+ */
+export interface EditaisSelect<T extends boolean = true> {
+  numero?: T;
+  ano?: T;
+  dataEvento?: T;
+  horario?: T;
+  titulo?: T;
+  local?: T;
+  endereco?: T;
+  pesagem?: T;
+  competicao?: T;
+  abertura?: T;
+  disposicoes?: T;
+  inscricoesDe?: T;
+  inscricoesAte?: T;
+  emailInscricao?: T;
+  inscricoesTexto?: T;
+  taxas?:
+    | T
+    | {
+        categoria?: T;
+        federado?: T;
+        naoFederado?: T;
+        id?: T;
+      };
+  observacaoTaxas?: T;
+  inscricoesRegras?:
+    | T
+    | {
+        texto?: T;
+        id?: T;
+      };
+  categoriasIdade?:
+    | T
+    | {
+        nome?: T;
+        descricao?: T;
+        id?: T;
+      };
+  categoriasPeso?:
+    | T
+    | {
+        titulo?: T;
+        linhas?:
+          | T
+          | {
+              masculino?: T;
+              feminino?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  requisitos?:
+    | T
+    | {
+        texto?: T;
+        id?: T;
+      };
+  regras?: T;
+  direitosImagem?: T;
+  observacoesFinais?: T;
+  publicado?: T;
+  documento?: T;
+  cidadeAssinatura?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1636,6 +1935,23 @@ export interface FormulariosInscricaoSelect<T extends boolean = true> {
               id?: T;
               blockName?: T;
             };
+        arquivo?:
+          | T
+          | {
+              nome?: T;
+              rotulo?: T;
+              ajuda?: T;
+              aceita?: T;
+              obrigatorio?: T;
+              mostrarSe?:
+                | T
+                | {
+                    campo?: T;
+                    valor?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
         email?:
           | T
           | {
@@ -1803,6 +2119,13 @@ export interface FormulariosInscricaoSelect<T extends boolean = true> {
         sucesso?: T;
         foraDoPeriodo?: T;
       };
+  confirmacao?:
+    | T
+    | {
+        titulo?: T;
+        texto?: T;
+        arquivo?: T;
+      };
   evento?: T;
   versao?: T;
   limitePorAtleta?: T;
@@ -1824,6 +2147,7 @@ export interface InscricoesSelect<T extends boolean = true> {
   formularioVersao?: T;
   idadeNaInscricao?: T;
   respostas?: T;
+  arquivosEnviados?: T;
   consentimentos?:
     | T
     | {
@@ -1853,6 +2177,29 @@ export interface InscricoesSelect<T extends boolean = true> {
   observacoesInternas?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "arquivos-inscricao_select".
+ */
+export interface ArquivosInscricaoSelect<T extends boolean = true> {
+  titulo?: T;
+  campo?: T;
+  rotulo?: T;
+  atleta?: T;
+  inscricao?: T;
+  formulario?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

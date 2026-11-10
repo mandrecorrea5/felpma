@@ -113,11 +113,13 @@ const doc = async (titulo: string, categoria: string, extra: Record<string, unkn
 
 // ---------- limpeza ----------
 const limpar: CollectionSlug[] = [
+  'arquivos-inscricao',
   'inscricoes',
   'formularios-inscricao',
   'convocacoes',
   'resultados',
   'recordes',
+  'editais',
   'competicoes',
   'noticias',
   'centros',
@@ -665,6 +667,25 @@ await payload.updateGlobal({
 })
 log('páginas fixas atualizadas')
 
+// Depois das configurações: o PDF do edital usa a sigla e a logo do site.
+await payload.create({
+  collection: 'editais',
+  data: {
+    numero: '01',
+    ano,
+    dataEvento: dias(24),
+    horario: 'a partir das 8h',
+    titulo: 'CAMPEONATO MARANHENSE — ETAPA CAPITAL',
+    local: '[Ginásio]',
+    endereco: '[Endereço completo do ginásio, bairro, cidade e CEP]',
+    inscricoesDe: dias(-7),
+    inscricoesAte: dias(12),
+    competicao: capital.id,
+    publicado: true,
+  } as never,
+})
+log('edital de exemplo criado')
+
 // Evita "variável não usada" para documentos que só existem para aparecer nas listagens.
 void [estatuto, regGeral, calendarioOficial, fichaAtleta]
 
@@ -696,9 +717,7 @@ await payload.create({
     titulo: `Inscrição — Curso de Formação de Árbitros ${ano}`,
     evento: eventoInscricao.id,
     _status: 'published',
-    descricao: texto(
-      'Leva cerca de 3 minutos. Tenha em mãos o nome do seu clube/CT, se houver.',
-    ),
+    descricao: texto('Leva cerca de 3 minutos. Tenha em mãos o nome do seu clube/CT, se houver.'),
     campos: [
       { blockType: 'secao', titulo: 'Sobre você', descricao: 'Dados para contato da organização.' },
       {
@@ -727,12 +746,26 @@ await payload.create({
         maxLength: 600,
       },
       {
+        blockType: 'arquivo',
+        nome: 'comprovante-experiencia',
+        rotulo: 'Comprovante de experiência (opcional)',
+        ajuda: 'Certificado, declaração ou foto do documento. O arquivo é privado.',
+        aceita: 'pdf-imagem',
+        obrigatorio: false,
+      },
+      {
         blockType: 'aceite',
         nome: 'declaracao-regulamento',
         texto: 'Declaro que li e aceito o edital do curso.',
         obrigatorio: true,
       },
     ],
+    confirmacao: {
+      titulo: 'Confirme sua inscrição no curso',
+      texto:
+        'Leia o edital do curso e confira seus dados antes de confirmar. Depois do envio, alterações dependem da comissão de inscrições.',
+      arquivo: regCurso.id,
+    },
     lgpd: {
       finalidade: 'Organizar a inscrição no curso e o contato com a organização.',
       baseLegal: 'contrato',

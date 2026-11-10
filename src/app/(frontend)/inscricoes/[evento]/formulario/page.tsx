@@ -69,6 +69,23 @@ export default async function FormularioPage({ params }: Props) {
 
   const idade = idadeEm(atleta.dataNascimento)
 
+  // O modal só é montado se houver algo para mostrar. O documento precisa estar
+  // público: o link aponta para a rota de arquivo do Payload, que respeita
+  // `publico` e devolveria 403 para quem não está no painel.
+  const relacaoDoModal = formulario.confirmacao?.arquivo
+  const arquivoDoModal =
+    relacaoDoModal &&
+    typeof relacaoDoModal === 'object' &&
+    relacaoDoModal.publico &&
+    relacaoDoModal.filename
+      ? {
+          href: `/api/documentos/file/${encodeURIComponent(relacaoDoModal.filename)}`,
+          nome: relacaoDoModal.titulo,
+        }
+      : null
+  const textoDoModal = formulario.confirmacao?.texto?.trim() ?? ''
+  const temConfirmacao = Boolean(arquivoDoModal || textoDoModal)
+
   return (
     <>
       <PageHero
@@ -84,6 +101,15 @@ export default async function FormularioPage({ params }: Props) {
       <div className="container section" style={{ maxWidth: 820 }}>
         <FormularioInscricao
           acao={enviarInscricao}
+          confirmacao={
+            temConfirmacao
+              ? {
+                  titulo: formulario.confirmacao?.titulo ?? 'Confirme sua inscrição',
+                  texto: textoDoModal || null,
+                  arquivo: arquivoDoModal,
+                }
+              : null
+          }
           evento={{
             slug,
             nome: evento.nome,

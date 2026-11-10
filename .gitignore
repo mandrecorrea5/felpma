@@ -53,4 +53,5 @@ node_modules/
 .env
 /media
 /documentos
+/arquivos-inscricao
 /next-env.d.ts

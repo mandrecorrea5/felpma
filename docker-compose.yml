@@ -12,7 +12,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-felpma}
       POSTGRES_DB: felpma
     ports:
-      - '5432:5432'
+      # Só loopback: em dev o banco não precisa estar exposto na rede local.
+      # Em produção o overlay remove as portas por completo.
+      - '127.0.0.1:5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -46,8 +48,11 @@ services:
       # Imagens e PDFs enviados pelo painel
       - uploads-media:/app/media
       - uploads-documentos:/app/documentos
+      # Documentos privados das inscrições (atestado, comprovante)
+      - uploads-inscricoes:/app/arquivos-inscricao
 
 volumes:
   pgdata:
   uploads-media:
   uploads-documentos:
+  uploads-inscricoes:

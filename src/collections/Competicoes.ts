@@ -203,6 +203,16 @@ export const Competicoes: CollectionConfig = {
       },
     },
     {
+      name: 'editais',
+      label: 'Editais deste evento',
+      type: 'join',
+      collection: 'editais',
+      on: 'competicao',
+      admin: {
+        description: 'Cadastrados em Competições › Editais. O PDF publicado aparece em Documentos.',
+      },
+    },
+    {
       name: 'destaqueHome',
       label: 'Destaque na página inicial',
       type: 'checkbox',

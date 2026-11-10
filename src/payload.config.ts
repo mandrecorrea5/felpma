@@ -10,11 +10,13 @@ import { Users } from './collections/Users'
 import { Atletas } from './collections/Atletas'
 import { FormulariosInscricao } from './collections/FormulariosInscricao'
 import { Inscricoes } from './collections/Inscricoes'
+import { ArquivosInscricao } from './collections/ArquivosInscricao'
 import { Media } from './collections/Media'
 import { Documentos } from './collections/Documentos'
 import { Noticias } from './collections/Noticias'
 import { Competicoes } from './collections/Competicoes'
 import { Convocacoes } from './collections/Convocacoes'
+import { Editais } from './collections/Editais'
 import { Resultados } from './collections/Resultados'
 import { Recordes } from './collections/Recordes'
 import { Centros } from './collections/Centros'
@@ -53,6 +55,7 @@ export default buildConfig({
     Mensagens,
     Competicoes,
     Convocacoes,
+    Editais,
     Resultados,
     Recordes,
     Centros,
@@ -63,6 +66,7 @@ export default buildConfig({
     Atletas,
     FormulariosInscricao,
     Inscricoes,
+    ArquivosInscricao,
   ],
   globals: [Home, Filiacao, Federacao, Configuracoes],
   // Resend por variáveis de ambiente. Sem credenciais, em dev o link sai no
@@ -70,6 +74,11 @@ export default buildConfig({
   // (ver src/lib/email.ts).
   email: emailAdapter,
   editor: lexicalEditor(),
+  // O site não usa a API GraphQL. Deixá-la de pé abria uma porta lateral para as
+  // operações de autenticação do Payload (`loginAtleta`, `forgotPasswordAtleta`…)
+  // que o `src/proxy.ts` fecha no REST — e era por ali que o rate limit e as
+  // regras de e-mail do cadastro podiam ser contornados. O painel usa REST.
+  graphQL: { disable: true },
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
   db: postgresAdapter({

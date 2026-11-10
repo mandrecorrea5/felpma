@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PageHero } from '@/components/ui'
+import { Icon } from '@/components/Icon'
 import { exigirAtleta } from '@/lib/atleta/guarda'
 import { labelOf, STATUS_INSCRICAO } from '@/lib/constants'
 import { decifrar, ehCifrado } from '@/lib/crypto/campos'
@@ -26,6 +27,7 @@ type Snapshot = {
   sensivel?: boolean
   tipo: string
   valor: boolean | number | string | string[]
+  arquivo?: null | { id: number | string; nome: string; tamanho?: number }
 }
 
 const TOM: Record<string, string> = {
@@ -134,7 +136,22 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
                 <li key={r.campo}>
                   <div>
                     <small>{r.rotulo}</small>
-                    {exibir(r)}
+                    {r.arquivo ? (
+                      <a
+                        href={`/area/inscricoes/${inscricao.protocolo}/arquivos/${r.arquivo.id}`}
+                        className="btn btn--sm btn--contorno"
+                        download
+                        data-ndovu-mask
+                      >
+                        <Icon name="download" size={16} />
+                        Baixar {r.arquivo.nome}
+                      </a>
+                    ) : (
+                      // `data-ndovu-mask` é proteção de dado, não estilo: o valor já
+                      // vem decifrado para o titular e não pode ir num snapshot de
+                      // tela (ver src/lib/ndovu/client.ts).
+                      <span data-ndovu-mask>{exibir(r)}</span>
+                    )}
                   </div>
                 </li>
               ))}
@@ -152,25 +169,25 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
                 <li>
                   <div>
                     <small>Nome</small>
-                    {responsavel.nome}
+                    <span data-ndovu-mask>{responsavel.nome}</span>
                   </div>
                 </li>
                 <li>
                   <div>
                     <small>Parentesco</small>
-                    {responsavel.parentesco ?? '—'}
+                    <span data-ndovu-mask>{responsavel.parentesco ?? '—'}</span>
                   </div>
                 </li>
                 <li>
                   <div>
                     <small>Telefone</small>
-                    {responsavel.telefone ?? '—'}
+                    <span data-ndovu-mask>{responsavel.telefone ?? '—'}</span>
                   </div>
                 </li>
                 <li>
                   <div>
                     <small>CPF</small>
-                    {cpfResponsavel ?? '—'}
+                    <span data-ndovu-mask>{cpfResponsavel ?? '—'}</span>
                   </div>
                 </li>
               </ul>

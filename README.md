@@ -93,7 +93,85 @@ Payload criaria para `atletas` (`/api/atletas/login`, `/me`…) são bloqueados 
 **LGPD:** CPF e dados marcados como sensíveis são gravados cifrados (AES-256-GCM) com índice
 cego (HMAC) para busca; o CPF aparece mascarado. Cada aceite guarda o texto exibido, a versão,
 o hash e a data, com IP pseudonimizado. O prazo de retenção é calculado por formulário no
-momento do envio (`retencaoAte`). O expurgo automático e a trilha de auditoria entram na Fase 2.
+momento do envio (`retencaoAte`) e o **expurgo roda sozinho uma vez por dia** no processo do
+site (`src/lib/lgpd/expurgo.ts`): inscrição vencida e seus arquivos privados são eliminados.
+Desligue com `EXPURGO_DESATIVADO=1` se uma data de retenção estiver errada.
+
+A **trilha de auditoria** de acesso a dado pessoal sai como linha JSON no stdout
+(`audit="acesso_dado_pessoal"`), coletada pelo promtail e consultável no Loki: quem (usuário do
+painel), o quê (coleção/documento), quando e o IP pseudonimizado. Cobre leitura, alteração e
+exclusão em `inscricoes`, `arquivos-inscricao` e `atletas` pelo painel. É log, não tabela — o
+schema é aplicado por migrations e criar coleção nova exigiria uma migration gerada contra o
+banco de produção; trocar por tabela é um passo separado.
+
+### Exportar inscritos de um formulário
+
+No painel, abra **Inscrições › Formulários de inscrição** e entre no formulário. No topo da
+tela, o botão **Exportar inscritos (N)** baixa um CSV com uma linha por inscrição e uma coluna
+por pergunta.
+
+- O CSV traz protocolo, situação, data de envio, versão do formulário, nome, e-mail, CPF,
+  nascimento, telefone, cidade/UF, idade, responsável (quando menor) e consentimentos aceitos,
+  além de **todas as respostas** — inclusive as de versões anteriores do formulário (entram no
+  fim, com o rótulo congelado no snapshot).
+- Abre direto no Excel em português: UTF-8 com BOM, separador `;` e valores entre aspas.
+- **Só administradores** veem o botão e podem chamar o endpoint. A exportação é registrada no
+  log do servidor; dados marcados como sensíveis são decifrados apenas nesse arquivo.
+- O endpoint é `GET /api/formularios-inscricao/:id/exportar` (exige sessão de administrador).
+
+### Arquivo no formulário (upload privado)
+
+Na aba **Campos**, o bloco **Arquivo (upload)** pede um documento ao atleta — atestado médico,
+comprovante de pagamento, declaração do responsável etc.
+
+- **Tipos aceitos** por campo: PDF, PDF ou foto, ou só foto (JPG/PNG). O limite é **2 MB por
+  arquivo** e **10 MB por inscrição**, conferido no navegador e de novo no servidor.
+- O arquivo **não fica público**: vai para a coleção `arquivos-inscricao` e para o volume
+  `uploads-inscricoes`, nunca para `media`. No painel, a inscrição tem o bloco **Arquivos
+  enviados**; o atleta baixa o próprio arquivo em **Área do atleta › Inscrição › O que você
+  respondeu**.
+- Fotos são reencodadas com `sharp` (orientação aplicada e EXIF/GPS removidos) antes de gravar;
+  PDFs têm o cabeçalho `%PDF-` conferido.
+- O download do atleta usa `GET /area/inscricoes/:protocolo/arquivos/:id`, que exige a sessão
+  do atleta e confere o dono do arquivo. A API do Payload só serve o arquivo para o painel.
+- Limite de upload: o Server Action usa `bodySizeLimit: '12mb'` em `next.config.ts` — sem isso
+  o padrão de 1 MB do Next corta a requisição antes da validação.
+
+### Modal de confirmação com o edital
+
+Na aba **Mensagens › Modal antes do envio**, o formulário pode exibir um modal quando o atleta
+clica em **Enviar inscrição**, no último passo:
+
+- **Título** e **texto** do modal são livres; o texto aparece acima do arquivo.
+- **Arquivo exibido no modal** escolhe um documento de **Documentos** (o PDF de um edital
+  publicado aparece lá automaticamente). Só documentos com **Visível no site** podem ser
+  escolhidos, e publicar o formulário valida isso.
+- Com o modal configurado, nada é gravado antes do clique em **Confirmar e enviar**. Sem
+  arquivo e sem texto, o envio continua direto, como antes.
+
+## Editais
+
+Em **Competições › Editais**, o edital é cadastrado como conteúdo estruturado — não é preciso
+produzir o PDF fora do painel. As abas cobrem:
+
+- **Edital** — número/ano, título da convocação, data e horário, local, endereço, abertura e
+  disposições preliminares.
+- **Inscrições e taxas** — janela de inscrições, e-mail para comprovante, texto, tabela de
+  taxas e regras posteriores à tabela.
+- **Categorias** — categorias de idade e tabelas de peso (masculino/feminino).
+- **Requisitos e textos finais** — requisitos, regras (IWF), direitos de imagem e disposições
+  finais.
+
+Os textos aceitam placeholders trocados na geração: `{ano}`, `{titulo}`, `{data}`, `{local}`,
+`{cidade}`, `{inscricoesDe}`, `{inscricoesAte}` e `{emailInscricao}`. Ao salvar com
+**Publicado no site** marcado, o sistema gera um PDF A4 no padrão da federação (cabeçalho,
+tabelas e assinatura, **sem a marca d'água central**) e cria/atualiza automaticamente um
+documento em **Documentos › Editais e notas oficiais**. O botão **Baixar PDF** no topo da
+edição abre a versão atual mesmo antes de publicar.
+
+O PDF é gerado em `src/lib/editais/pdf.ts` (PDFKit) e o conteúdo padrão fica em
+`src/lib/editais/padrao.ts`. Para mudar o texto de um edital específico, edite os campos; para
+mudar o padrão de todos os novos, ajuste `padrao.ts`.
 
 ### E-mail transacional (Resend)
 
@@ -218,7 +296,7 @@ Nessas plataformas o disco não é persistente. Antes de publicar, configure um 
 
 ## Backup
 
-O serviço `backup` (só no overlay de produção) roda 03:00 todo dia e gera três
+O serviço `backup` (só no overlay de produção) roda 03:00 todo dia e gera quatro
 artefatos por execução em `deploy/backup/backups/`:
 
 | Arquivo | Origem |
@@ -226,6 +304,7 @@ artefatos por execução em `deploy/backup/backups/`:
 | `felpma-<data-hora>.dump` | `pg_dump -Fc` do banco |
 | `felpma-media-<data-hora>.tar.gz` | volume `uploads-media` (imagens do painel) |
 | `felpma-documentos-<data-hora>.tar.gz` | volume `uploads-documentos` (PDFs) |
+| `felpma-arquivos-inscricao-<data-hora>.tar.gz` | volume `uploads-inscricoes` (arquivos privados das inscrições) |
 
 Os uploads precisam do tar.gz: o banco guarda só o caminho do arquivo, então um
 restore que trouxer apenas o dump devolve páginas com imagem quebrada.

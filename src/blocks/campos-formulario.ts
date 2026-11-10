@@ -1,4 +1,5 @@
 import type { Block, Field } from 'payload'
+import { TIPOS_ARQUIVO } from '../lib/inscricoes/arquivo'
 
 /**
  * Construtor de campos do formulário de inscrição.
@@ -6,6 +7,10 @@ import type { Block, Field } from 'payload'
  * Cada bloco vira um campo na tela pública. `nome` é a chave técnica (imutável,
  * usada no snapshot da resposta); `rotulo` é o que o atleta lê. `sensivel` liga
  * a cifra do valor e o mascaramento no painel.
+ *
+ * O bloco `arquivo` é a exceção: não guarda o valor no snapshot, e sim uma
+ * referência ao upload privado em `arquivos-inscricao` (o arquivo em si fica
+ * fora do banco, em disco, com acesso só do atleta e do painel).
  */
 
 const nomeTecnico = (sobre: string): Field => ({
@@ -101,6 +106,29 @@ export const camposFormulario: Block[] = [
     slug: 'texto-longo',
     labels: { singular: 'Texto longo', plural: 'Textos longos' },
     fields: [...base('observacoes'), ...limitesTexto],
+  },
+  {
+    slug: 'arquivo',
+    labels: { singular: 'Arquivo (upload)', plural: 'Arquivos (upload)' },
+    fields: [
+      nomeTecnico('atestado-medico'),
+      rotulo,
+      ajuda,
+      {
+        name: 'aceita',
+        label: 'Tipos aceitos',
+        type: 'select',
+        required: true,
+        defaultValue: 'pdf-imagem',
+        options: [...TIPOS_ARQUIVO],
+        admin: {
+          description:
+            'Limite de 2 MB por arquivo. O atleta e a federação veem o arquivo; ninguém mais.',
+        },
+      },
+      obrigatorio,
+      mostrarSe,
+    ],
   },
   { slug: 'email', labels: { singular: 'E-mail', plural: 'E-mails' }, fields: base('email-contato') },
   {

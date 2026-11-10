@@ -11,6 +11,7 @@ export type Resposta = boolean | number | string | string[]
 export type Respostas = Record<string, Resposta>
 
 export type CampoFormulario = {
+  aceita?: null | string
   ajuda?: null | string
   blockType: string
   descricao?: null | string
@@ -30,7 +31,16 @@ export type CampoFormulario = {
 
 export type ErroCampo = { campo: string; mensagem: string }
 
+/** Referência ao upload privado guardado em `arquivos-inscricao`. */
+export type ArquivoSnapshot = {
+  id: number | string
+  mimetype: string
+  nome: string
+  tamanho: number
+}
+
 export type RespostaSnapshot = {
+  arquivo?: ArquivoSnapshot
   campo: string
   exibicao?: string
   rotulo: string
@@ -163,6 +173,13 @@ export function validarRespostas(
           break
         }
         valores[nome] = iso
+        break
+      }
+
+      case 'arquivo': {
+        // O nome só serve de rastro para a revisão; o arquivo em si é conferido
+        // e gravado na server action (`arquivo-servidor.ts`).
+        valores[nome] = texto(bruto)
         break
       }
 

@@ -16,7 +16,7 @@
 
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useRef } from 'react'
-import { rastreia, type FuncaoApp, type Metadados } from './client'
+import { rastreia, rotaPrivada, type FuncaoApp, type Metadados } from './client'
 import { identificarRota } from './rotas'
 
 /** Marcador que `src/instrumentation-client.ts` escreve no início de cada navegação. */
@@ -69,7 +69,9 @@ export function NdovuTracker() {
       area: rota.area,
       tipoDeRota: rota.tipo,
     }
-    if (rota.parametro) metadados.parametro = rota.parametro
+    // O protocolo de uma inscrição identifica o titular: em rota privada ele não
+    // vai nem como metadado (o snapshot já é barrado em `client.ts`).
+    if (rota.parametro && !rotaPrivada(pathname)) metadados.parametro = rota.parametro
 
     const filtros = filtrosDaBusca(busca.toString())
     if (filtros) metadados.filtros = filtros

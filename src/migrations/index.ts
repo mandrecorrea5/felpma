@@ -3,6 +3,8 @@ import * as migration_20261030_140639_inscricoes from './20261030_140639_inscric
 import * as migration_20261030_154204_remove_verificacao_email from './20261030_154204_remove_verificacao_email';
 import * as migration_20261030_154227_aprovacao_cadastro from './20261030_154227_aprovacao_cadastro';
 import * as migration_20261109_214014_ativacao_email from './20261109_214014_ativacao_email';
+import * as migration_20261110_033447_add_editais from './20261110_033447_add_editais';
+import * as migration_20261110_041139_add_arquivos_e_confirmacao from './20261110_041139_add_arquivos_e_confirmacao';
 
 export const migrations = [
   {
@@ -28,6 +30,16 @@ export const migrations = [
   {
     up: migration_20261109_214014_ativacao_email.up,
     down: migration_20261109_214014_ativacao_email.down,
-    name: '20261109_214014_ativacao_email'
+    name: '20261109_214014_ativacao_email',
+  },
+  {
+    up: migration_20261110_033447_add_editais.up,
+    down: migration_20261110_033447_add_editais.down,
+    name: '20261110_033447_add_editais',
+  },
+  {
+    up: migration_20261110_041139_add_arquivos_e_confirmacao.up,
+    down: migration_20261110_041139_add_arquivos_e_confirmacao.down,
+    name: '20261110_041139_add_arquivos_e_confirmacao'
   },
 ];

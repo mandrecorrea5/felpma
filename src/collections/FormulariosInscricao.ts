@@ -1,11 +1,22 @@
 import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 import { APIError } from 'payload'
-import { authenticated, doPainel, isAdmin } from '../access'
+import { authenticated, doPainel, isAdmin, isAdminUser } from '../access'
 import { camposFormulario } from '../blocks/campos-formulario'
 import { BASES_LEGAIS, FINALIDADES_CONSENTIMENTO } from '../lib/constants'
+import { gerarCsvInscricoes } from '../lib/inscricoes/exportacao'
 
 /** Nomes que a inscrição já usa na identificação — não podem ser repetidos nos campos. */
 const NOMES_RESERVADOS = new Set(['nome', 'email', 'cpf', 'nascimento', 'telefone', 'responsavel'])
+
+/** Aceita a relação já populada (objeto) ou só o id, como o painel e a API enviam. */
+const idDaRelacao = (valor: unknown): number | string | null => {
+  if (valor == null) return null
+  if (typeof valor === 'number' || typeof valor === 'string') return valor
+  if (typeof valor === 'object' && 'id' in valor) {
+    return (valor as { id?: number | string }).id ?? null
+  }
+  return null
+}
 
 /**
  * Formulário de inscrição de um evento.
@@ -73,6 +84,33 @@ const validaAntesDeSalvar: CollectionBeforeChangeHook = async ({
     if (campos.length === 0) {
       throw new APIError('Adicione ao menos um campo ao formulário.', 400)
     }
+    // O modal só ajuda se o arquivo abrir para quem não está logado no painel:
+    // documento privado viraria um link quebrado na hora da confirmação.
+    const arquivoDoModal = idDaRelacao(
+      (data.confirmacao as { arquivo?: unknown } | undefined)?.arquivo,
+    )
+    if (arquivoDoModal) {
+      try {
+        const documento = await req.payload.findByID({
+          collection: 'documentos',
+          id: arquivoDoModal,
+          depth: 0,
+          overrideAccess: true,
+        })
+        if (!documento.publico) {
+          throw new APIError(
+            'O arquivo do modal não está visível no site. Marque "Visível no site" em Documentos antes de publicar o formulário.',
+            400,
+          )
+        }
+      } catch (erro) {
+        if (erro instanceof APIError) throw erro
+        throw new APIError(
+          'O documento escolhido para o modal não existe mais. Escolha outro em Documentos.',
+          400,
+        )
+      }
+    }
     const estavaPublicado = originalDoc?._status === 'published'
     if (!estavaPublicado) {
       data.versao = Number(originalDoc?.versao ?? 0) + 1
@@ -91,7 +129,12 @@ export const FormulariosInscricao: CollectionConfig = {
     group: 'Inscrições',
     defaultColumns: ['titulo', 'evento', 'versao', '_status', 'updatedAt'],
     description:
-      'Cada formulário pertence a um evento. Quem libera a inscrição no site é o evento, não o formulário.',
+      'Cada formulário pertence a um evento. Quem libera a inscrição no site é o evento, não o formulário. Abra um formulário para exportar os inscritos em CSV.',
+    components: {
+      edit: {
+        beforeDocumentControls: ['/components/admin/ExportarInscritos#ExportarInscritos'],
+      },
+    },
   },
   versions: { drafts: true, maxPerDoc: 20 },
   access: {
@@ -103,6 +146,61 @@ export const FormulariosInscricao: CollectionConfig = {
     delete: isAdmin,
   },
   hooks: { beforeChange: [validaAntesDeSalvar] },
+  endpoints: [
+    {
+      path: '/:id/exportar',
+      method: 'get',
+      handler: async (req) => {
+        // Exportar em massa é uma operação de administrador: o arquivo tem CPF,
+        // telefone e todas as respostas, inclusive as marcadas como sensíveis.
+        if (!isAdminUser(req.user)) {
+          return Response.json(
+            { erro: 'Apenas administradores podem exportar os inscritos.' },
+            { status: 403 },
+          )
+        }
+
+        const id = req.routeParams?.id
+        if (!id) return Response.json({ erro: 'Formulário não informado.' }, { status: 400 })
+
+        try {
+          const formulario = await req.payload.findByID({
+            collection: 'formularios-inscricao',
+            id: id as number | string,
+            depth: 0,
+            overrideAccess: true,
+          })
+
+          const { docs: inscricoes } = await req.payload.find({
+            collection: 'inscricoes',
+            where: { formulario: { equals: formulario.id } },
+            sort: 'enviadaEm',
+            depth: 2,
+            pagination: false,
+            overrideAccess: true,
+          })
+
+          const { arquivo, csv, linhas } = gerarCsvInscricoes(formulario, inscricoes)
+          req.payload.logger.info(
+            `[exportacao] formulário ${formulario.id}: ${linhas} inscrições exportadas por ${req.user?.email ?? req.user?.id}`,
+          )
+
+          return new Response(csv, {
+            status: 200,
+            headers: {
+              'Content-Type': 'text/csv; charset=utf-8',
+              'Content-Disposition': `attachment; filename="${arquivo}"`,
+              'Cache-Control': 'no-store',
+              'X-Content-Type-Options': 'nosniff',
+            },
+          })
+        } catch (erro) {
+          req.payload.logger.error({ err: erro, msg: 'Falha ao exportar inscrições' })
+          return Response.json({ erro: 'Não foi possível gerar a exportação.' }, { status: 500 })
+        }
+      },
+    },
+  ],
   defaultSort: '-updatedAt',
   fields: [
     {
@@ -278,6 +376,43 @@ export const FormulariosInscricao: CollectionConfig = {
                   label: 'Mensagem fora do período',
                   type: 'textarea',
                   admin: { description: 'Só é usada se o evento não tiver aviso próprio.' },
+                },
+              ],
+            },
+            {
+              name: 'confirmacao',
+              label: 'Modal antes do envio',
+              type: 'group',
+              admin: {
+                description:
+                  'Abre quando o atleta clica em "Enviar inscrição", no último passo. Serve para ele ler o edital/regulamento e confirmar. Deixe em branco para enviar direto, sem modal.',
+              },
+              fields: [
+                {
+                  name: 'titulo',
+                  label: 'Título do modal',
+                  type: 'text',
+                  defaultValue: 'Confirme sua inscrição',
+                },
+                {
+                  name: 'texto',
+                  label: 'Texto do modal',
+                  type: 'textarea',
+                  admin: {
+                    description:
+                      'Opcional. Ex.: "Confira os dados e leia o edital antes de confirmar. Depois do envio, alterações dependem da federação."',
+                  },
+                },
+                {
+                  name: 'arquivo',
+                  label: 'Arquivo exibido no modal',
+                  type: 'relationship',
+                  relationTo: 'documentos',
+                  filterOptions: () => ({ publico: { equals: true } }),
+                  admin: {
+                    description:
+                      'Ex.: o edital da competição. Precisa estar com "Visível no site" marcado — o PDF dos editais publicados aparece em Documentos › Editais e notas oficiais.',
+                  },
                 },
               ],
             },

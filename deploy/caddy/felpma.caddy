@@ -39,13 +39,18 @@ felpma.com.br {
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		-Server
+		# O Payload injeta `X-Powered-By: Next.js, Payload` em toda resposta.
+		# Não é vulnerabilidade, é mapa da casa: some na borda.
+		-X-Powered-By
 	}
 
-	# Sem CSP de propósito, e sem X-Frame-Options: o painel do Payload injeta
-	# estilo e script inline e o mapa de centros é um iframe do OpenStreetMap.
-	# Uma CSP herdada do bloco do SvelteKit do vizinho quebraria o painel no
-	# escuro. Se um dia for escrever CSP pra este site, escreva do zero e em
-	# Content-Security-Policy-Report-Only primeiro.
+	# frame-ancestors e X-Frame-Options vêm do next.config.ts (valem para o
+	# site e o painel). O mapa é um iframe do OpenStreetMap DENTRO das nossas
+	# páginas: `frame-ancestors` diz quem pode enquadrar o site, não o que o
+	# site enquadra — por isso não conflita.
+	# A CSP completa com script-src continua de fora: o painel do Payload usa
+	# script/estilo inline e quebraria. O caminho é escrever do zero, com nonce,
+	# e subir em Content-Security-Policy-Report-Only primeiro.
 
 	# `dynamic a` re-resolve o DNS interno do Docker a cada 10s. Sem isso, todo
 	# `--force-recreate` do felpma troca o IP do container e o Caddy continua

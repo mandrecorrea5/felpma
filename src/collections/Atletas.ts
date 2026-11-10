@@ -8,6 +8,7 @@ import { atletaOuPainel, isAdmin, isAdminField } from '../access'
 import { cifrar, ehCifrado, hashBusca } from '../lib/crypto/campos'
 import { cpfValido, mascararCpf, normalizarCpf } from '../lib/cpf'
 import { emailAtivacaoConta, emailRecuperacaoSenha } from '../lib/email-templates'
+import { auditarAcesso } from '../lib/lgpd/auditoria'
 
 /**
  * Conta do atleta — o "filiado" do site.
@@ -99,7 +100,11 @@ export const Atletas: CollectionConfig = {
     delete: isAdmin,
   },
   defaultSort: 'nome',
-  hooks: { beforeValidate: [preparaCpf], beforeChange: [registraAprovacao] },
+  hooks: {
+    afterOperation: [auditarAcesso('atletas')],
+    beforeValidate: [preparaCpf],
+    beforeChange: [registraAprovacao],
+  },
   fields: [
     { name: 'nome', label: 'Nome completo', type: 'text', required: true },
     {

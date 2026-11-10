@@ -80,7 +80,7 @@ services:
         max-file: "3"
 
   # ---------------------------------------------------------------------------
-  # Backup: dump do Postgres + tar.gz dos dois volumes de upload, 03:00 todo dia.
+  # Backup: dump do Postgres + tar.gz dos três volumes de upload, 03:00 todo dia.
   #
   # Os volumes do próprio compose entram montados aqui (compose resolve o
   # prefixo do projeto, ex.: felpma_uploads-media) — por isso o script não
@@ -116,6 +116,7 @@ services:
       - ./deploy/backup/backups:/backups
       - uploads-media:/uploads/media:ro
       - uploads-documentos:/uploads/documentos:ro
+      - uploads-inscricoes:/uploads/arquivos-inscricao:ro
     depends_on:
       postgres:
         condition: service_healthy

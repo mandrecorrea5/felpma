@@ -22,6 +22,18 @@ export type Rota = {
 
 const EXATAS: Record<string, Rota> = {
   '/': { padrao: '/', nome: 'Início', area: 'institucional' },
+  // Área do atleta: telas privadas. Entram na tabela para o `screen` ser estável
+  // (sem o protocolo na URL) e para o funil de cadastro/login não cair em
+  // "rota fora da tabela".
+  '/area': { padrao: '/area', nome: 'Área do atleta', area: 'area' },
+  '/area/ativar': { padrao: '/area/ativar', nome: 'Ativar conta', area: 'area' },
+  '/area/consentimentos': { padrao: '/area/consentimentos', nome: 'Consentimentos', area: 'area' },
+  '/area/criar-conta': { padrao: '/area/criar-conta', nome: 'Criar conta', area: 'area' },
+  '/area/entrar': { padrao: '/area/entrar', nome: 'Entrar', area: 'area' },
+  '/area/meus-dados': { padrao: '/area/meus-dados', nome: 'Meus dados', area: 'area' },
+  '/area/privacidade': { padrao: '/area/privacidade', nome: 'Privacidade', area: 'area' },
+  '/area/recuperar-senha': { padrao: '/area/recuperar-senha', nome: 'Recuperar senha', area: 'area' },
+  '/area/redefinir-senha': { padrao: '/area/redefinir-senha', nome: 'Redefinir senha', area: 'area' },
   '/busca': { padrao: '/busca', nome: 'Busca', area: 'busca' },
   '/calendario': { padrao: '/calendario', nome: 'Calendário', area: 'competicoes' },
   '/centros': { padrao: '/centros', nome: 'Centros de Treinamento', area: 'centros' },
@@ -39,6 +51,10 @@ const EXATAS: Record<string, Rota> = {
 
 /** Uma captura por segmento dinâmico, na ordem do disco. */
 const DINAMICAS: { re: RegExp; rota: Rota }[] = [
+  {
+    re: /^\/area\/inscricoes\/([^/]+)$/,
+    rota: { padrao: '/area/inscricoes/[protocolo]', nome: 'Inscrição', area: 'area' },
+  },
   {
     re: /^\/calendario\/([^/]+)$/,
     rota: { padrao: '/calendario/[slug]', nome: 'Competição', area: 'competicoes' },

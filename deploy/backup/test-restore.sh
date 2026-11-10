@@ -65,6 +65,7 @@ pick() {
 DUMP="$(pick 'felpma-*.dump')"
 MEDIA="$(pick 'felpma-media-*.tar.gz')"
 DOCS="$(pick 'felpma-documentos-*.tar.gz')"
+INSCRICOES="$(pick 'felpma-arquivos-inscricao-*.tar.gz')"
 
 if [ -z "${DUMP}" ]; then
     echo "[restore-test] ERRO: nenhum dump encontrado no R2 (filtros: felpma-*.dump, max 30d)" >&2
@@ -73,6 +74,7 @@ fi
 echo "[restore-test] dump:            $(basename "${DUMP}") ($(du -h "${DUMP}" | cut -f1))"
 echo "[restore-test] uploads media:   $(basename "${MEDIA:-<nenhum>}")"
 echo "[restore-test] uploads docs:    $(basename "${DOCS:-<nenhum>}")"
+echo "[restore-test] uploads inscrições: $(basename "${INSCRICOES:-<nenhum>}")"
 
 echo "[restore-test] subindo Postgres efêmero em :${PORT}…"
 docker run -d --rm --name "${CONTAINER}" \
@@ -115,7 +117,7 @@ fi
 
 # Os uploads são o outro meio do dado: o dump volta apontando pra arquivo que
 # não existe se o tar.gz estiver vazio ou faltando.
-for pair in "media:${MEDIA}" "documentos:${DOCS}"; do
+for pair in "media:${MEDIA}" "documentos:${DOCS}" "arquivos-inscricao:${INSCRICOES}"; do
     name="${pair%%:*}"
     archive="${pair#*:}"
     if [ -z "${archive}" ]; then
