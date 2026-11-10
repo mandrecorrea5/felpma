@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"sed -n 1,80p src/lib/ndovu/client.ts; echo ----; cat src/instrumentation-client.ts; echo ----; grep -n -i ndovu .github/workflows/*.yml deploy/*.sh .env 2>/dev/null\",\"description\":\"Read Nd...",
+  "error": "Exit code 2\n/**\n * Integração do site com o Ndovu (browser SDK).\n *\n * Por que existe uma fachada em vez de exportar a instância direto:\n *\n * 1. `createNdovu` **lança** se faltar endpoint/apiKey/app — e o build de produção\n *    precisa passar mesmo com o Ndovu desligado. Sem chave, tudo aqui vira no-op.\n * 2. O SDK roda antes da hidratação (via `src/instrumentation-client.ts`). Um erro\n *    dele não pode derrubar o site: nenhum método daqui propaga exceção.\n * 3. `NEXT_PUBLIC_*` é congelado n...",
+  "timestamp": "2026-10-20T19:39:39.046Z",
+  "retry_count": 1
+}

@@ -1,0 +1,36 @@
+
+## 2026-10-16 [deploy, env, producao, felpma]
+Em produção, o `.env` de `/opt/felpma` é gerado por `deploy/provision-env.sh` (ele se recusa a sobrescrever um `.env` existente — troca de valor é edição manual). `DATABASE_URL` **não** aparece no `.env` de propósito: o `docker-compose.yml:31` compõe o valor a partir de `POSTGRES_PASSWORD`, e senha em dois lugares é como uma das duas divergir. `NEXT_PUBLIC_SERVER_URL` entra como build arg — mudá-lo exige rebuild, não restart.
+
+## 2026-10-16 [deploy, caddy, tls, gotcha, vps]
+Emissão de cert ACME no Caddy compartilhado (ranking-caddy): depois de uma falha de validação (ex.: DNS ainda não propagado), o Caddy entra em backoff e PARA de tentar — `caddy reload` com o mesmo config é no-op (log: "config is unchanged") e NÃO re-dispara a obtenção do cert. Precisa de `docker restart ranking-caddy` (ou uma mudança semântica no config) pra tentar de novo. Sintoma externo: `curl https://dominio/` cai com `tlsv1 alert internal error` em <0.5s, enquanto o app por dentro está saudável (`docker exec ranking-caddy wget -qO- http://felpma-site:3000/healthz` → {"ok":true}).
+
+## 2026-10-16 [payload, auth, admin, gotcha]
+No felpma, o formulário /admin/create-first-user do Payload cria o primeiro usuário como `editor` (o campo `role` em src/collections/Users.ts tem `defaultValue: 'editor'` + `access.create: isAdminField`, então pra requisição anônima o campo some do formulário), e um editor não se auto-promove (mesmo `isAdminField` no update). Pra nascer admin: `POST /api/users/first-register` com `role: "admin"` no body — a operation `registerFirstUserOperation` roda `payload.create` com `overrideAccess: true` e só exige a coleção `users` vazia. Depois do primeiro usuário a rota vira 403 permanente.
+
+## 2026-10-16 [payload, validation, gotcha]
+Payload 3 (3.91): o validador embutido que aplica `min`/`max`/`enterNumber` de um campo só é instalado quando o campo NÃO define `validate` próprio (node_modules/payload/dist/fields/config/sanitize.js:154 — `if (typeof field.validate === 'undefined')`). Definir `validate` customizado SUBSTITUI o check nativo: é preciso reimplementar min, max e o "não é número" dentro do seu, senão você enfraquece a validação achando que está reforçando. Assinatura: `validate: (value, options) => true | string` — o value vem como 1º argumento posicional (não `({value})`).
+
+## 2026-10-16 [deploy, docker, volumes, uploads, gotcha, backup]
+felpma: os volumes nomeados `uploads-media`/`uploads-documentos` são montados por DOIS serviços (site em /app/*, backup em /uploads/*). O Docker semeia a posse de um volume novo a partir do image de quem monta primeiro, e como a corrida decide quem chega primeiro, o volume nascia root:root em ~1 de cada 3 `up -d` — e o site (nextjs, uid 100) não conseguia escrever: upload do painel morria em `EACCES: permission denied, open 'media/...'`. Causa: `deploy/backup/Dockerfile` fazia `mkdir -p /uploads/media /uploads/documentos` como root. Conserto: tirar esses dois caminhos do image (deixar só /backups) — sem caminho de origem, o backup não semea nada e o site sempre ganha (5/5). Socorro imediato num host já contaminado, sem redeploy: `docker run --rm -v felpma_uploads-media:/d alpine chown -R 100:101 /d` (uid 100 = nextjs, 101 = nodejs).
+
+## 2026-10-16 [build, payload, dev-setup, gotcha]
+Para rodar CLI do Payload localmente neste repo (`payload migrate`, `payload run <script>`), use `node_modules/.bin/payload` direto — `pnpm payload ...` falha porque o pnpm deste ambiente resolve Node 20.9.0 e o `sharp` exige import attributes (`... with { type: "json" }`), que só a partir de Node 20.10; o `node` do PATH é v22.23.2. Receita de teste local: `cp .env.example .env` → `docker compose up -d` → `node_modules/.bin/payload migrate` → `node_modules/.bin/payload run src/<script>.ts` → `docker compose down -v && rm .env`. Cuidado: qualquer comando do Payload regrava `src/payload-types.ts` sem o prettier do repo (ponto-e-vírgula, ~750 linhas de ruído) — faça `git checkout -- src/payload-types.ts` depois.
+
+## 2026-10-17 [build, gotcha, node, pnpm]
+`pnpm build`/`pnpm dev` neste repo usa o shim do asdf (node v20.9.0), abaixo do `engines` do package.json (>=20.18.1). O build falha em "Failed to load external module sharp: SyntaxError: Unexpected token 'with'" — não é bug do código. Rode com node 22: `PATH="/Users/marcoscorrea/.local/bin:$PATH" NODE_OPTIONS="--no-deprecation --max-old-space-size=8000" ./node_modules/.bin/next build`.
+
+## 2026-10-17 [ndovu, observabilidade, gotcha, cors]
+Ingestão do Ndovu a partir do browser exige CORS na API (`X-Api-Key` é header não-simple → preflight OPTIONS). Sem responder OPTIONS com `Access-Control-Allow-Headers: Content-Type, X-Api-Key, traceparent`, o SDK falha em silêncio: a fila do SDK empurra os eventos de volta e nada aparece no backend nem no console. Vale para o Ndovu local (18081) e para o de produção.
+
+## 2026-10-17 [ndovu, config, producao, deploy]
+O Ndovu do projeto é SaaS externo: `NEXT_PUBLIC_NDOVU_ENDPOINT=https://api.ndovu.solutions`, e o **nome do app cadastrado é `felpma`** (não `felpma-site`). A vinculação é estrita: envelope `app` ≠ app da chave responde `400 app do envelope não corresponde ao app da chave`, e a mensagem já diz qual é o nome certo. Lotes vazios são rejeitados (`events não pode ser vazio`) e `eventId` exige UUID. Produção fica em `root@2.24.205.200:/opt/felpma/.env` (chave `~/.ssh/felpma_deploy`) — nunca na máquina local.
+
+## 2026-10-17 [ndovu, vendor, gotcha, build]
+No vendor do Ndovu, `ndovu-next.js` (~3KB, NdovuProvider/NdovuAutoRouter/useNdovu) é **companheiro** do `ndovu-browser.js` (~24KB), não substituto: ele só faz pageView por rota e importa `createNdovu` do browser SDK. Os dois vêm lado a lado em `ndovu/sdk/src/`. Substituir um pelo outro quebra `client.ts:21` com TS2307. `src/lib/ndovu/ndovu-browser.d.ts` é **escrito à mão por nós** (não existe no repo do Ndovu) — apagar o vendor junto perde as tipagens sem como recuperar do upstream.
+
+## 2026-10-17 [build, node, asdf, gotcha]
+`pnpm build` local quebra com "Failed to load external module sharp-…: SyntaxError: Unexpected token 'with'" porque o pnpm herda o node do **asdf shim** (v20.9.0, que não entende import attributes `with`), não o `~/.local/bin/node` (v22). O package.json pede node >=20.18.1 e o CI usa 22 — ou seja, o erro é do ambiente, não do código. Para buildar local limpo: `NODE_OPTIONS="--no-deprecation --max-old-space-size=8000" ~/.local/bin/node node_modules/next/dist/bin/next build`.
+
+## 2026-10-22 [deploy, ci, gotcha, build]
+O deploy do felpma é 100% dependente do registry público em tempo de build: `Dockerfile:8` roda `corepack enable` + `pnpm install --frozen-lockfile`, e o corepack **baixa** `https://registry.npmjs.org/pnpm/-/pnpm-<versão>.tgz` a cada build (nada de cache entre builds). Um 503 do npmjs derruba o `docker build` na VPS e o job Deploy falha — sem nada de errado no código. Re-rodar o job (`gh run rerun <id> --failed`) resolveu nas duas vezes que aconteceu (2026-10-22, junto de um `dial tcp <VPS>:22 i/o timeout` transitório). O job de CI (lint/typecheck/build) roda em runner do GitHub e passa verde mesmo quando o deploy da VPS morre — CI verde NÃO prova que o deploy vai passar.

@@ -1,0 +1,166 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1792523768804,
+  "projectRoot": "/Users/marcoscorrea/Develop/personal-projects/felpma",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": ">=20.18.1",
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "next",
+        "version": "16.3.3",
+        "category": "fullstack"
+      },
+      {
+        "name": "react",
+        "version": "19.2.6",
+        "category": "frontend"
+      },
+      {
+        "name": "react-dom",
+        "version": "19.2.6",
+        "category": "frontend"
+      }
+    ],
+    "packageManager": "pnpm",
+    "runtime": "Node.js 20.18.1"
+  },
+  "build": {
+    "buildCommand": "pnpm build",
+    "testCommand": null,
+    "lintCommand": "pnpm lint",
+    "devCommand": "pnpm dev",
+    "scripts": {
+      "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
+      "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
+      "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=--no-deprecation next dev",
+      "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
+      "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+      "lint": "cross-env NODE_OPTIONS=--no-deprecation eslint .",
+      "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+      "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
+      "seed": "cross-env NODE_OPTIONS=--no-deprecation payload run src/seed/index.ts",
+      "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
+      "migrate": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
+      "typecheck": "tsc --noEmit"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": "type-based"
+  },
+  "structure": {
+    "isMonorepo": true,
+    "workspaces": [],
+    "mainDirectories": [
+      "public",
+      "src"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "deploy": {
+      "path": "deploy",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1792523768720,
+      "keyFiles": [
+        "provision-env.sh",
+        "reload-caddy.sh"
+      ]
+    },
+    "public": {
+      "path": "public",
+      "purpose": "Public files",
+      "fileCount": 1,
+      "lastAccessed": 1792523768720,
+      "keyFiles": []
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 3,
+      "lastAccessed": 1792523768757,
+      "keyFiles": [
+        "instrumentation-client.ts",
+        "payload-types.ts",
+        "payload.config.ts"
+      ]
+    },
+    "src/app": {
+      "path": "src/app",
+      "purpose": "Application code",
+      "fileCount": 4,
+      "lastAccessed": 1792523768759,
+      "keyFiles": [
+        "global-error.tsx",
+        "icon.svg",
+        "robots.ts"
+      ]
+    },
+    "src/components": {
+      "path": "src/components",
+      "purpose": "UI components",
+      "fileCount": 8,
+      "lastAccessed": 1792523768759,
+      "keyFiles": [
+        "AutoSubmitSelect.tsx",
+        "CentrosMap.tsx",
+        "CompeticaoCard.tsx"
+      ]
+    },
+    "src/lib": {
+      "path": "src/lib",
+      "purpose": "Library code",
+      "fileCount": 6,
+      "lastAccessed": 1792523768765,
+      "keyFiles": [
+        "centros.ts",
+        "competicoes.ts",
+        "constants.ts"
+      ]
+    },
+    "src/migrations": {
+      "path": "src/migrations",
+      "purpose": "Database migrations",
+      "fileCount": 3,
+      "lastAccessed": 1792523768766,
+      "keyFiles": [
+        "20261016_052329_initial.json",
+        "20261016_052329_initial.ts",
+        "index.ts"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src/app/(frontend)/layout.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1792523944997,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
