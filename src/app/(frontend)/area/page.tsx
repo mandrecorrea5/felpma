@@ -5,6 +5,8 @@ import { PageHero } from '@/components/ui'
 import { exigirAtleta } from '@/lib/atleta/guarda'
 import { labelOf, STATUS_INSCRICAO } from '@/lib/constants'
 import { dataCurta, periodo } from '@/lib/format'
+import { categoriaPesoDaInscricao } from '@/lib/inscricoes/categoria-peso'
+import { comprovantesDoAtleta } from '@/lib/inscricoes/comprovante'
 import { painelDoAtleta } from '@/lib/inscricoes/consultas'
 import { sairAction } from './actions'
 
@@ -29,6 +31,7 @@ export default async function AreaPage({ searchParams }: Props) {
     retomar ? `/area?retomar=${encodeURIComponent(retomar)}` : '/area',
   )
   const painel = await painelDoAtleta(atleta.id)
+  const comprovantes = await comprovantesDoAtleta(atleta.id)
 
   // Quem clicou em "Preencher" antes de entrar volta para cá: o formulário que
   // estava abrindo sobe para o topo da lista, já com o botão de continuar.
@@ -67,6 +70,14 @@ export default async function AreaPage({ searchParams }: Props) {
       </PageHero>
 
       <div className="container section" style={{ display: 'grid', gap: 40 }}>
+        {!atleta.sexo ? (
+          <div className="alerta alerta--erro" role="status" style={{ margin: 0 }}>
+            <strong>Complete seu sexo no cadastro.</strong> Ele define a categoria de peso nas
+            inscrições e evita perguntas repetidas. Você pode informar agora em{' '}
+            <Link href="/area/meus-dados">Meus dados</Link> ou na primeira inscrição — vamos salvar
+            na sua conta.
+          </div>
+        ) : null}
         {retomar && !destaque ? (
           <div
             className={
@@ -156,6 +167,7 @@ export default async function AreaPage({ searchParams }: Props) {
               {painel.inscricoes.map((i) => {
                 const evento = typeof i.evento === 'object' ? i.evento : null
                 const quando = periodo(evento?.dataInicio, evento?.dataFim)
+                const categoriaPeso = categoriaPesoDaInscricao(i)
                 return (
                   <div key={i.id} className="inscricao-lista__item">
                     <div className="inscricao-lista__txt">
@@ -165,9 +177,22 @@ export default async function AreaPage({ searchParams }: Props) {
                         Protocolo {i.protocolo} · enviada em {dataCurta(i.enviadaEm)}
                       </div>
                     </div>
+                    {categoriaPeso ? (
+                      <span className="tag tag--cinza">Categoria de peso: {categoriaPeso}</span>
+                    ) : null}
                     <span className={`status ${TOM[i.status] ?? 'status--blue'}`}>
                       {labelOf(STATUS_INSCRICAO, i.status)}
                     </span>
+                    {i.status !== 'cancelada' ? (
+                      <Link
+                        href={`/area/comprovantes?inscricao=${i.protocolo}`}
+                        className="btn btn--sm btn--contorno"
+                      >
+                        {(comprovantes.get(String(i.id))?.length ?? 0) > 0
+                          ? 'Comprovante'
+                          : 'Enviar comprovante'}
+                      </Link>
+                    ) : null}
                     <Link
                       href={`/area/inscricoes/${i.protocolo}`}
                       className="btn btn--sm btn--contorno"
@@ -186,6 +211,10 @@ export default async function AreaPage({ searchParams }: Props) {
             Conta
           </h2>
           <div className="tiles">
+            <Link href="/area/comprovantes" className="tile">
+              <span className="tile__titulo">Comprovantes</span>
+              <span className="muted">Enviar pagamento</span>
+            </Link>
             <Link href="/area/meus-dados" className="tile">
               <span className="tile__titulo">Meus dados</span>
               <span className="muted">Contato e senha</span>

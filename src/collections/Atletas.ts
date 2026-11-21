@@ -7,6 +7,7 @@ import { APIError } from 'payload'
 import { atletaOuPainel, isAdmin, isAdminField } from '../access'
 import { cifrar, ehCifrado, hashBusca } from '../lib/crypto/campos'
 import { cpfValido, mascararCpf, normalizarCpf } from '../lib/cpf'
+import { SEXOS } from '../lib/constants'
 import { emailAtivacaoConta, emailRecuperacaoSenha } from '../lib/email-templates'
 import { auditarAcesso } from '../lib/lgpd/auditoria'
 
@@ -66,7 +67,7 @@ export const Atletas: CollectionConfig = {
   admin: {
     useAsTitle: 'nome',
     group: 'Inscrições',
-    defaultColumns: ['nome', 'email', 'cidade', 'status', 'createdAt'],
+    defaultColumns: ['nome', 'email', 'sexo', 'cidade', 'status', 'createdAt'],
     listSearchableFields: ['nome', 'email'],
     description:
       'Contas da área do filiado. Não têm acesso ao painel — só à área do atleta no site.',
@@ -136,6 +137,19 @@ export const Atletas: CollectionConfig = {
       required: true,
       admin: { date: { pickerAppearance: 'dayOnly', displayFormat: 'dd/MM/yyyy' } },
       access: { update: isAdminField },
+    },
+    {
+      name: 'sexo',
+      label: 'Sexo',
+      type: 'select',
+      options: [...SEXOS],
+      // O atleta informa no cadastro; depois, só a federação corrige. A
+      // inscrição usa o valor para definir a categoria de peso.
+      access: { update: isAdminField },
+      admin: {
+        description:
+          'Usado para definir a categoria de peso nas inscrições. O atleta informa no cadastro e, depois, só a federação altera.',
+      },
     },
     {
       type: 'row',

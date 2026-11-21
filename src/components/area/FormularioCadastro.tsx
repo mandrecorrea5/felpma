@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { type FormEvent, useEffect, useState, useTransition } from 'react'
 import type { EstadoFormulario } from '@/lib/atleta/tipos'
+import { SEXOS } from '@/lib/constants'
 
 /**
  * Cadastro controlado.
@@ -21,6 +22,7 @@ type Valores = {
   nascimento: string
   nome: string
   senha: string
+  sexo: string
   telefone: string
   uf: string
 }
@@ -33,6 +35,7 @@ const INICIAL: Valores = {
   nascimento: '',
   nome: '',
   senha: '',
+  sexo: '',
   telefone: '',
   uf: 'MA',
 }
@@ -209,6 +212,35 @@ export function FormularioCadastro({
             </small>
           ) : null}
         </div>
+      </div>
+
+      <div className="field">
+        <label htmlFor="sexo">Sexo *</label>
+        <select
+          id="sexo"
+          name="sexo"
+          className="select"
+          value={valores.sexo}
+          onChange={(e) => definir('sexo', e.target.value)}
+          {...campoErro('sexo')}
+        >
+          <option value="">Selecione…</option>
+          {SEXOS.map((opcao) => (
+            <option key={opcao.value} value={opcao.value}>
+              {opcao.label}
+            </option>
+          ))}
+        </select>
+        {erroDe('sexo') ? (
+          <small id="sexo-erro" className="campo-erro" role="alert">
+            {erroDe('sexo')}
+          </small>
+        ) : (
+          <small className="muted">
+            Usado para definir sua categoria de peso nas competições. Depois de informado, só a
+            federação altera.
+          </small>
+        )}
       </div>
 
       <div className="field-row">

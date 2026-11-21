@@ -1,9 +1,14 @@
-import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
+import type {
+  CollectionAfterReadHook,
+  CollectionBeforeChangeHook,
+  CollectionConfig,
+} from 'payload'
 import { APIError } from 'payload'
 import { donoDaInscricao, doPainel, isAdmin, isAdminUser } from '../access'
 import { cifrar, ehCifrado } from '../lib/crypto/campos'
 import { normalizarCpf } from '../lib/cpf'
-import { STATUS_INSCRICAO } from '../lib/constants'
+import { CAMPO_COMPROVANTE, STATUS_INSCRICAO } from '../lib/constants'
+import { categoriaPesoDeRespostas } from '../lib/inscricoes/categoria-peso'
 import { gerarCsvInscricoes, respostaCsv } from '../lib/inscricoes/exportacao'
 import { gerarProtocolo } from '../lib/inscricoes/protocolo'
 import { auditarAcesso, registrarAcesso } from '../lib/lgpd/auditoria'
@@ -18,6 +23,15 @@ const somarMeses = (data: Date, meses: number): Date => {
 }
 
 const preparaInscricao: CollectionBeforeChangeHook = async ({ data, operation, req }) => {
+  // Categoria de peso: a resposta do formulário é a fonte da verdade. Guardar
+  // em campo próprio permite filtrar/ordenar no painel e exportar no CSV sem
+  // abrir o JSON de respostas. Se o valor já veio preenchido (correção feita
+  // pela federação), ele é preservado.
+  if (!data?.categoriaPeso) {
+    const categoriaPeso = categoriaPesoDeRespostas(data?.respostas)
+    if (categoriaPeso) data.categoriaPeso = categoriaPeso
+  }
+
   if (operation !== 'create') {
     // O CPF do responsável também nunca é gravado em claro.
     const cpfResponsavel = data?.responsavel?.cpf
@@ -56,6 +70,18 @@ const preparaInscricao: CollectionBeforeChangeHook = async ({ data, operation, r
 }
 
 /**
+ * Inscrições anteriores ao campo próprio (ou gravadas por integração) exibem a
+ * categoria derivada do snapshot, sem precisar reabrir e salvar cada registro.
+ */
+const completaCategoriaPeso: CollectionAfterReadHook = ({ doc }) => {
+  if (!doc?.categoriaPeso) {
+    const categoriaPeso = categoriaPesoDeRespostas(doc?.respostas)
+    if (categoriaPeso) doc.categoriaPeso = categoriaPeso
+  }
+  return doc
+}
+
+/**
  * Inscrição recebida.
  *
  * Nunca é criada por REST: só pela server action, que valida janela do evento,
@@ -69,8 +95,8 @@ export const Inscricoes: CollectionConfig = {
   admin: {
     useAsTitle: 'protocolo',
     group: 'Inscrições',
-    defaultColumns: ['protocolo', 'atleta', 'evento', 'status', 'enviadaEm'],
-    listSearchableFields: ['protocolo'],
+    defaultColumns: ['protocolo', 'atleta', 'categoriaPeso', 'evento', 'status', 'enviadaEm'],
+    listSearchableFields: ['protocolo', 'categoriaPeso'],
     description:
       'Dados pessoais: leia só o necessário e registre o motivo do acesso. Use o bloco "Exportar inscrições" no topo para baixar o CSV de um evento.',
     components: {
@@ -157,7 +183,11 @@ export const Inscricoes: CollectionConfig = {
       },
     },
   ],
-  hooks: { afterOperation: [auditarAcesso('inscricoes')], beforeChange: [preparaInscricao] },
+  hooks: {
+    afterRead: [completaCategoriaPeso],
+    afterOperation: [auditarAcesso('inscricoes')],
+    beforeChange: [preparaInscricao],
+  },
   defaultSort: '-enviadaEm',
   fields: [
     {
@@ -214,6 +244,17 @@ export const Inscricoes: CollectionConfig = {
       ],
     },
     {
+      name: 'categoriaPeso',
+      label: 'Categoria de peso',
+      type: 'text',
+      index: true,
+      admin: {
+        placeholder: 'Ex.: 73 kg',
+        description:
+          'Preenchida automaticamente com a resposta "Categoria de peso" do formulário. Confira antes de confirmar a inscrição — é a categoria que organiza a competição.',
+      },
+    },
+    {
       type: 'row',
       fields: [
         {
@@ -258,6 +299,19 @@ export const Inscricoes: CollectionConfig = {
       admin: {
         description:
           'Atestados, comprovantes e documentos anexados pelo atleta. Privados: o download exige sessão do painel.',
+      },
+    },
+    {
+      name: 'comprovantesPagamento',
+      label: 'Comprovantes de pagamento',
+      type: 'join',
+      collection: 'arquivos-inscricao',
+      on: 'inscricao',
+      where: { campo: { equals: CAMPO_COMPROVANTE } },
+      admin: {
+        defaultColumns: ['titulo', 'createdAt'],
+        description:
+          'Comprovantes enviados depois da inscrição pela área do atleta. A federação recebe uma cópia por e-mail a cada envio.',
       },
     },
     {

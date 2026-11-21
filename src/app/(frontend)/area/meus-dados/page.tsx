@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { FormularioAcao } from '@/components/area/FormularioAcao'
 import { PageHero } from '@/components/ui'
 import { exigirAtleta } from '@/lib/atleta/guarda'
+import { labelOf, SEXOS } from '@/lib/constants'
 import { dataCurta } from '@/lib/format'
 import { atualizarDadosAction } from '../actions'
 
@@ -16,7 +17,7 @@ export default async function MeusDadosPage() {
     <>
       <PageHero
         titulo="Meus dados"
-        intro="Você pode corrigir contato e endereço. CPF e data de nascimento exigem atendimento da federação."
+        intro="Você pode corrigir contato e endereço. CPF e data de nascimento exigem atendimento da federação; o sexo pode ser informado uma vez e depois só a federação altera."
         crumbs={[{ href: '/area', label: 'Área do atleta' }, { label: 'Meus dados' }]}
       />
       <div className="container section" style={{ maxWidth: 640 }}>
@@ -40,10 +41,35 @@ export default async function MeusDadosPage() {
                 <span data-ndovu-mask>{dataCurta(atleta.dataNascimento)}</span>
               </div>
             </li>
+            {atleta.sexo ? (
+              <li>
+                <div>
+                  <small>Sexo</small>
+                  <span>{labelOf(SEXOS, atleta.sexo)}</span>
+                </div>
+              </li>
+            ) : null}
           </ul>
         </div>
 
         <FormularioAcao acao={atualizarDadosAction} rotulo="Salvar dados">
+          {!atleta.sexo ? (
+            <div className="field">
+              <label htmlFor="sexo">Sexo</label>
+              <select id="sexo" name="sexo" className="select" defaultValue="">
+                <option value="">Selecione…</option>
+                {SEXOS.map((opcao) => (
+                  <option key={opcao.value} value={opcao.value}>
+                    {opcao.label}
+                  </option>
+                ))}
+              </select>
+              <small className="muted">
+                Usado para definir sua categoria de peso nas inscrições. Você pode informar agora ou
+                na primeira inscrição; depois de informado, só a federação altera.
+              </small>
+            </div>
+          ) : null}
           <div className="field">
             <label htmlFor="nome">Nome completo</label>
             <input
@@ -96,7 +122,7 @@ export default async function MeusDadosPage() {
           Quer trocar a senha? <Link href="/area/recuperar-senha">Enviar link por e-mail</Link>.
         </p>
         <p style={{ marginTop: 8, fontSize: 14 }}>
-          Precisa corrigir CPF ou data de nascimento?{' '}
+          Precisa corrigir CPF, data de nascimento ou sexo?{' '}
           <Link href="/contato">Fale com a federação</Link>.
         </p>
       </div>

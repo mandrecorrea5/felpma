@@ -2,22 +2,9 @@ import type { Payload } from 'payload'
 import type { Atleta, Competicao, Inscricao } from '@/payload-types'
 import { labelOf, STATUS_INSCRICAO } from '@/lib/constants'
 import { emailConfirmacaoInscricao } from '@/lib/email-templates'
-import { dataHora, dataLonga, periodo } from '@/lib/format'
+import { dataHora, periodo } from '@/lib/format'
+import { detalhesDasRespostas } from './respostas-email'
 import type { RespostaSnapshot } from './validacao'
-
-/** Texto exibido para respostas sensíveis, que nunca saem no e-mail. */
-const PROTEGIDO = 'Informação protegida — disponível na área do atleta'
-
-const exibir = (resposta: RespostaSnapshot): string => {
-  if (resposta.sensivel) return PROTEGIDO
-  if (resposta.exibicao) return resposta.exibicao
-  if (typeof resposta.valor === 'boolean') return resposta.valor ? 'Sim' : 'Não'
-  if (Array.isArray(resposta.valor)) return resposta.valor.join(', ')
-  if (resposta.tipo === 'data' && typeof resposta.valor === 'string') {
-    return dataLonga(resposta.valor)
-  }
-  return String(resposta.valor ?? '—')
-}
 
 /**
  * Envia a confirmação da inscrição para o atleta.
@@ -43,10 +30,7 @@ export async function enviarConfirmacaoInscricao(args: {
       to: atleta.email,
       subject: `Inscrição confirmada — ${evento.nome}`,
       html: emailConfirmacaoInscricao({
-        detalhes: respostas.map((resposta) => ({
-          rotulo: resposta.rotulo,
-          valor: exibir(resposta),
-        })),
+        detalhes: detalhesDasRespostas(respostas),
         enviadaEm: dataHora(inscricao.enviadaEm),
         evento: evento.nome,
         local: local || undefined,

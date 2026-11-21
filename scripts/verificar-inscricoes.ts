@@ -117,6 +117,16 @@ const dadosFormulario: Record<string, unknown> = {
       ],
     },
     {
+      blockType: 'selecao',
+      nome: 'categoria-peso',
+      rotulo: 'Categoria de peso',
+      obrigatorio: true,
+      opcoes: [
+        { valor: 'sub17-67', rotulo: 'Sub-17 – 67 kg' },
+        { valor: 'senior-73', rotulo: 'Sênior – 73 kg' },
+      ],
+    },
+    {
       blockType: 'texto',
       nome: 'condicao-saude',
       rotulo: 'Condição de saúde relevante',
@@ -191,6 +201,7 @@ if (!atleta) {
       password: senha,
       cpf,
       dataNascimento: '2009-05-12T00:00:00-03:00',
+      sexo: 'M',
       telefone: '98999990000',
       cidade: 'São Luís',
       uf: 'MA',
@@ -319,6 +330,14 @@ const inscricao = await payload.create({
       { campo: 'clube', rotulo: 'Clube ou CT', tipo: 'texto', valor: 'CT Teste', sensivel: false },
       { campo: 'categoria', rotulo: 'Categoria', tipo: 'selecao', valor: 'sub17', exibicao: 'Sub-17', sensivel: false },
       {
+        campo: 'categoria-peso',
+        rotulo: 'Categoria de peso',
+        tipo: 'selecao',
+        valor: 'sub17-67',
+        exibicao: 'Sub-17 – 67 kg',
+        sensivel: false,
+      },
+      {
         campo: 'condicao-saude',
         rotulo: 'Condição de saúde relevante',
         tipo: 'texto',
@@ -344,6 +363,11 @@ const inscricao = await payload.create({
 })
 
 verificar('inscrição criada com prazo de retenção', Boolean(inscricao.retencaoAte), String(inscricao.retencaoAte))
+verificar(
+  'categoria de peso gravada na inscrição',
+  inscricao.categoriaPeso === 'Sub-17 – 67 kg',
+  String(inscricao.categoriaPeso),
+)
 verificar(
   'CPF do responsável cifrado',
   String((inscricao.responsavel as { cpf?: string } | undefined)?.cpf ?? '').startsWith('enc:v1:'),

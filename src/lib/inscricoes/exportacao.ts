@@ -3,6 +3,7 @@ import { labelOf, STATUS_INSCRICAO } from '@/lib/constants'
 import { decifrar, ehCifrado } from '@/lib/crypto/campos'
 import { formatarCpf } from '@/lib/cpf'
 import { dataHora } from '@/lib/format'
+import { categoriaPesoDaInscricao, ehCategoriaPeso } from './categoria-peso'
 import type { CampoFormulario } from './validacao'
 
 /**
@@ -41,6 +42,7 @@ const FIXAS: Coluna[] = [
   { chave: 'cidade', titulo: 'Cidade' },
   { chave: 'uf', titulo: 'UF' },
   { chave: 'idade', titulo: 'Idade na inscrição' },
+  { chave: 'categoriaPeso', titulo: 'Categoria de peso' },
   { chave: 'menor', titulo: 'Menor de idade' },
   { chave: 'responsavel', titulo: 'Responsável' },
   { chave: 'parentesco', titulo: 'Parentesco' },
@@ -118,6 +120,8 @@ const montaColunas = (
     const atuais = (formulario.campos ?? []) as CampoFormulario[]
     for (const campo of atuais) {
       if (campo.blockType === 'secao') continue
+      // A categoria de peso tem coluna fixa no início do arquivo.
+      if (ehCategoriaPeso(campo)) continue
       const chave = campo.nome?.trim()
       if (!chave || porCampo.has(chave)) continue
       porCampo.add(chave)
@@ -128,6 +132,7 @@ const montaColunas = (
   // Perguntas de versões antigas (ou removidas) que ainda existem nos snapshots.
   for (const inscricao of inscricoes) {
     for (const snapshot of comoSnapshot(inscricao.respostas)) {
+      if (ehCategoriaPeso({ campo: snapshot.campo, rotulo: snapshot.rotulo })) continue
       if (porCampo.has(snapshot.campo)) continue
       porCampo.add(snapshot.campo)
       colunas.push({
@@ -172,6 +177,7 @@ const linhaDe = (
     cidade: atleta?.cidade ?? '',
     uf: atleta?.uf ?? '',
     idade: inscricao.idadeNaInscricao != null ? String(inscricao.idadeNaInscricao) : '',
+    categoriaPeso: categoriaPesoDaInscricao(inscricao) ?? '',
     menor: inscricao.menorDeIdade ? 'Sim' : 'Não',
     responsavel: responsavel.nome ?? '',
     parentesco: responsavel.parentesco ?? '',

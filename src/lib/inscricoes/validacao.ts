@@ -6,6 +6,8 @@
  * limites e o que está visível (perguntas condicionais).
  */
 
+import { ehCategoriaPeso } from './categoria-peso'
+
 export type Resposta = boolean | number | string | string[]
 
 export type Respostas = Record<string, Resposta>
@@ -47,6 +49,8 @@ export type ArquivoSnapshot = {
 export type RespostaSnapshot = {
   arquivo?: ArquivoSnapshot
   campo: string
+  /** Valor cifrado no banco (dado sensível). */
+  cifrado?: boolean
   exibicao?: string
   rotulo: string
   sensivel: boolean
@@ -145,7 +149,9 @@ export function validarRespostas(
     if (!nome) continue
     const rotulo = campo.rotulo?.trim() || nome
     const bruto = respostas[nome]
-    const obrigatorio = Boolean(campo.obrigatorio)
+    // A categoria de peso organiza a competição: é obrigatória mesmo que o
+    // formulário no CMS tenha esquecido de marcar o bloco como obrigatório.
+    const obrigatorio = Boolean(campo.obrigatorio) || ehCategoriaPeso(campo)
 
     if (campo.blockType === 'aceite') {
       if (obrigatorio && bruto !== true) {

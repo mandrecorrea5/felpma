@@ -140,3 +140,12 @@ export const STATUS_INSCRICAO = [
   { label: 'Rejeitada', value: 'rejeitada' },
   { label: 'Cancelada', value: 'cancelada' },
 ] as const
+
+/**
+ * Comprovante de pagamento enviado fora do formulário.
+ *
+ * O arquivo fica na coleção privada `arquivos-inscricao` com este `campo`, o que
+ * permite separá-lo dos atestados e documentos na área do atleta e no painel.
+ */
+export const CAMPO_COMPROVANTE = 'comprovante-pagamento'
+export const ROTULO_COMPROVANTE = 'Comprovante de pagamento'

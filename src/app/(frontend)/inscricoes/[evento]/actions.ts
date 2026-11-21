@@ -9,6 +9,10 @@ import { cifrar } from '@/lib/crypto/campos'
 import { limitar } from '@/lib/rate-limit'
 import { origemDaRequisicao, provaConsentimento } from '@/lib/inscricoes/consentimento'
 import {
+  aplicarDadosDoCadastro,
+  sexoDaResposta,
+} from '@/lib/inscricoes/dados-cadastro'
+import {
   estadoInscricao,
   type EventoParaInscricao,
 } from '@/lib/inscricoes/estado'
@@ -31,6 +35,10 @@ import { LIMITE_ARQUIVO_BYTES, nomeArmazenado } from '@/lib/inscricoes/arquivo'
 import { type ArquivoPreparado, prepararArquivo } from '@/lib/inscricoes/arquivo-servidor'
 import { getPayloadClient } from '@/lib/payload'
 import { enviarConfirmacaoInscricao } from '@/lib/inscricoes/confirmacao'
+import {
+  type AnexoFederacao,
+  enviarInscricaoParaFederacao,
+} from '@/lib/inscricoes/notificacao-federacao'
 import { gerarProtocolo } from '@/lib/inscricoes/protocolo'
 
 /**
@@ -87,6 +95,11 @@ export async function enviarInscricao(
   }
 
   const campos = (formulario.campos ?? []) as CampoFormulario[]
+
+  // Dados da conta são a fonte da verdade para nome, e-mail, sexo, nascimento
+  // e idade. O corpo da requisição pode trazer outro valor; aqui ele é trocado
+  // pelo dado do cadastro antes de qualquer validação.
+  respostas = aplicarDadosDoCadastro(campos, respostas, atleta, evento.dataInicio)
 
   // ------------------------------------------------------------- arquivos
   // O navegador manda cada arquivo em `arquivo:<nome do campo>`. Antes de validar
@@ -187,6 +200,7 @@ export async function enviarInscricao(
 
   const arquivosPorCampo = new Map<string, ArquivoSnapshot>()
   const arquivosGravados: Array<number | string> = []
+  const anexosFederacao: AnexoFederacao[] = []
   let inscricaoCriada = false
 
   try {
@@ -217,6 +231,11 @@ export async function enviarInscricao(
         mimetype: preparado.mimetype,
         nome,
         tamanho: preparado.tamanho,
+      })
+      anexosFederacao.push({
+        buffer: preparado.buffer,
+        mimetype: preparado.mimetype,
+        nome,
       })
     }
 
@@ -258,6 +277,25 @@ export async function enviarInscricao(
     })
     inscricaoCriada = true
 
+    // Conta antiga sem sexo: a primeira inscrição que pedir o dado completa a
+    // conta. Depois disso o campo fica travado e as próximas já vêm preenchidas.
+    if (!atleta.sexo) {
+      const sexo = sexoDaResposta(campos, validacao.valores)
+      if (sexo) {
+        try {
+          await payload.update({
+            collection: 'atletas',
+            id: atleta.id,
+            data: { sexo },
+            overrideAccess: true,
+          })
+        } catch (erro) {
+          // A inscrição já está gravada; completar o cadastro é conveniência.
+          console.error('Falha ao salvar sexo do atleta a partir da inscrição', erro)
+        }
+      }
+    }
+
     // Vincula os uploads à inscrição — é o vínculo que a área do atleta usa
     // para liberar o download. Falhar aqui não derruba a inscrição já gravada.
     for (const id of arquivosGravados) {
@@ -281,6 +319,19 @@ export async function enviarInscricao(
       inscricao: criada,
       payload,
       respostas: respostasSnapshot,
+    })
+
+    // Cópia operacional para a federação, com os arquivos enviados em anexo.
+    // Também é best-effort: a inscrição já está gravada e visível no painel.
+    await enviarInscricaoParaFederacao({
+      anexos: anexosFederacao,
+      atleta,
+      evento,
+      inscricao: criada,
+      payload,
+      respostas: respostasSnapshot,
+    }).catch((erro) => {
+      console.error('Falha ao enviar a inscrição para a federação', erro)
     })
 
     redirect(`/area/inscricoes/${criada.protocolo}?enviada=1`)

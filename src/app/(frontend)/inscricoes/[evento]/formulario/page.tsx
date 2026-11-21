@@ -13,6 +13,7 @@ import {
   inscritosNoEvento,
 } from '@/lib/inscricoes/consultas'
 import { estadoInscricao, type EventoParaInscricao } from '@/lib/inscricoes/estado'
+import { dadosIniciaisDoCadastro } from '@/lib/inscricoes/dados-cadastro'
 import { idadeEm } from '@/lib/inscricoes/idade'
 import type { CampoFormulario } from '@/lib/inscricoes/validacao'
 import { enviarInscricao } from '../actions'
@@ -68,6 +69,12 @@ export default async function FormularioPage({ params }: Props) {
   }
 
   const idade = idadeEm(atleta.dataNascimento)
+  const campos = (formulario.campos ?? []) as CampoFormulario[]
+  const { respostas: respostasIniciais, bloqueados: camposBloqueados } = dadosIniciaisDoCadastro(
+    campos,
+    atleta,
+    evento.dataInicio,
+  )
 
   // O modal só é montado se houver algo para mostrar. O documento precisa estar
   // público: o link aponta para a rota de arquivo do Payload, que respeita
@@ -101,6 +108,8 @@ export default async function FormularioPage({ params }: Props) {
       <div className="container section" style={{ maxWidth: 820 }}>
         <FormularioInscricao
           acao={enviarInscricao}
+          camposBloqueados={camposBloqueados}
+          respostasIniciais={respostasIniciais}
           confirmacao={
             temConfirmacao
               ? {
@@ -119,7 +128,7 @@ export default async function FormularioPage({ params }: Props) {
             id: String(formulario.id),
             titulo: formulario.titulo,
             versaoAviso: formulario.lgpd?.versaoAviso ?? '2026-10',
-            campos: (formulario.campos ?? []) as CampoFormulario[],
+            campos,
             consentimentos: (formulario.consentimentos ?? []).map((c) => ({
               identificador: String(c.identificador ?? ''),
               texto: c.texto ?? '',

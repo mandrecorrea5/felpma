@@ -1207,6 +1207,10 @@ export interface Atleta {
    */
   cpfMascara?: string | null;
   dataNascimento: string;
+  /**
+   * Usado para definir a categoria de peso nas inscrições. O atleta informa no cadastro e, depois, só a federação altera.
+   */
+  sexo?: ('F' | 'M') | null;
   telefone?: string | null;
   uf?: string | null;
   cidade?: string | null;
@@ -1261,6 +1265,10 @@ export interface Inscricao {
   formulario: number | FormularioInscricao;
   formularioVersao: number;
   idadeNaInscricao?: number | null;
+  /**
+   * Preenchida automaticamente com a resposta "Categoria de peso" do formulário. Confira antes de confirmar a inscrição — é a categoria que organiza a competição.
+   */
+  categoriaPeso?: string | null;
   /**
    * Snapshot das perguntas e respostas no momento do envio (não muda se o formulário mudar).
    */
@@ -1871,6 +1879,7 @@ export interface AtletasSelect<T extends boolean = true> {
   cpfHash?: T;
   cpfMascara?: T;
   dataNascimento?: T;
+  sexo?: T;
   telefone?: T;
   uf?: T;
   cidade?: T;

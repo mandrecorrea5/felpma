@@ -32,7 +32,7 @@ pnpm dev
 | Feed de agenda | `/calendario.ics` | Assinável no Google Agenda, Outlook e iPhone |
 | Eventos e cursos | `/eventos` | Competições do tipo Curso/Evento |
 | Inscrições | `/inscricoes/[slug]` | Formulário de inscrição do evento (só com login) |
-| Área do atleta | `/area` | Formulários disponíveis e já preenchidos, consentimentos, privacidade |
+| Área do atleta | `/area` | Formulários disponíveis e já preenchidos, comprovantes, consentimentos, privacidade |
 | Convocações | `/convocacoes` | Convocações (PDF obrigatório) |
 | Resultados | `/resultados`, `/resultados/[slug]` | Resultados (tabela por atleta e/ou súmula PDF) |
 | Recordes estaduais | `/recordes` | Recordes |
@@ -66,6 +66,12 @@ O módulo **Inscrições** fica no painel, ao lado de "Competições":
   origem), responsável (quando menor) e observações internas.
 - **Contas de atleta** — a área do filiado Nível 1. Login próprio, separado do painel.
 
+**Categoria de peso.** A resposta do formulário é copiada para o campo próprio da inscrição,
+que aparece na lista do painel, na área do atleta e no CSV. Ela é obrigatória mesmo que o bloco
+no CMS não tenha sido marcado como obrigatório: sem categoria não há como organizar a
+competição. Inscrições antigas são preenchidas pela migração
+`20261120_214500_categoria_peso_inscricao` a partir do snapshot das respostas.
+
 **Quem manda na inscrição é o evento.** Na edição da competição, o grupo lateral
 *Inscrições* tem a chave "Permitir inscrições", a janela (`Inscrições de`/`até`), o limite de
 vagas e o aviso fora do período. A regra vive em `src/lib/inscricoes/estado.ts` e é aplicada
@@ -78,6 +84,23 @@ Ao entrar, o atleta cai na lista de **formulários disponíveis** (cada um com b
 formulário em um clique) e de **formulários preenchidos** (protocolo, evento e situação). Quem
 clicou em "Preencher" antes de entrar volta para essa lista com o formulário de origem em
 destaque, pronto para continuar — sem precisar procurar o evento no calendário.
+
+**Dados do cadastro aproveitados na inscrição.** O formulário nasce preenchido com o que já
+existe na conta: nome, e-mail, telefone, cidade, UF, data de nascimento, idade e **sexo**. Nome,
+e-mail, sexo, nascimento e idade ficam travados e o servidor os sobrescreve com o dado da conta —
+o atleta não consegue trocar o sexo no navegador para entrar em outra categoria. Telefone,
+cidade e UF vêm preenchidos, mas podem ser ajustados para aquela inscrição. O sexo é pedido no
+cadastro novo; contas antigas informam uma única vez em **Meus dados** ou na primeira inscrição
+(o valor é salvo na conta). A idade usa como referência **31/12 do ano do evento**. Clube/CT,
+treinador, prova e categoria de peso não existem na conta e continuam sendo perguntados.
+
+**Comprovante de pagamento depois da inscrição:** em **Área do atleta › Comprovantes**
+(`/area/comprovantes`), o atleta escolhe a competição entre as inscrições dele e envia o
+comprovante em PDF/JPG/PNG (até 2 MB). O arquivo entra na coleção privada `arquivos-inscricao`
+com o campo técnico `comprovante-pagamento`, fica vinculado à inscrição e aparece na área e no
+painel (bloco **Comprovantes de pagamento**). Cada envio dispara um e-mail para a caixa
+operacional da federação com o comprovante em anexo. O mesmo caminho aparece no detalhe da
+inscrição e nos formulários preenchidos da área.
 
 **Cadastro novo entra como "Pendente de ativação"** e recebe um e-mail com o link
 `/area/ativar?token=…`. Ao clicar, o e-mail é confirmado e a conta vira **Ativa** — o atleta já
@@ -118,9 +141,9 @@ Há dois caminhos, ambos só para **administradores**:
 O CSV tem uma linha por inscrição e uma coluna por pergunta:
 
 - Traz protocolo, situação, data de envio, versão do formulário, nome, e-mail, CPF, nascimento,
-  telefone, cidade/UF, idade, responsável (quando menor) e consentimentos aceitos, além de
-  **todas as respostas** — inclusive as de versões anteriores do formulário (entram no fim, com
-  o rótulo congelado no snapshot).
+  telefone, cidade/UF, idade, **categoria de peso**, responsável (quando menor) e consentimentos
+  aceitos, além de **todas as respostas** — inclusive as de versões anteriores do formulário
+  (entram no fim, com o rótulo congelado no snapshot).
 - Abre direto no Excel em português: UTF-8 com BOM, separador `;` e valores entre aspas.
 - A exportação é registrada na trilha de auditoria (`audit="acesso_dado_pessoal"`); dados
   marcados como sensíveis são decifrados apenas nesse arquivo.
@@ -138,6 +161,11 @@ comprovante de pagamento, declaração do responsável etc.
   `uploads-inscricoes`, nunca para `media`. No painel, a inscrição tem o bloco **Arquivos
   enviados**; o atleta baixa o próprio arquivo em **Área do atleta › Inscrição › O que você
   respondeu**.
+- Comprovante enviado **depois** da inscrição entra pelo mesmo cofre, com o campo
+  `comprovante-pagamento`, e aparece no bloco **Comprovantes de pagamento** do painel. O atleta
+  o envia em **Área do atleta › Comprovantes** ou no detalhe da própria inscrição.
+- Toda inscrição e todo comprovante geram uma cópia por e-mail para a federação, com os
+  arquivos em anexo (ver *E-mail transacional*).
 - Fotos são reencodadas com `sharp` (orientação aplicada e EXIF/GPS removidos) antes de gravar;
   PDFs têm o cabeçalho `%PDF-` conferido.
 - O download do atleta usa `GET /area/inscricoes/:protocolo/arquivos/:id`, que exige a sessão
@@ -203,17 +231,25 @@ O site usa o adaptador oficial `@payloadcms/email-resend` (`src/lib/email.ts`). 
 
 - o **link de ativação** da conta de atleta (cadastro);
 - a **recuperação de senha** da área do atleta;
-- a **confirmação de inscrição**, com evento, protocolo, respostas e link da inscrição.
+- a **confirmação de inscrição**, com evento, protocolo, respostas e link da inscrição;
+- a **cópia operacional da federação** de cada inscrição recebida e de cada comprovante de
+  pagamento enviado depois, com os arquivos em anexo e `Reply-To` do atleta.
 
 Configure `RESEND_API_KEY`, `EMAIL_FROM_ADDRESS` e `EMAIL_FROM_NAME` no `.env` (e no ambiente
 de produção). O domínio do remetente precisa estar verificado no Resend com os registros SPF e
 DKIM. A chave começa com `re_` e é criada em **API Keys**.
 
+A caixa da federação é definida por `EMAIL_FEDERACAO`; sem a variável, o padrão é
+`lpomaranhao@gmail.com`. Se o Resend recusar o envio com anexo, o sistema tenta de novo sem
+anexo para a federação ao menos ser avisada — o original continua no painel.
+
 - **Sem as credenciais em produção:** o cadastro de atleta é bloqueado com uma mensagem clara
   (melhor do que criar uma conta que nunca poderá ser ativada); a recuperação de senha fica
-  oculta. A confirmação de inscrição apenas registra o erro no log — a inscrição já foi feita.
+  oculta. A confirmação de inscrição e a cópia da federação apenas registram o erro no log — a
+  inscrição já foi feita.
 - **Sem as credenciais em desenvolvimento:** nada quebra. O link de ativação/recuperação é
-  impresso no terminal (`[e-mail simulado] … link=…`).
+  impresso no terminal (`[e-mail simulado] … link=…`) e o destinatário/assunto dos avisos da
+  federação também.
 
 ### Chaves de LGPD (obrigatórias em produção)
 
@@ -315,7 +351,9 @@ Nessas plataformas o disco não é persistente. Antes de publicar, configure um 
 - [ ] Nomear o encarregado (DPO) e publicar o canal de atendimento
 - [ ] Gerar `LGPD_CHAVE_CAMPOS` e `LGPD_HASH_SALT` e guardar a chave fora do servidor
 - [ ] Configurar o Resend (`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`) e verificar o domínio no DNS
-- [ ] Testar ativação de conta, recuperação de senha e confirmação de inscrição em produção
+- [ ] Confirmar `EMAIL_FEDERACAO=lpomaranhao@gmail.com` e testar o recebimento dos avisos
+- [ ] Testar ativação de conta, recuperação de senha, confirmação de inscrição e envio de
+      comprovante (com anexo) em produção
 - [ ] Preencher `R2_*` + `HEALTHCHECK_URL` no `.env` do servidor e rodar `bash deploy/backup/test-restore.sh`
 
 ## Backup

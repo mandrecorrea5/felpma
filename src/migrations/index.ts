@@ -6,6 +6,8 @@ import * as migration_20261109_214014_ativacao_email from './20261109_214014_ati
 import * as migration_20261110_033447_add_editais from './20261110_033447_add_editais';
 import * as migration_20261110_041139_add_arquivos_e_confirmacao from './20261110_041139_add_arquivos_e_confirmacao';
 import * as migration_20261110_111621_add_grupos_opcoes from './20261110_111621_add_grupos_opcoes';
+import * as migration_20261120_214500_categoria_peso_inscricao from './20261120_214500_categoria_peso_inscricao';
+import * as migration_20261120_223000_sexo_atleta from './20261120_223000_sexo_atleta';
 
 export const migrations = [
   {
@@ -47,5 +49,15 @@ export const migrations = [
     up: migration_20261110_111621_add_grupos_opcoes.up,
     down: migration_20261110_111621_add_grupos_opcoes.down,
     name: '20261110_111621_add_grupos_opcoes'
+  },
+  {
+    up: migration_20261120_214500_categoria_peso_inscricao.up,
+    down: migration_20261120_214500_categoria_peso_inscricao.down,
+    name: '20261120_214500_categoria_peso_inscricao'
+  },
+  {
+    up: migration_20261120_223000_sexo_atleta.up,
+    down: migration_20261120_223000_sexo_atleta.down,
+    name: '20261120_223000_sexo_atleta'
   },
 ];

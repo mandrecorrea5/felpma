@@ -12,6 +12,7 @@ import {
 import { Icon } from '@/components/Icon'
 import type { EstadoFormulario } from '@/lib/atleta/tipos'
 import { dataLonga } from '@/lib/format'
+import { ehCategoriaPeso } from '@/lib/inscricoes/categoria-peso'
 import {
   acceptDoCampo,
   erroDoArquivo,
@@ -44,6 +45,8 @@ type Props = {
     nome: string
   }
   aviso: ReactNode
+  /** Campos que vêm do cadastro e não podem ser alterados nesta inscrição. */
+  camposBloqueados?: string[]
   /** Modal do último passo. Sem arquivo/texto, o envio acontece direto. */
   confirmacao?: null | {
     arquivo?: null | { href: string; nome: string }
@@ -58,6 +61,8 @@ type Props = {
     titulo: string
     versaoAviso: string
   }
+  /** Respostas já preenchidas com os dados da conta do atleta. */
+  respostasIniciais?: Respostas
 }
 
 const PASSOS = ['Identificação', 'Dados da inscrição', 'Responsável e LGPD', 'Revisão']
@@ -71,13 +76,15 @@ export function FormularioInscricao({
   acao,
   atleta,
   aviso,
+  camposBloqueados = [],
   confirmacao,
   evento,
   formulario,
+  respostasIniciais = {},
 }: Props) {
   const campos = formulario.campos
   const [passo, setPasso] = useState(0)
-  const [respostas, setRespostas] = useState<Respostas>({})
+  const [respostas, setRespostas] = useState<Respostas>(() => respostasIniciais)
   const [aceites, setAceites] = useState<Record<string, boolean>>({})
   const [responsavel, setResponsavel] = useState({
     nome: '',
@@ -190,6 +197,7 @@ export function FormularioInscricao({
 
   const visiveis = useMemo(() => camposVisiveis(campos, respostas), [campos, respostas])
   const erroDe = (nome: string) => erros.find((e) => e.campo === nome)?.mensagem
+  const bloqueado = (nome: string): boolean => camposBloqueados.includes(nome)
   const visivel = (campo: CampoFormulario): boolean => {
     const regra = campo.mostrarSe
     if (!regra?.campo) return true
@@ -421,6 +429,7 @@ export function FormularioInscricao({
               const id = `campo-${nome}`
               const valor = respostas[nome]
               const arquivoSelecionado = arquivos[nome]
+              const travado = bloqueado(nome)
 
               return (
                 <div className="field" key={nome}>
@@ -440,7 +449,7 @@ export function FormularioInscricao({
                     <>
                       <label htmlFor={id}>
                         {campo.rotulo}
-                        {campo.obrigatorio ? ' *' : ''}
+                        {campo.obrigatorio || ehCategoriaPeso(campo) ? ' *' : ''}
                       </label>
 
                       {campo.blockType === 'texto-longo' ? (
@@ -448,10 +457,13 @@ export function FormularioInscricao({
                           id={id}
                           className="textarea"
                           data-ndovu-mask
+                          disabled={travado}
                           value={String(valor ?? '')}
                           onChange={(e) => definir(nome, e.target.value)}
                           aria-invalid={Boolean(erro)}
-                          aria-describedby={erro ? `${id}-erro` : undefined}
+                          aria-describedby={
+                            erro ? `${id}-erro` : travado ? `${id}-cadastro` : undefined
+                          }
                         />
                       ) : campo.blockType === 'arquivo' ? (
                         <div className="arquivo-campo">
@@ -493,9 +505,11 @@ export function FormularioInscricao({
                           id={id}
                           className="select"
                           style={{ width: '100%' }}
+                          disabled={travado}
                           value={String(valor ?? '')}
                           onChange={(e) => definir(nome, e.target.value)}
                           aria-invalid={Boolean(erro)}
+                          aria-describedby={travado ? `${id}-cadastro` : undefined}
                         >
                           <option value="">Selecione…</option>
                           {opcoesDisponiveis(campo, campos, respostas).map((o) => (
@@ -541,6 +555,7 @@ export function FormularioInscricao({
                           id={id}
                           className="input"
                           data-ndovu-mask
+                          disabled={travado}
                           type={
                             campo.blockType === 'email'
                               ? 'email'
@@ -557,7 +572,13 @@ export function FormularioInscricao({
                           onChange={(e) => definir(nome, e.target.value)}
                           aria-invalid={Boolean(erro)}
                           aria-describedby={
-                            erro ? `${id}-erro` : campo.ajuda ? `${id}-ajuda` : undefined
+                            erro
+                              ? `${id}-erro`
+                              : travado
+                                ? `${id}-cadastro`
+                                : campo.ajuda
+                                  ? `${id}-ajuda`
+                                  : undefined
                           }
                         />
                       )}
@@ -569,6 +590,13 @@ export function FormularioInscricao({
                       ) : campo.blockType === 'arquivo' && !arquivoSelecionado ? (
                         <small id={`${id}-ajuda`} className="muted">
                           PDF ou foto (JPG/PNG), até {LIMITE_ARQUIVO_MB} MB.
+                        </small>
+                      ) : null}
+
+                      {travado ? (
+                        <small id={`${id}-cadastro`} className="muted">
+                          Dado do seu cadastro. Para alterar,{' '}
+                          <a href="/area/meus-dados">atualize em Meus dados</a>.
                         </small>
                       ) : null}
                     </>

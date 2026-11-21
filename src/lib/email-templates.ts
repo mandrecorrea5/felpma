@@ -206,3 +206,130 @@ export const emailConfirmacaoInscricao = (args: {
     `Inscrição ${args.protocolo} recebida para ${args.evento}.`,
   )
 }
+
+/** Bloco de protocolo reutilizado pelos e-mails operacionais da federação. */
+const blocoProtocolo = (protocolo: string): string =>
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 0;background:#1c0a96;border-radius:12px">
+     <tr>
+       <td style="padding:18px 20px;font-family:Arial,Helvetica,sans-serif">
+         <p style="margin:0;font-size:11px;line-height:1.4;letter-spacing:.12em;text-transform:uppercase;color:#d6d2f6;font-weight:700">Protocolo</p>
+         <p style="margin:5px 0 0;font-size:24px;line-height:1.1;color:#ffffff;font-weight:700;letter-spacing:.04em">${escapar(protocolo)}</p>
+       </td>
+     </tr>
+   </table>`
+
+const tabelaDetalhes = (linhas: string): string =>
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0 0;border-top:1px solid #e6e6ec;border-bottom:1px solid #e6e6ec">${linhas}</table>`
+
+const tabelaRespostas = (detalhes: DetalheInscricaoEmail[]): string =>
+  detalhes.length
+    ? `<h2 style="margin:28px 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.3;color:#14141a;font-weight:700">Respostas do atleta</h2>
+       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #e6e6ec">
+         ${detalhes
+           .map(
+             (d) =>
+               `<tr>
+                  <td style="padding:12px 0;border-bottom:1px solid #e6e6ec;font-family:Arial,Helvetica,sans-serif">
+                    <span style="display:block;font-size:12px;line-height:1.4;color:#5a5a66">${escapar(d.rotulo)}</span>
+                    <span style="display:block;margin-top:3px;font-size:14px;line-height:1.5;color:#14141a">${escapar(d.valor)}</span>
+                  </td>
+                </tr>`,
+           )
+           .join('')}
+       </table>`
+    : ''
+
+const listaAnexos = (anexos: string[]): string =>
+  anexos.length
+    ? `<h2 style="margin:28px 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.3;color:#14141a;font-weight:700">Arquivos anexados</h2>
+       <ul style="margin:0;padding-left:20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.7;color:#3e3e48">
+         ${anexos.map((nome) => `<li>${escapar(nome)}</li>`).join('')}
+       </ul>`
+    : ''
+
+/**
+ * Cópia operacional de uma inscrição para a caixa da federação.
+ *
+ * A federação é a controladora dos dados, mas o e-mail continua sendo um canal
+ * menos protegido que o painel: respostas marcadas como sensíveis aparecem
+ * apenas como “informação protegida” e os arquivos seguem em anexo.
+ */
+export const emailFederacaoInscricao = (args: {
+  adminUrl: string
+  anexos: string[]
+  atleta: string
+  emailAtleta: string
+  enviadaEm?: string
+  evento: string
+  local?: string
+  protocolo: string
+  quando?: string
+  respostas: DetalheInscricaoEmail[]
+  situacao?: string
+  telefone?: string
+}): string => {
+  const linhas = [
+    linhaDetalhe('Atleta', args.atleta),
+    linhaDetalhe('E-mail', args.emailAtleta),
+    args.telefone ? linhaDetalhe('Telefone', args.telefone) : '',
+    linhaDetalhe('Evento', args.evento),
+    args.quando ? linhaDetalhe('Quando', args.quando) : '',
+    args.local ? linhaDetalhe('Local', args.local) : '',
+    args.enviadaEm ? linhaDetalhe('Enviada em', args.enviadaEm) : '',
+    args.situacao ? linhaDetalhe('Situação', args.situacao) : '',
+  ]
+    .filter(Boolean)
+    .join('')
+
+  return layout(
+    'Nova inscrição recebida',
+    `<p style="margin:0">Uma nova inscrição foi enviada pelo site da FELPMA.</p>
+     ${blocoProtocolo(args.protocolo)}
+     ${tabelaDetalhes(linhas)}
+     ${tabelaRespostas(args.respostas)}
+     ${listaAnexos(args.anexos)}
+     ${caixa(
+       'Os arquivos enviados pelo atleta seguem anexados a este e-mail. Se algum anexo não aparecer, abra a inscrição no painel para baixar o original.',
+       true,
+     )}
+     ${botao(args.adminUrl, 'Abrir no painel')}`,
+    'Você recebeu este e-mail porque ele faz parte da operação de inscrições da FELPMA.',
+    `Nova inscrição ${args.protocolo} — ${args.evento}.`,
+  )
+}
+
+/** Aviso de comprovante de pagamento enviado depois da inscrição. */
+export const emailFederacaoComprovante = (args: {
+  adminUrl: string
+  arquivo: string
+  atleta: string
+  emailAtleta: string
+  enviadaEm?: string
+  evento: string
+  protocolo: string
+  situacao?: string
+  telefone?: string
+}): string => {
+  const linhas = [
+    linhaDetalhe('Atleta', args.atleta),
+    linhaDetalhe('E-mail', args.emailAtleta),
+    args.telefone ? linhaDetalhe('Telefone', args.telefone) : '',
+    linhaDetalhe('Evento', args.evento),
+    args.enviadaEm ? linhaDetalhe('Inscrição enviada em', args.enviadaEm) : '',
+    args.situacao ? linhaDetalhe('Situação atual', args.situacao) : '',
+    linhaDetalhe('Comprovante', args.arquivo),
+  ]
+    .filter(Boolean)
+    .join('')
+
+  return layout(
+    'Comprovante de pagamento recebido',
+    `<p style="margin:0">O atleta enviou um comprovante de pagamento para a inscrição abaixo.</p>
+     ${blocoProtocolo(args.protocolo)}
+     ${tabelaDetalhes(linhas)}
+     ${caixa('O comprovante segue anexado a este e-mail. Se não aparecer, abra a inscrição no painel para baixar o original.', true)}
+     ${botao(args.adminUrl, 'Abrir inscrição no painel')}`,
+    'Você recebeu este e-mail porque ele faz parte da operação de inscrições da FELPMA.',
+    `Comprovante de pagamento — inscrição ${args.protocolo}.`,
+  )
+}

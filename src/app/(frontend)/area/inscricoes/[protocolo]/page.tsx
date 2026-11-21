@@ -7,7 +7,9 @@ import { exigirAtleta } from '@/lib/atleta/guarda'
 import { labelOf, STATUS_INSCRICAO } from '@/lib/constants'
 import { decifrar, ehCifrado } from '@/lib/crypto/campos'
 import { mascararCpf } from '@/lib/cpf'
-import { dataCurta, dataLonga } from '@/lib/format'
+import { dataCurta, dataLonga, tamanhoArquivo } from '@/lib/format'
+import { categoriaPesoDaInscricao, ehCategoriaPeso } from '@/lib/inscricoes/categoria-peso'
+import { comprovantesDaInscricao } from '@/lib/inscricoes/comprovante'
 import { getPayloadClient } from '@/lib/payload'
 import { cancelarInscricao } from './actions'
 
@@ -66,20 +68,35 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
   const inscricao = docs[0]
   if (!inscricao) notFound()
 
+  const comprovantes = await comprovantesDaInscricao(atleta.id, inscricao.id)
+
   const evento = typeof inscricao.evento === 'object' ? inscricao.evento : null
-  const respostas = (Array.isArray(inscricao.respostas) ? inscricao.respostas : [])
-    .map((r) => {
-      const item = r as Snapshot
-      // O titular vê o próprio dado: aqui o valor cifrado é decifrado.
-      if (item.cifrado && typeof item.valor === 'string' && ehCifrado(item.valor)) {
-        try {
-          return { ...item, cifrado: false, valor: JSON.parse(decifrar(item.valor)) as Snapshot['valor'] }
-        } catch {
-          return item
+  const categoriaPeso = categoriaPesoDaInscricao(inscricao)
+  // Cursos e eventos podem não pedir categoria de peso: nesse caso não há o
+  // que cobrar do atleta nem o que exibir como "não informada".
+  const formulario = typeof inscricao.formulario === 'object' ? inscricao.formulario : null
+  const camposDoFormulario = (formulario?.campos ?? []) as {
+    nome?: null | string
+    rotulo?: null | string
+  }[]
+  const exigeCategoriaPeso = camposDoFormulario.some((campo) => ehCategoriaPeso(campo))
+  const mostrarCategoriaPeso = Boolean(categoriaPeso) || exigeCategoriaPeso
+  const respostas = (Array.isArray(inscricao.respostas) ? inscricao.respostas : []).map((r) => {
+    const item = r as Snapshot
+    // O titular vê o próprio dado: aqui o valor cifrado é decifrado.
+    if (item.cifrado && typeof item.valor === 'string' && ehCifrado(item.valor)) {
+      try {
+        return {
+          ...item,
+          cifrado: false,
+          valor: JSON.parse(decifrar(item.valor)) as Snapshot['valor'],
         }
+      } catch {
+        return item
       }
-      return item
-    }) as Snapshot[]
+    }
+    return item
+  }) as Snapshot[]
   const podeCancelar = ['recebida', 'em-analise'].includes(inscricao.status)
   const responsavel = (inscricao.responsavel ?? {}) as {
     nome?: null | string
@@ -105,6 +122,7 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
           <span className={`status ${TOM[inscricao.status] ?? 'status--blue'}`}>
             {labelOf(STATUS_INSCRICAO, inscricao.status)}
           </span>
+          {categoriaPeso ? <span className="tag">Categoria de peso: {categoriaPeso}</span> : null}
           <span className="tag tag--cinza">Enviada em {dataCurta(inscricao.enviadaEm)}</span>
         </div>
       </PageHero>
@@ -124,6 +142,25 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
           <div className="alerta alerta--erro" role="alert">
             <strong>Motivo:</strong> {inscricao.motivoRejeicao}
           </div>
+        ) : null}
+
+        {mostrarCategoriaPeso ? (
+          <section aria-labelledby="categoria-peso">
+            <div className="card card--pad">
+              <small id="categoria-peso" className="muted">
+                Categoria de peso
+              </small>
+              <p style={{ fontSize: 22, fontWeight: 700, margin: '4px 0 0' }}>
+                {categoriaPeso ?? 'Não informada'}
+              </p>
+              {!categoriaPeso ? (
+                <p className="muted" style={{ fontSize: 13, margin: '6px 0 0' }}>
+                  A categoria não foi encontrada nas respostas desta inscrição. Fale com a
+                  federação para regularizar antes da competição.
+                </p>
+              ) : null}
+            </div>
+          </section>
         ) : null}
 
         <section aria-labelledby="respostas">
@@ -156,6 +193,51 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
                 </li>
               ))}
             </ul>
+          </div>
+        </section>
+
+        <section aria-labelledby="comprovantes">
+          <h2 id="comprovantes" style={{ fontSize: 20 }}>
+            Comprovante de pagamento
+          </h2>
+          <div className="card card--pad" style={{ marginTop: 12, display: 'grid', gap: 14 }}>
+            {comprovantes.length === 0 ? (
+              <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+                Nenhum comprovante enviado por aqui. Se o pagamento foi feito depois da inscrição,
+                envie o comprovante para a federação.
+              </p>
+            ) : (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {comprovantes.map((comprovante) => (
+                  <a
+                    key={comprovante.id}
+                    href={`/area/inscricoes/${inscricao.protocolo}/arquivos/${comprovante.id}`}
+                    className="btn btn--sm btn--contorno"
+                    download
+                    data-ndovu-mask
+                    style={{ justifyContent: 'flex-start' }}
+                  >
+                    <Icon name="download" size={16} />
+                    {comprovante.nome}
+                    {comprovante.tamanho ? ` · ${tamanhoArquivo(comprovante.tamanho)}` : ''}
+                    <span className="muted" style={{ fontSize: 12 }}>
+                      {dataCurta(comprovante.criadoEm)}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            )}
+
+            {inscricao.status !== 'cancelada' ? (
+              <div>
+                <Link
+                  href={`/area/comprovantes?inscricao=${inscricao.protocolo}`}
+                  className="btn btn--sm btn--azul"
+                >
+                  {comprovantes.length === 0 ? 'Enviar comprovante' : 'Enviar outro comprovante'}
+                </Link>
+              </div>
+            ) : null}
           </div>
         </section>
 

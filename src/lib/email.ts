@@ -31,6 +31,14 @@ const remetente = (): string =>
 
 const nomeRemetente = (): string => process.env.EMAIL_FROM_NAME?.trim() || 'FELPMA'
 
+/**
+ * Caixa da federação que recebe uma cópia de cada inscrição e de cada
+ * comprovante enviado pelo atleta. Configurável no ambiente; o padrão é o
+ * endereço operacional combinado com a FELPMA.
+ */
+export const emailFederacao = (): string =>
+  process.env.EMAIL_FEDERACAO?.trim() || 'lpomaranhao@gmail.com'
+
 /** Extrai o primeiro link do HTML para o log de desenvolvimento. */
 const primeiroLink = (html?: null | string): string | undefined =>
   typeof html === 'string' ? html.match(/https?:\/\/[^\s"'<>]+/)?.[0] : undefined

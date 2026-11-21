@@ -42,6 +42,8 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-FELPMA}
+      # Cópia operacional de cada inscrição e comprovante enviados pelo site.
+      EMAIL_FEDERACAO: ${EMAIL_FEDERACAO:-lpomaranhao@gmail.com}
     ports:
       - '3000:3000'
     volumes:

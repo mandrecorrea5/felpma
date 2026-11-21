@@ -52,6 +52,7 @@ export async function criarConta(_prev: EstadoFormulario, form: FormData): Promi
     senha: texto(form, 'senha'),
     cpf: normalizarCpf(texto(form, 'cpf')),
     nascimento: texto(form, 'nascimento'),
+    sexo: texto(form, 'sexo'),
     telefone: texto(form, 'telefone'),
     cidade: texto(form, 'cidade'),
     uf: texto(form, 'uf') || 'MA',
@@ -74,6 +75,8 @@ export async function criarConta(_prev: EstadoFormulario, form: FormData): Promi
     if (idade < 0 || idade > 100)
       erros.push({ campo: 'nascimento', mensagem: 'Confira a data de nascimento.' })
   }
+  if (campos.sexo !== 'M' && campos.sexo !== 'F')
+    erros.push({ campo: 'sexo', mensagem: 'Informe seu sexo.' })
   if (form.get('aceite') !== 'on')
     erros.push({ campo: 'aceite', mensagem: 'É necessário aceitar o aviso de privacidade.' })
 
@@ -129,6 +132,7 @@ export async function criarConta(_prev: EstadoFormulario, form: FormData): Promi
         password: campos.senha,
         cpf: campos.cpf,
         dataNascimento: dataParaISO(campos.nascimento),
+        sexo: campos.sexo as 'F' | 'M',
         telefone: campos.telefone.replace(/\D/g, '').slice(0, 11) || undefined,
         cidade: campos.cidade.slice(0, 120) || undefined,
         uf: campos.uf.slice(0, 2).toUpperCase(),
@@ -269,18 +273,33 @@ export async function atualizarDadosAction(_prev: EstadoFormulario, form: FormDa
   const nome = texto(form, 'nome')
   if (nome.length < 5 || !nome.includes(' ')) return { ok: false, erro: 'Informe o nome completo.' }
 
+  const dados: {
+    cidade: null | string
+    nome: string
+    sexo?: 'F' | 'M'
+    telefone: null | string
+    uf: string
+  } = {
+    nome: nome.slice(0, 120),
+    telefone: texto(form, 'telefone').replace(/\D/g, '').slice(0, 11) || null,
+    cidade: texto(form, 'cidade').slice(0, 120) || null,
+    uf: (texto(form, 'uf') || 'MA').slice(0, 2).toUpperCase(),
+  }
+
+  // O sexo é informado uma única vez. Depois disso, só a federação corrige —
+  // é ele que define a categoria de peso e não pode virar autoatribuição.
+  if (!atleta.sexo) {
+    const sexo = texto(form, 'sexo')
+    if (sexo === 'M' || sexo === 'F') dados.sexo = sexo
+  }
+
   try {
     const payload = await getPayloadClient()
     await payload.update({
       collection: 'atletas',
       id: atleta.id,
       overrideAccess: true,
-      data: {
-        nome: nome.slice(0, 120),
-        telefone: texto(form, 'telefone').replace(/\D/g, '').slice(0, 11) || null,
-        cidade: texto(form, 'cidade').slice(0, 120) || null,
-        uf: (texto(form, 'uf') || 'MA').slice(0, 2).toUpperCase(),
-      },
+      data: dados,
     })
     return { ok: true, sucesso: 'Dados atualizados.' }
   } catch (e) {
