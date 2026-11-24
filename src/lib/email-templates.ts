@@ -372,3 +372,33 @@ export const emailContatoRecebido = (args: {
     `Contato — ${args.assunto} — ${args.nome}.`,
   )
 }
+
+/**
+ * Resposta da federação a uma mensagem do formulário de contato.
+ *
+ * Vai para o visitante com `Reply-To` da caixa de contato da FELPMA: se ele
+ * responder, a conversa volta para a federação — e não para o endereço
+ * "nao-responda" do remetente.
+ */
+export const emailRespostaContato = (args: {
+  assunto: string
+  mensagemOriginal: string
+  nome: string
+  resposta: string
+}): string => {
+  const saudacao = primeiroNome(args.nome) ? `Olá, ${escapar(primeiroNome(args.nome))}.` : 'Olá.'
+  const resposta = escapar(args.resposta).replace(/\r?\n/g, '<br>')
+  const original = escapar(args.mensagemOriginal).replace(/\r?\n/g, '<br>')
+
+  return layout(
+    'Resposta da FELPMA',
+    `<p style="margin:0">${saudacao}</p>
+     <p style="margin:14px 0 0">A Federação de Levantamento de Pesos do Maranhão respondeu a sua mensagem enviada pelo site.</p>
+     ${caixa(resposta, true)}
+     <h2 style="margin:26px 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.3;color:#5a5a66;font-weight:700">Sua mensagem (${escapar(args.assunto)})</h2>
+     ${caixa(`<span style="color:#8a8a96">${original}</span>`)}
+     ${caixa('Para continuar a conversa, responda este e-mail — ele já vai para a caixa de contato da federação.', true)}`,
+    'Você recebeu este e-mail porque enviou uma mensagem pelo site da FELPMA.',
+    `Resposta da FELPMA — ${args.assunto}.`,
+  )
+}

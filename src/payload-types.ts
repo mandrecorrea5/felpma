@@ -329,6 +329,8 @@ export interface Pagina {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Para responder ao visitante: abra a mensagem, escreva em "Resposta ao visitante", marque "Enviar esta resposta por e-mail" e clique em Salvar. O e-mail sai com o texto e a mensagem original citada.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "mensagens".
  */
@@ -338,7 +340,19 @@ export interface Mensagem {
   email: string;
   telefone?: string | null;
   assunto: 'filiacao' | 'competicoes' | 'imprensa' | 'parcerias' | 'outros';
+  /**
+   * Mensagem recebida do visitante.
+   */
   mensagem: string;
+  /**
+   * Escreva aqui a resposta. Ela só é enviada quando a caixa abaixo está marcada ao salvar — assim dá para revisar antes.
+   */
+  resposta?: string | null;
+  /**
+   * Depois do envio a caixa é desmarcada sozinha, o campo "Respondida em" é preenchido e a situação vira "Respondida".
+   */
+  enviarResposta?: boolean | null;
+  respondidaEm?: string | null;
   status?: ('nova' | 'respondida' | 'arquivada') | null;
   updatedAt: string;
   createdAt: string;
@@ -1611,6 +1625,9 @@ export interface MensagensSelect<T extends boolean = true> {
   telefone?: T;
   assunto?: T;
   mensagem?: T;
+  resposta?: T;
+  enviarResposta?: T;
+  respondidaEm?: T;
   status?: T;
   updatedAt?: T;
   createdAt?: T;

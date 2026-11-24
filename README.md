@@ -258,6 +258,12 @@ um aviso para `EMAIL_CONTATO` (padrão `contato@felpma.com.br`), com `Reply-To` 
 basta responder no cliente de e-mail para falar com ele. O envio é best-effort: se o Resend
 falhar, a mensagem continua no painel e o visitante vê o sucesso normal.
 
+**Responder pelo painel:** abra a mensagem, escreva em *Resposta ao visitante*, marque *Enviar
+esta resposta por e-mail ao visitante* e salve. O e-mail sai com o texto e a mensagem original
+citada, com `Reply-To` da caixa de contato (a resposta do visitante volta para a federação); a
+caixa é desmarcada sozinha, *Respondida em* é preenchido e a situação vira **Respondida**. Se o
+envio falhar, aparece o erro e nada é marcado como respondido — salvar de novo tenta outra vez.
+
 - **Sem as credenciais em produção:** o cadastro de atleta é bloqueado com uma mensagem clara
   (melhor do que criar uma conta que nunca poderá ser ativada); a recuperação de senha fica
   oculta. A confirmação de inscrição e a cópia da federação apenas registram o erro no log — a
