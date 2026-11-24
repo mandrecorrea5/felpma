@@ -11,6 +11,12 @@ import { mascararCpf } from '@/lib/cpf'
 import { dataCurta, dataLonga, tamanhoArquivo } from '@/lib/format'
 import { categoriaPesoDaInscricao, ehCategoriaPeso } from '@/lib/inscricoes/categoria-peso'
 import {
+  formularioPublicado,
+  inscricoesDoAtletaNoEvento,
+  inscritosNoEvento,
+} from '@/lib/inscricoes/consultas'
+import { estadoInscricao, type EventoParaInscricao } from '@/lib/inscricoes/estado'
+import {
   comprovantesDaInscricao,
   estaPendenteDeComprovante,
 } from '@/lib/inscricoes/comprovante'
@@ -86,6 +92,26 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
   }[]
   const exigeCategoriaPeso = camposDoFormulario.some((campo) => ehCategoriaPeso(campo))
   const mostrarCategoriaPeso = Boolean(categoriaPeso) || exigeCategoriaPeso
+  // Dá para adicionar outra categoria de idade? Depende da janela do evento, do
+  // limite do formulário e de já não ter estourado as inscrições. A regra é a
+  // mesma da página do evento: nada de link que leva a uma tela bloqueada.
+  const formularioDoEvento = evento ? await formularioPublicado(evento.id) : null
+  const inscricoesDoEvento =
+    evento && atleta ? await inscricoesDoAtletaNoEvento(evento.id, atleta.id) : []
+  const inscritos =
+    evento && evento.limiteVagas ? await inscritosNoEvento(evento) : 0
+  const estadoDoEvento = evento
+    ? estadoInscricao(evento as EventoParaInscricao, {
+        temFormulario: Boolean(formularioDoEvento),
+        inscritos,
+        inscricoesDoAtleta: inscricoesDoEvento.length,
+        limitePorAtleta: formularioDoEvento?.limitePorAtleta ?? 1,
+      })
+    : null
+  const podeAdicionarCategoria = Boolean(
+    estadoDoEvento?.podeInscrever && inscricao.status !== 'cancelada',
+  )
+
   const respostas = (Array.isArray(inscricao.respostas) ? inscricao.respostas : []).map((r) => {
     const item = r as Snapshot
     // O titular vê o próprio dado: aqui o valor cifrado é decifrado.
@@ -161,6 +187,23 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
         {sp.erro === 'status' ? (
           <div className="alerta alerta--erro" role="alert">
             Esta inscrição não pode mais ser cancelada por aqui. Fale com a federação.
+          </div>
+        ) : null}
+        {podeAdicionarCategoria && evento ? (
+          <div className="alerta alerta--ok" role="status" style={{ display: 'grid', gap: 10 }}>
+            <div>
+              <strong>Dá para competir em mais de uma categoria de idade.</strong> Este evento
+              aceita outra inscrição sua — Sub-17, Sub-20, Adulto… — desde que a categoria de
+              peso seja a mesma desta ({categoriaPeso ?? 'a informada'}).
+            </div>
+            <div>
+              <Link
+                href={`/inscricoes/${evento.slug}/formulario`}
+                className="btn btn--sm btn--azul"
+              >
+                Adicionar outra categoria
+              </Link>
+            </div>
           </div>
         ) : null}
         {inscricao.status === 'rejeitada' && inscricao.motivoRejeicao ? (

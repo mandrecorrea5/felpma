@@ -13,6 +13,10 @@ import {
   inscritosNoEvento,
 } from '@/lib/inscricoes/consultas'
 import { estadoInscricao, type EventoParaInscricao } from '@/lib/inscricoes/estado'
+import {
+  categoriaPesoDaInscricao,
+  pesoDaCategoria,
+} from '@/lib/inscricoes/categoria-peso'
 import { dadosIniciaisDoCadastro } from '@/lib/inscricoes/dados-cadastro'
 import { idadeEm } from '@/lib/inscricoes/idade'
 import type { CampoFormulario } from '@/lib/inscricoes/validacao'
@@ -72,6 +76,13 @@ export default async function FormularioPage({ params }: Props) {
     )
   }
 
+  // Peso já usado nas inscrições deste evento: a nova tem de repetir o kg, então
+  // o formulário nem oferece outra categoria de peso.
+  const pesoPermitido =
+    inscricoes
+      .map((inscricao) => pesoDaCategoria(categoriaPesoDaInscricao(inscricao)))
+      .find((peso) => peso != null) ?? null
+
   const idade = idadeEm(atleta.dataNascimento)
   const campos = (formulario.campos ?? []) as CampoFormulario[]
   const { respostas: respostasIniciais, bloqueados: camposBloqueados } = dadosIniciaisDoCadastro(
@@ -125,6 +136,7 @@ export default async function FormularioPage({ params }: Props) {
           acao={enviarInscricao}
           camposBloqueados={camposBloqueados}
           respostasIniciais={respostasIniciais}
+          pesoPermitido={pesoPermitido}
           confirmacao={
             temConfirmacao
               ? {

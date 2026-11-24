@@ -12,7 +12,7 @@ import {
 import { Icon } from '@/components/Icon'
 import type { EstadoFormulario } from '@/lib/atleta/tipos'
 import { dataLonga } from '@/lib/format'
-import { ehCategoriaPeso } from '@/lib/inscricoes/categoria-peso'
+import { ehCategoriaPeso, pesoDaCategoria } from '@/lib/inscricoes/categoria-peso'
 import {
   acceptDoCampo,
   erroDoArquivo,
@@ -63,6 +63,12 @@ type Props = {
   }
   /** Respostas já preenchidas com os dados da conta do atleta. */
   respostasIniciais?: Respostas
+  /**
+   * Peso já usado pelo atleta em outra inscrição deste evento. Quando existe,
+   * a categoria de peso só mostra as opções com esse mesmo kg — a pesagem é uma
+   * só e o servidor recusa qualquer outro valor.
+   */
+  pesoPermitido?: null | number
 }
 
 const PASSOS = ['Identificação', 'Dados da inscrição', 'Responsável e LGPD', 'Revisão']
@@ -80,6 +86,7 @@ export function FormularioInscricao({
   confirmacao,
   evento,
   formulario,
+  pesoPermitido = null,
   respostasIniciais = {},
 }: Props) {
   const campos = formulario.campos
@@ -196,6 +203,13 @@ export function FormularioInscricao({
   }
 
   const visiveis = useMemo(() => camposVisiveis(campos, respostas), [campos, respostas])
+
+  // Categoria de peso já usada em outra inscrição do evento: só o mesmo kg.
+  const opcoesDoCampo = (campo: CampoFormulario) => {
+    const lista = opcoesDisponiveis(campo, campos, respostas)
+    if (pesoPermitido == null || !ehCategoriaPeso(campo)) return lista
+    return lista.filter((opcao) => pesoDaCategoria(opcao.rotulo) === pesoPermitido)
+  }
   const erroDe = (nome: string) => erros.find((e) => e.campo === nome)?.mensagem
   const bloqueado = (nome: string): boolean => camposBloqueados.includes(nome)
   const visivel = (campo: CampoFormulario): boolean => {
@@ -512,7 +526,7 @@ export function FormularioInscricao({
                           aria-describedby={travado ? `${id}-cadastro` : undefined}
                         >
                           <option value="">Selecione…</option>
-                          {opcoesDisponiveis(campo, campos, respostas).map((o) => (
+                          {opcoesDoCampo(campo).map((o) => (
                             <option key={o.valor} value={o.valor ?? ''}>
                               {o.rotulo}
                             </option>
@@ -524,7 +538,7 @@ export function FormularioInscricao({
                           style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}
                         >
                           <legend className="sr-only">{campo.rotulo}</legend>
-                          {opcoesDisponiveis(campo, campos, respostas).map((o) => {
+                          {opcoesDoCampo(campo).map((o) => {
                             const lista = Array.isArray(valor) ? valor : []
                             const marcado = lista.includes(o.valor ?? '')
                             return (
