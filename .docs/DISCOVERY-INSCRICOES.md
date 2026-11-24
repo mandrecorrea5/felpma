@@ -141,7 +141,7 @@ MFA no painel, banner de consentimento do GA4 e cifra dos backups.
 | `authenticated` é **agnóstico de coleção** (`Boolean(user)`) | [`access/index.ts:5`](../src/access/index.ts#L5) | Um token de atleta herdaria escrita em 11 coleções via REST — corrigir **antes** de criar `atletas` |
 | Não há testes automatizados; CI = lint + typecheck + build | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | Regras de LGPD sem teste é risco; propor vitest (decisão aberta nº 9) |
 | Postgres 16 em Docker, sem cifra de disco; backup diário **sem cifra** para R2 | [`docker-compose.yml`](../docker-compose.yml), [`deploy/backup/backup.sh`](../deploy/backup/backup.sh) | Dump com PII sai da VPS em claro — corrigir (9.8) |
-| GA4 carrega **sempre** em produção, sem consentimento | [`layout.tsx:48`](../src/app/(frontend)/layout.tsx#L48) | Lacuna atual de LGPD; precisa de banner/Consent Mode (9.11) |
+| GA4 carrega **só depois do aceite**, com banner e Consent Mode v2 | [`ConsentimentoGA.tsx`](../src/components/analytics/ConsentimentoGA.tsx), [`ga.ts`](../src/lib/analytics/ga.ts) | Resolvido em 21/11/2026; falta o texto da política citar cookies (9.11.1) |
 | Política de privacidade é placeholder no seed | [`seed/index.ts:528`](../src/seed/index.ts#L528) | Precisa de texto real e versionado antes do go-live |
 
 ---
@@ -650,9 +650,17 @@ campos (`v1` → `v2`, recifragem em lote).
 ### 9.11 Lacunas que **já existem** hoje e este projeto precisa encarar
 1. **Política de privacidade é placeholder** ([`seed/index.ts:528`](../src/seed/index.ts#L528)) —
    sem texto real, não há transparência.
-2. **GA4 sem consentimento** ([`layout.tsx:48`](../src/app/(frontend)/layout.tsx#L48)) —
-   cookies de medição + transferência internacional para o Google. Precisa banner/Consent Mode
-   v2 ou desligar até lá.
+2. ~~**GA4 sem consentimento**~~ — resolvido em 21/11/2026: banner de consentimento em
+   [`ConsentimentoGA.tsx`](../src/components/analytics/ConsentimentoGA.tsx), decisão guardada por
+   180 dias e reversível no rodapé; sem aceite nenhum script do Google é carregado. O `page_view`
+   é manual ([`PaginaVistaGA.tsx`](../src/components/analytics/PaginaVistaGA.tsx)) e a URL vai
+   **sanitizada** ([`ga.ts`](../src/lib/analytics/ga.ts)): `/area/inscricoes/FELPMA-2026-0001`
+   chega ao Google como `/area/inscricoes/[protocolo]`. Continua pendente o **texto da política
+   de privacidade** mencionar os cookies de medição (`_ga`, 14 meses, transferência internacional
+   para o Google).
+   No painel do GA4, é **obrigatório** desligar a medição aprimorada "Alterações de página com
+   base em eventos de histórico do navegador": com ela ligada, cada navegação conta duas vezes e
+   uma das cópias manda a URL crua (com o protocolo).
 3. **Backup sem cifra** ([`deploy/backup/backup.sh`](../deploy/backup/backup.sh)) — dump com PII
    vai para o R2 em claro.
 4. **Sem DPO, sem ROPA, sem RIPD, sem canal de direitos** — o código pode oferecer as telas,
@@ -887,8 +895,9 @@ por um técnico/CT em uma única conta; integração com sistema da confederaç�
    recuperação de senha nem confirmação de inscrição.
 6. **Área do filiado oficial**: vamos construir a nossa agora e depois integrar, ou já existe
    um sistema que deve ser o dono do login?
-7. **GA4/Ndovu**: incluímos o banner de consentimento neste projeto (recomendado, porque a
-   área de inscrição aumenta o risco) ou fica para depois?
+7. ~~**GA4/Ndovu**~~ — decidido em 21/11/2026: banner de consentimento próprio (sem CMP
+   externa), GA4 atrás do aceite e eventos de conversão do funil. O Ndovu continua como
+   observabilidade técnica, sem relação com consentimento de marketing.
 8. **Pagamento de inscrição** está fora? (assumido fora)
 9. **Testes automatizados**: introduzir vitest para as regras de janela, validação e
    consentimento (recomendado) ou manter só lint/typecheck/build?

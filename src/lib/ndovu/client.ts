@@ -22,7 +22,7 @@
 'use client'
 
 import { createNdovu, type NdovuErrorOpts, type NdovuSdk } from './ndovu-browser.js'
-import { identificarRota, type RotaIdentificada } from './rotas'
+import { identificarRota, rotaPrivada, type RotaIdentificada } from './rotas'
 
 /** Conjunto fechado de áreas — manter alinhado com `area` de `rotas.ts`. */
 export type FuncaoApp =
@@ -121,18 +121,9 @@ export function initNdovu(): NdovuSdk | null {
   return inst
 }
 
-/**
- * Rotas em que a tela carrega dado pessoal do titular logado.
- *
- * `/admin` não passa por este layout (o painel tem o seu), mas fica na lista
- * como cinto e suspensório caso um dia passe.
- */
-const ROTAS_PRIVADAS = ['/area', '/admin'] as const
-
-export function rotaPrivada(caminho: string): boolean {
-  const limpo = caminho.length > 1 ? caminho.replace(/\/+$/, '') || '/' : caminho
-  return ROTAS_PRIVADAS.some((base) => limpo === base || limpo.startsWith(`${base}/`))
-}
+// `rotaPrivada` mudou para `rotas.ts`: o GA4 também precisa da noção de rota
+// privada para sanitizar a URL, e não deve arrastar o SDK para o bundle dele.
+export { rotaPrivada }
 
 /**
  * Barreira de saída do snapshot de tela.

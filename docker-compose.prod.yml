@@ -58,10 +58,23 @@ services:
         NEXT_PUBLIC_NDOVU_API_KEY: ${NEXT_PUBLIC_NDOVU_API_KEY:-}
         NEXT_PUBLIC_NDOVU_APP: ${NEXT_PUBLIC_NDOVU_APP:-felpma}
         NEXT_PUBLIC_APP_VERSION: ${NEXT_PUBLIC_APP_VERSION:-}
+        # GA4. O padrão é a propriedade que já estava no código; para trocar de
+        # propriedade basta definir NEXT_PUBLIC_GA_ID no .env da VPS e rebuildar.
+        NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID:-G-NBE78VLWCS}
     networks:
       - felpma-net
       - ingress
     ports: !reset []
+    # Observabilidade do servidor (aba Logs do Ndovu). Runtime, não build: estas
+    # entram no processo Node e mudam com restart, sem rebuild da imagem.
+    # Sem NDOVU_OTLP_API_KEY nada é enviado — e como o app `felpma` do Ndovu é de
+    # frontend, a chave aqui precisa ser de um app de SERVIDOR.
+    environment:
+      NDOVU_OTLP_API_KEY: ${NDOVU_OTLP_API_KEY:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-https://otlp.ndovu.solutions}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-felpma-site}
+      NDOVU_OTLP_NIVEL: ${NDOVU_OTLP_NIVEL:-warn}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
     healthcheck:
       test: ['CMD', 'wget', '-q', '-O', '-', 'http://127.0.0.1:3000/healthz']
       interval: 10s

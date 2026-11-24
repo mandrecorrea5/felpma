@@ -1,7 +1,7 @@
 import 'server-only'
-import type { ArquivoInscricao } from '@/payload-types'
-import { CAMPO_COMPROVANTE } from '@/lib/constants'
+import type { ArquivoInscricao, Inscricao } from '@/payload-types'
 import { getPayloadClient } from '@/lib/payload'
+import { ehComprovantePagamento, statusTemPendenciaDeComprovante } from './comprovante-regra'
 
 export type Comprovante = {
   criadoEm: string
@@ -26,6 +26,21 @@ const inscricaoDoArquivo = (arquivo: ArquivoInscricao): null | string => {
 }
 
 /**
+ * A inscrição está pendente de comprovante?
+ *
+ * A regra é derivada dos arquivos, não de um campo que precisa ser sincronizado:
+ * enviou (por esta tela ou pelo formulário) deixa de ser pendente; cancelada ou
+ * rejeitada nunca entra como pendência.
+ */
+export const estaPendenteDeComprovante = (
+  inscricao: Pick<Inscricao, 'status'>,
+  comprovantes: Comprovante[] | undefined,
+): boolean => {
+  if (!statusTemPendenciaDeComprovante(inscricao.status)) return false
+  return !comprovantes || comprovantes.length === 0
+}
+
+/**
  * Comprovantes do atleta agrupados pela inscrição (id da inscrição → arquivos).
  *
  * É a consulta da tela "Comprovantes": o atleta pode ter mais de um comprovante
@@ -37,9 +52,7 @@ export async function comprovantesDoAtleta(
   const payload = await getPayloadClient()
   const { docs } = await payload.find({
     collection: 'arquivos-inscricao',
-    where: {
-      and: [{ atleta: { equals: atletaId } }, { campo: { equals: CAMPO_COMPROVANTE } }],
-    },
+    where: { atleta: { equals: atletaId } },
     sort: '-createdAt',
     limit: 500,
     depth: 0,
@@ -48,6 +61,7 @@ export async function comprovantesDoAtleta(
 
   const porInscricao = new Map<string, Comprovante[]>()
   for (const arquivo of docs) {
+    if (!ehComprovantePagamento(arquivo)) continue
     const inscricaoId = inscricaoDoArquivo(arquivo)
     if (!inscricaoId) continue
     const lista = porInscricao.get(inscricaoId) ?? []
@@ -66,16 +80,12 @@ export async function comprovantesDaInscricao(
   const { docs } = await payload.find({
     collection: 'arquivos-inscricao',
     where: {
-      and: [
-        { atleta: { equals: atletaId } },
-        { inscricao: { equals: inscricaoId } },
-        { campo: { equals: CAMPO_COMPROVANTE } },
-      ],
+      and: [{ atleta: { equals: atletaId } }, { inscricao: { equals: inscricaoId } }],
     },
     sort: '-createdAt',
     limit: 100,
     depth: 0,
     overrideAccess: true,
   })
-  return docs.map((arquivo) => paraResumo(arquivo))
+  return docs.filter(ehComprovantePagamento).map((arquivo) => paraResumo(arquivo))
 }

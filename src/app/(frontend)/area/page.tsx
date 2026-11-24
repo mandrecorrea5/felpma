@@ -6,7 +6,7 @@ import { exigirAtleta } from '@/lib/atleta/guarda'
 import { labelOf, STATUS_INSCRICAO } from '@/lib/constants'
 import { dataCurta, periodo } from '@/lib/format'
 import { categoriaPesoDaInscricao } from '@/lib/inscricoes/categoria-peso'
-import { comprovantesDoAtleta } from '@/lib/inscricoes/comprovante'
+import { comprovantesDoAtleta, estaPendenteDeComprovante } from '@/lib/inscricoes/comprovante'
 import { painelDoAtleta } from '@/lib/inscricoes/consultas'
 import { sairAction } from './actions'
 
@@ -32,6 +32,9 @@ export default async function AreaPage({ searchParams }: Props) {
   )
   const painel = await painelDoAtleta(atleta.id)
   const comprovantes = await comprovantesDoAtleta(atleta.id)
+  const pendentes = painel.inscricoes.filter((inscricao) =>
+    estaPendenteDeComprovante(inscricao, comprovantes.get(String(inscricao.id))),
+  )
 
   // Quem clicou em "Preencher" antes de entrar volta para cá: o formulário que
   // estava abrindo sobe para o topo da lista, já com o botão de continuar.
@@ -63,6 +66,11 @@ export default async function AreaPage({ searchParams }: Props) {
           <span className="tag">
             {painel.inscricoes.length} preenchido{painel.inscricoes.length === 1 ? '' : 's'}
           </span>
+          {pendentes.length > 0 ? (
+            <span className="tag tag--vermelho">
+              {pendentes.length} com comprovante pendente
+            </span>
+          ) : null}
           <span className="tag tag--cinza" data-ndovu-mask>
             {atleta.email}
           </span>
@@ -76,6 +84,30 @@ export default async function AreaPage({ searchParams }: Props) {
             inscrições e evita perguntas repetidas. Você pode informar agora em{' '}
             <Link href="/area/meus-dados">Meus dados</Link> ou na primeira inscrição — vamos salvar
             na sua conta.
+          </div>
+        ) : null}
+        {pendentes.length > 0 ? (
+          <div className="alerta alerta--erro" role="alert" style={{ margin: 0 }}>
+            <strong>Inscrição pendente de comprovante.</strong>{' '}
+            {pendentes.length === 1
+              ? 'Uma inscrição ainda precisa'
+              : `${pendentes.length} inscrições ainda precisam`}{' '}
+            do comprovante de pagamento. Envie em{' '}
+            <Link href="/area/comprovantes">Comprovantes</Link> para regularizar.
+            <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
+              {pendentes.map((inscricao) => {
+                const evento =
+                  typeof inscricao.evento === 'object' ? inscricao.evento : null
+                return (
+                  <li key={inscricao.id}>
+                    {evento?.nome ?? 'Evento'} · {inscricao.protocolo} —{' '}
+                    <Link href={`/area/comprovantes?inscricao=${inscricao.protocolo}`}>
+                      enviar comprovante
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
           </div>
         ) : null}
         {retomar && !destaque ? (
@@ -168,6 +200,10 @@ export default async function AreaPage({ searchParams }: Props) {
                 const evento = typeof i.evento === 'object' ? i.evento : null
                 const quando = periodo(evento?.dataInicio, evento?.dataFim)
                 const categoriaPeso = categoriaPesoDaInscricao(i)
+                const pendente = estaPendenteDeComprovante(
+                  i,
+                  comprovantes.get(String(i.id)),
+                )
                 return (
                   <div key={i.id} className="inscricao-lista__item">
                     <div className="inscricao-lista__txt">
@@ -176,9 +212,29 @@ export default async function AreaPage({ searchParams }: Props) {
                         {quando ? `${quando} · ` : ''}
                         Protocolo {i.protocolo} · enviada em {dataCurta(i.enviadaEm)}
                       </div>
+                      {pendente ? (
+                        <div
+                          style={{
+                            color: 'var(--vermelho-escuro)',
+                            fontSize: 14,
+                            fontWeight: 600,
+                            marginTop: 4,
+                          }}
+                        >
+                          Falta enviar o comprovante de pagamento.
+                        </div>
+                      ) : null}
                     </div>
                     {categoriaPeso ? (
                       <span className="tag tag--cinza">Categoria de peso: {categoriaPeso}</span>
+                    ) : null}
+                    {pendente ? (
+                      <span
+                        className="status status--red"
+                        title="Falta enviar o comprovante de pagamento"
+                      >
+                        Pendente
+                      </span>
                     ) : null}
                     <span className={`status ${TOM[i.status] ?? 'status--blue'}`}>
                       {labelOf(STATUS_INSCRICAO, i.status)}
@@ -186,11 +242,11 @@ export default async function AreaPage({ searchParams }: Props) {
                     {i.status !== 'cancelada' ? (
                       <Link
                         href={`/area/comprovantes?inscricao=${i.protocolo}`}
-                        className="btn btn--sm btn--contorno"
+                        className={
+                          pendente ? 'btn btn--sm btn--vermelho' : 'btn btn--sm btn--contorno'
+                        }
                       >
-                        {(comprovantes.get(String(i.id))?.length ?? 0) > 0
-                          ? 'Comprovante'
-                          : 'Enviar comprovante'}
+                        {pendente ? 'Enviar comprovante' : 'Comprovante'}
                       </Link>
                     ) : null}
                     <Link

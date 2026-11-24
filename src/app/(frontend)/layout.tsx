@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import { GoogleAnalytics } from '@next/third-parties/google'
 import React from 'react'
 import '@fontsource/montserrat/600.css'
 import '@fontsource/montserrat/700.css'
@@ -11,6 +10,9 @@ import '@fontsource/ibm-plex-sans/600.css'
 import './globals.css'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { ConsentimentoGA } from '@/components/analytics/ConsentimentoGA'
+import { LoginGA } from '@/components/analytics/EventoGA'
+import { PaginaVistaGA } from '@/components/analytics/PaginaVistaGA'
 import { NdovuTracker } from '@/lib/ndovu/NdovuTracker'
 import { getConfiguracoes } from '@/lib/payload'
 
@@ -40,12 +42,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="pt-BR">
       <body>
         <NdovuTracker />
+        <LoginGA />
+        <PaginaVistaGA />
         <Header config={config} />
         <main id="conteudo">{children}</main>
         <Footer config={config} />
+        {/*
+          GA4 com consentimento: o script só é montado depois do aceite e só se
+          NEXT_PUBLIC_GA_ID existir. Em `next dev` fica desligado para não sujar
+          a propriedade real — o banner continua aparecendo para ser testado.
+        */}
+        <ConsentimentoGA />
       </body>
-      {/* Só em produção, pra o `next dev` não sujar as métricas do GA. */}
-      {process.env.NODE_ENV === 'production' && <GoogleAnalytics gaId="G-NBE78VLWCS" />}
     </html>
   )
 }

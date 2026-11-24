@@ -97,6 +97,7 @@ export interface Config {
     };
     inscricoes: {
       arquivosEnviados: 'arquivos-inscricao';
+      comprovantesPagamento: 'arquivos-inscricao';
     };
   };
   collectionsSelect: {
@@ -1262,13 +1263,13 @@ export interface Inscricao {
   enviadaEm: string;
   atleta: number | Atleta;
   evento: number | Competicao;
-  formulario: number | FormularioInscricao;
-  formularioVersao: number;
-  idadeNaInscricao?: number | null;
   /**
    * Preenchida automaticamente com a resposta "Categoria de peso" do formulário. Confira antes de confirmar a inscrição — é a categoria que organiza a competição.
    */
   categoriaPeso?: string | null;
+  formulario: number | FormularioInscricao;
+  formularioVersao: number;
+  idadeNaInscricao?: number | null;
   /**
    * Snapshot das perguntas e respostas no momento do envio (não muda se o formulário mudar).
    */
@@ -1285,6 +1286,14 @@ export interface Inscricao {
    * Atestados, comprovantes e documentos anexados pelo atleta. Privados: o download exige sessão do painel.
    */
   arquivosEnviados?: {
+    docs?: (number | ArquivoInscricao)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  /**
+   * Comprovantes enviados depois da inscrição pela área do atleta. A federação recebe uma cópia por e-mail a cada envio. Se este bloco estiver vazio, a inscrição aparece como pendente de comprovante na área do atleta.
+   */
+  comprovantesPagamento?: {
     docs?: (number | ArquivoInscricao)[];
     hasNextPage?: boolean;
     totalDocs?: number;
@@ -1320,6 +1329,10 @@ export interface Inscricao {
     cpf?: string | null;
   };
   menorDeIdade?: boolean | null;
+  /**
+   * Calculado automaticamente: "Pendente" quando a inscrição está ativa e não tem comprovante de pagamento; "Enviado" quando já tem; "—" quando a inscrição está encerrada. Não é uma coluna do banco.
+   */
+  situacaoComprovante?: string | null;
   /**
    * Calculado a partir do prazo do formulário. O expurgo automático entra na Fase 2.
    */
@@ -2172,11 +2185,13 @@ export interface InscricoesSelect<T extends boolean = true> {
   enviadaEm?: T;
   atleta?: T;
   evento?: T;
+  categoriaPeso?: T;
   formulario?: T;
   formularioVersao?: T;
   idadeNaInscricao?: T;
   respostas?: T;
   arquivosEnviados?: T;
+  comprovantesPagamento?: T;
   consentimentos?:
     | T
     | {
@@ -2201,6 +2216,7 @@ export interface InscricoesSelect<T extends boolean = true> {
         cpf?: T;
       };
   menorDeIdade?: T;
+  situacaoComprovante?: T;
   retencaoAte?: T;
   motivoRejeicao?: T;
   observacoesInternas?: T;

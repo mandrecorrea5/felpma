@@ -69,6 +69,19 @@ NEXT_PUBLIC_NDOVU_API_KEY=
 NEXT_PUBLIC_NDOVU_APP=felpma
 NEXT_PUBLIC_APP_VERSION=
 
+# --- Ndovu: logs do servidor via OTLP -----------------------------------------
+# Alimenta a aba Logs do Ndovu. A chave é de um app de SERVIDOR (o app de
+# frontend acima não aceita OTLP: o Ndovu responde 403 "marque-o como app de
+# servidor"). Vazio = nenhum log do servidor sai, e o site funciona igual.
+#
+# Runtime, não build: mudar aqui exige restart do container, não rebuild.
+# Conferir: pnpm verificar:ndovu  (--teste envia um log de prova)
+NDOVU_OTLP_API_KEY=
+OTEL_EXPORTER_OTLP_ENDPOINT=https://otlp.ndovu.solutions
+OTEL_SERVICE_NAME=felpma-site
+# info | warn | error
+NDOVU_OTLP_NIVEL=warn
+
 # --- E-mail transacional (Resend) --------------------------------------------
 # Sem RESEND_API_KEY + EMAIL_FROM_ADDRESS, o cadastro de atleta fica bloqueado
 # em produção (o site avisa e não cria cadastro órfão). O domínio do remetente

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { EventoGA } from '@/components/analytics/EventoGA'
 import { emailConfigurado, emailDisponivel } from '@/lib/email'
 import { FormularioLogin } from '@/components/area/FormularioLogin'
 import { PageHero } from '@/components/ui'
@@ -38,6 +39,18 @@ export default async function EntrarPage({ searchParams }: Props) {
         crumbs={[{ href: '/area', label: 'Área do atleta' }, { label: 'Entrar' }]}
       />
       <div className="container section" style={{ maxWidth: 560 }}>
+        {/* Conversões do GA4. A action redireciona, então o único sinal de
+            sucesso que chega aqui é a query — o `EventoGA` deduplica por sessão
+            para um F5 não contar duas vezes. */}
+        {sp.criada ? (
+          <EventoGA
+            chave="cadastro"
+            nome="sign_up"
+            parametros={{ method: 'email', envio_email: sp.envio === 'falhou' ? 'falhou' : 'ok' }}
+          />
+        ) : null}
+        {sp.ativada ? <EventoGA chave="ativacao" nome="conta_ativada" /> : null}
+
         {sp.ativada ? (
           <div className="alerta alerta--ok" role="status" style={{ marginBottom: 16 }}>
             <strong>Conta ativada!</strong> Seu e-mail foi confirmado. Entre com o e-mail e a

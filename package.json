@@ -18,12 +18,12 @@
     "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
     "migrate": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
     "typecheck": "tsc --noEmit",
-    "verificar:inscricoes": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/verificar-inscricoes.ts"
+    "verificar:inscricoes": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/verificar-inscricoes.ts",
+    "verificar:ndovu": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/verificar-ndovu.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.3.0",
     "@fontsource/montserrat": "^5.3.0",
-    "@next/third-parties": "16.3.3",
     "@payloadcms/db-postgres": "3.91.0",
     "@payloadcms/email-resend": "3.91.0",
     "@payloadcms/next": "3.91.0",

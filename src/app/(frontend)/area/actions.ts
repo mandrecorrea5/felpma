@@ -1,7 +1,9 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import type { Atleta } from '@/payload-types'
+import { COOKIE_LOGIN } from '@/lib/analytics/constantes'
 import { getPayloadClient } from '@/lib/payload'
 import { atletaAtual, entrar, limparSessao, revogarTodasAsSessoes, sair } from '@/lib/atleta/sessao'
 import { cpfValido, normalizarCpf } from '@/lib/cpf'
@@ -192,6 +194,18 @@ export async function entrarAction(_prev: EstadoFormulario, form: FormData): Pro
 
   const resultado = await entrar(email, senha)
   if (!resultado.ok) return { ok: false, erro: resultado.erro, campos: { email } }
+
+  // Flash para o GA4: o redirect abaixo não devolve resposta ao formulário, então
+  // o evento `login` (client-side) precisa de outro sinal. Cookie de 60 s, não
+  // HttpOnly (o cliente precisa ler), sem valor nenhum além de "1".
+  const jar = await cookies()
+  jar.set(COOKIE_LOGIN, '1', {
+    httpOnly: false,
+    maxAge: 60,
+    path: '/',
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  })
 
   redirect(destinoPosLogin(retorno))
 }

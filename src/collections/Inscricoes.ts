@@ -9,6 +9,10 @@ import { cifrar, ehCifrado } from '../lib/crypto/campos'
 import { normalizarCpf } from '../lib/cpf'
 import { CAMPO_COMPROVANTE, STATUS_INSCRICAO } from '../lib/constants'
 import { categoriaPesoDeRespostas } from '../lib/inscricoes/categoria-peso'
+import {
+  ehComprovantePagamento,
+  statusTemPendenciaDeComprovante,
+} from '../lib/inscricoes/comprovante-regra'
 import { gerarCsvInscricoes, respostaCsv } from '../lib/inscricoes/exportacao'
 import { gerarProtocolo } from '../lib/inscricoes/protocolo'
 import { auditarAcesso, registrarAcesso } from '../lib/lgpd/auditoria'
@@ -82,6 +86,35 @@ const completaCategoriaPeso: CollectionAfterReadHook = ({ doc }) => {
 }
 
 /**
+ * Campo virtual do painel: marca a inscrição como pendente de comprovante.
+ *
+ * Só roda para usuários do painel. A área do atleta calcula a pendência na
+ * própria página (com uma consulta por atleta), então uma consulta extra por
+ * inscrição ali seria desperdício. As exportações em massa desligam o cálculo
+ * pelo `context` para não fazer N consultas.
+ */
+const calculaComprovantePendente: CollectionAfterReadHook = async ({ doc, req }) => {
+  if (!doc?.id) return doc
+  if (req.user?.collection !== 'users') return doc
+  if (req.context?.semComprovantePendente) return doc
+
+  if (!statusTemPendenciaDeComprovante(String(doc.status ?? ''))) {
+    doc.situacaoComprovante = '—'
+    return doc
+  }
+
+  const { docs } = await req.payload.find({
+    collection: 'arquivos-inscricao',
+    where: { inscricao: { equals: doc.id } },
+    limit: 100,
+    depth: 0,
+    overrideAccess: true,
+  })
+  doc.situacaoComprovante = docs.some(ehComprovantePagamento) ? 'Enviado' : 'Pendente'
+  return doc
+}
+
+/**
  * Inscrição recebida.
  *
  * Nunca é criada por REST: só pela server action, que valida janela do evento,
@@ -95,7 +128,15 @@ export const Inscricoes: CollectionConfig = {
   admin: {
     useAsTitle: 'protocolo',
     group: 'Inscrições',
-    defaultColumns: ['protocolo', 'atleta', 'categoriaPeso', 'evento', 'status', 'enviadaEm'],
+    defaultColumns: [
+      'protocolo',
+      'atleta',
+      'categoriaPeso',
+      'evento',
+      'status',
+      'situacaoComprovante',
+      'enviadaEm',
+    ],
     listSearchableFields: ['protocolo', 'categoriaPeso'],
     description:
       'Dados pessoais: leia só o necessário e registre o motivo do acesso. Use o bloco "Exportar inscrições" no topo para baixar o CSV de um evento.',
@@ -152,6 +193,8 @@ export const Inscricoes: CollectionConfig = {
               depth: 2,
               pagination: false,
               overrideAccess: true,
+              // Exportação em massa não precisa do campo virtual por linha.
+              context: { semComprovantePendente: true },
             }),
           ])
 
@@ -184,7 +227,7 @@ export const Inscricoes: CollectionConfig = {
     },
   ],
   hooks: {
-    afterRead: [completaCategoriaPeso],
+    afterRead: [completaCategoriaPeso, calculaComprovantePendente],
     afterOperation: [auditarAcesso('inscricoes')],
     beforeChange: [preparaInscricao],
   },
@@ -311,7 +354,7 @@ export const Inscricoes: CollectionConfig = {
       admin: {
         defaultColumns: ['titulo', 'createdAt'],
         description:
-          'Comprovantes enviados depois da inscrição pela área do atleta. A federação recebe uma cópia por e-mail a cada envio.',
+          'Comprovantes enviados depois da inscrição pela área do atleta. A federação recebe uma cópia por e-mail a cada envio. Se este bloco estiver vazio, a inscrição aparece como pendente de comprovante na área do atleta.',
       },
     },
     {
@@ -386,6 +429,18 @@ export const Inscricoes: CollectionConfig = {
       label: 'Menor de idade',
       type: 'checkbox',
       admin: { position: 'sidebar', readOnly: true },
+    },
+    {
+      name: 'situacaoComprovante',
+      label: 'Comprovante',
+      type: 'text',
+      virtual: true,
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description:
+          'Calculado automaticamente: "Pendente" quando a inscrição está ativa e não tem comprovante de pagamento; "Enviado" quando já tem; "—" quando a inscrição está encerrada. Não é uma coluna do banco.',
+      },
     },
     {
       name: 'retencaoAte',

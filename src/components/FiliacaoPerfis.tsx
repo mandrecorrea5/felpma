@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Icon } from './Icon'
+import { eventoGA } from '@/lib/analytics/ga'
 import { rastreia } from '@/lib/ndovu/client'
 
 export type PerfilFiliacao = {
@@ -91,7 +92,7 @@ export function FiliacaoPerfis({
               href={atual.linkInscricao}
               className="btn btn--vermelho"
               data-ndovu-manual
-              onClick={() =>
+              onClick={() => {
                 rastreia.acao('filiacao_iniciada', {
                   feature: 'filiacao',
                   metadados: {
@@ -100,7 +101,11 @@ export function FiliacaoPerfis({
                     temFormulario: Boolean(atual.formulario),
                   },
                 })
-              }
+                eventoGA('filiacao_iniciada', {
+                  perfil: atual.nome,
+                  destino: 'formulario_externo',
+                })
+              }}
             >
               Iniciar filiação de {atual.nome}
             </a>
@@ -109,7 +114,7 @@ export function FiliacaoPerfis({
               href={`/contato?assunto=filiacao&perfil=${encodeURIComponent(atual.nome)}`}
               className="btn btn--vermelho"
               data-ndovu-manual
-              onClick={() =>
+              onClick={() => {
                 rastreia.acao('filiacao_iniciada', {
                   feature: 'filiacao',
                   metadados: {
@@ -118,7 +123,8 @@ export function FiliacaoPerfis({
                     temFormulario: Boolean(atual.formulario),
                   },
                 })
-              }
+                eventoGA('filiacao_iniciada', { perfil: atual.nome, destino: 'form_contato' })
+              }}
             >
               Solicitar filiação de {atual.nome}
             </a>

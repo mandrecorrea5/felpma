@@ -102,6 +102,13 @@ painel (bloco **Comprovantes de pagamento**). Cada envio dispara um e-mail para 
 operacional da federação com o comprovante em anexo. O mesmo caminho aparece no detalhe da
 inscrição e nos formulários preenchidos da área.
 
+**Pendência de comprovante:** enquanto a inscrição estiver ativa (`recebida`, `em análise`,
+`aprovada` ou `lista de espera`) e não tiver nenhum comprovante — nem no formulário, nem pelo
+envio posterior —, a área do atleta mostra o selo **Pendente**, o aviso “Falta enviar o
+comprovante de pagamento” e um atalho para regularizar. No painel, a lista de inscrições ganha a
+coluna **Comprovante** com `Pendente`/`Enviado`. O estado é derivado dos arquivos, então some
+sozinho quando o comprovante chega; não sobrescreve a situação oficial da inscrição.
+
 **Cadastro novo entra como "Pendente de ativação"** e recebe um e-mail com o link
 `/area/ativar?token=…`. Ao clicar, o e-mail é confirmado e a conta vira **Ativa** — o atleta já
 entra com e-mail e senha, sem esperar aprovação manual. O link é de uso único e não expira
@@ -389,6 +396,60 @@ bash deploy/backup/test-restore.sh
 ```
 
 O `test-restore.sh` exige as envs `R2_*` no `.env` e a porta 55434 livre.
+
+## Observabilidade (Ndovu)
+
+A observabilidade tem **duas metades**, e elas usam chaves diferentes:
+
+| Metade | O que cobre | Env | Onde ver |
+|---|---|---|---|
+| Navegador | eventos, erros, web vitals, funis, replay | `NEXT_PUBLIC_NDOVU_*` | dashboard, sessões, issues |
+| Servidor | `console.error/warn/info`, exceções, erro de requisição | `NDOVU_OTLP_API_KEY` + `OTEL_*` | aba **Logs** |
+
+**Navegador.** `NEXT_PUBLIC_*` é congelado no bundle durante o build. Preencher a
+chave no `.env` da VPS e dar `restart` **não muda nada** — a cadeia é
+`.env` → `build.args` do `docker-compose.prod.yml` → `ARG`/`ENV` do `Dockerfile` →
+`process.env` em [`client.ts`](src/lib/ndovu/client.ts). Sem a chave o SDK fica
+no-op e, em dev, imprime `[ndovu] desativado`.
+
+**Servidor.** O processo Node exporta OTLP/HTTP para
+`https://otlp.ndovu.solutions/v1/logs`
+([`otlp.ts`](src/lib/observabilidade/otlp.ts), ligado em
+[`instrumentation.ts`](src/instrumentation.ts)). É runtime: muda com restart, sem
+rebuild. Antes de sair, o corpo passa por sanitização (e-mail, CPF, chave) e o
+caminho da requisição é reduzido ao padrão da rota — o protocolo de uma inscrição
+nunca vai para lá.
+
+> **App de servidor.** O Ndovu recusa OTLP de app cadastrado como frontend:
+> `403 "o app ... não aceita OTLP — marque-o como app de servidor"`. Isso não é
+> chave errada nem env faltando. Cadastre um app de servidor (ex.: `felpma-servidor`)
+> e use a chave dele em `NDOVU_OTLP_API_KEY` — a chave pública do navegador não serve.
+
+### Lista de verificação
+
+```bash
+pnpm verificar:ndovu          # confere env + faz probe real; não envia dado nenhum
+pnpm verificar:ndovu --teste  # manda UM log de prova e confirma a chegada
+```
+
+O comando sai com código 1 quando algo está faltando e imprime a correção de
+cada item. Checklist manual equivalente:
+
+- [ ] `NEXT_PUBLIC_NDOVU_ENDPOINT` é **HTTPS** e alcançável do navegador do visitante
+      (localhost/IP interno = bloqueio silencioso por mixed content)
+- [ ] `NEXT_PUBLIC_NDOVU_API_KEY` existe (começa com `ndk_`) e a imagem foi **rebuildada**
+- [ ] `NEXT_PUBLIC_NDOVU_APP` é exatamente o *Nome* do app no Ndovu (`felpma`)
+- [ ] existe um **app de servidor** no Ndovu e a chave dele está em `NDOVU_OTLP_API_KEY`
+- [ ] `POST https://otlp.ndovu.solutions/v1/logs` responde 2xx com essa chave
+- [ ] depois do deploy, a aba **Logs** mostra a linha de boot
+      `observabilidade do servidor ativa (felpma-site …)`
+- [ ] `docker compose ... logs site` continua mostrando os mesmos logs (a
+      interceptação do `console` preserva a saída original)
+
+Se a aba Logs ficar vazia, a ordem de investigação é: chave presente no container
+(`docker compose exec site printenv | grep -i otel`) → resposta do
+`pnpm verificar:ndovu --teste` → `stderr` do container, onde o exportador avisa
+falha de envio com rate-limit de 5 minutos.
 
 ## Fora deste projeto (por enquanto)
 

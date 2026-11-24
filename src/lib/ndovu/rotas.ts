@@ -117,6 +117,22 @@ export const ROTAS_KNOWN: Rota[] = [
   ADMIN.rota,
 ]
 
+/**
+ * Rotas em que a tela carrega dado pessoal do titular logado.
+ *
+ * Mora aqui — e não em `client.ts` — porque a sanitização de URL do GA4 também
+ * precisa dela, e o módulo do Ndovu arrasta o SDK para dentro do bundle.
+ *
+ * `/admin` não passa pelo layout do site (o painel tem o seu), mas fica na lista
+ * como cinto e suspensório caso um dia passe.
+ */
+const ROTAS_PRIVADAS = ['/area', '/admin'] as const
+
+export function rotaPrivada(caminho: string): boolean {
+  const limpo = caminho.length > 1 ? caminho.replace(/\/+$/, '') || '/' : caminho
+  return ROTAS_PRIVADAS.some((base) => limpo === base || limpo.startsWith(`${base}/`))
+}
+
 function decodificar(v?: string): string | undefined {
   if (!v) return undefined
   try {

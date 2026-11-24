@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { ConfiguracoesSite } from '@/payload-types'
 import { mediaUrl, whatsappLink } from '@/lib/format'
+import { PreferenciasCookies } from '../analytics/ConsentimentoGA'
 import { Icon } from '../Icon'
 
 export function Apoio({ config }: { config: ConfiguracoesSite }) {
@@ -119,7 +120,10 @@ export function Footer({ config }: { config: ConfiguracoesSite }) {
           © {ano} {config.sigla} — {config.nomeCompleto}
           {config.cnpj ? ` · CNPJ ${config.cnpj}` : ''}
         </span>
-        <Link href="/institucional/politica-de-privacidade">Política de privacidade</Link>
+        <div className="footer__bottom-links">
+          <PreferenciasCookies />
+          <Link href="/institucional/politica-de-privacidade">Política de privacidade</Link>
+        </div>
       </div>
     </footer>
   )

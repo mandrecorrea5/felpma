@@ -179,6 +179,8 @@ export const FormulariosInscricao: CollectionConfig = {
             depth: 2,
             pagination: false,
             overrideAccess: true,
+            // Exportação em massa não precisa do campo virtual por linha.
+            context: { semComprovantePendente: true },
           })
 
           const exportacao = gerarCsvInscricoes(formulario, inscricoes)

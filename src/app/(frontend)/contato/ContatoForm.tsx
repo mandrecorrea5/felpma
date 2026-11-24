@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useRef } from 'react'
+import { eventoGA } from '@/lib/analytics/ga'
 import { rastreia } from '@/lib/ndovu/client'
 import { enviarContato, type EstadoContato } from './actions'
 
@@ -62,6 +63,9 @@ export function ContatoForm({
     }
 
     rastreia.acao('contato_enviado', { feature: 'contato', metadados: { ...metadados, duracaoMs } })
+    // GA4: `generate_lead` é evento recomendado (aparece em relatórios de lead)
+    // e não leva nome, e-mail nem a mensagem digitada — só o assunto.
+    eventoGA('generate_lead', { origem: 'formulario_contato', assunto: metadados.assunto })
   }, [estado])
 
   if (estado.ok) {

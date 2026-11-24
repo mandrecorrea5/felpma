@@ -149,3 +149,14 @@ export const STATUS_INSCRICAO = [
  */
 export const CAMPO_COMPROVANTE = 'comprovante-pagamento'
 export const ROTULO_COMPROVANTE = 'Comprovante de pagamento'
+
+/**
+ * Situações em que ainda faz sentido cobrar o comprovante de pagamento.
+ * Inscrição cancelada ou rejeitada está encerrada.
+ */
+export const STATUS_COM_PENDENCIA = [
+  'recebida',
+  'em-analise',
+  'aprovada',
+  'lista-espera',
+] as const

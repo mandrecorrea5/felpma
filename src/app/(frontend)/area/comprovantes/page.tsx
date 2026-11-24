@@ -7,7 +7,7 @@ import { exigirAtleta } from '@/lib/atleta/guarda'
 import { labelOf, STATUS_INSCRICAO } from '@/lib/constants'
 import { dataCurta, periodo, tamanhoArquivo } from '@/lib/format'
 import { acceptDoCampo, LIMITE_ARQUIVO_MB } from '@/lib/inscricoes/arquivo'
-import { comprovantesDoAtleta } from '@/lib/inscricoes/comprovante'
+import { comprovantesDoAtleta, estaPendenteDeComprovante } from '@/lib/inscricoes/comprovante'
 import { inscricoesDoAtleta } from '@/lib/inscricoes/consultas'
 import { enviarComprovante } from './actions'
 
@@ -45,6 +45,9 @@ export default async function ComprovantesPage({ searchParams }: Props) {
   const comComprovante = ativas.filter((inscricao) =>
     comprovantes.has(String(inscricao.id)),
   )
+  const pendentes = ativas.filter((inscricao) =>
+    estaPendenteDeComprovante(inscricao, comprovantes.get(String(inscricao.id))),
+  )
 
   return (
     <>
@@ -59,6 +62,22 @@ export default async function ComprovantesPage({ searchParams }: Props) {
           <div className="alerta alerta--ok" role="status">
             Comprovante enviado. A federação recebeu uma cópia por e-mail.{' '}
             <Link href={`/area/inscricoes/${enviado.protocolo}`}>Ver a inscrição</Link>.
+          </div>
+        ) : null}
+
+        {pendentes.length > 0 ? (
+          <div className="alerta alerta--erro" role="alert">
+            <strong>
+              {pendentes.length === 1
+                ? 'Uma inscrição está pendente'
+                : `${pendentes.length} inscrições estão pendentes`}{' '}
+              de comprovante.
+            </strong>{' '}
+            Escolha a competição abaixo e envie o comprovante de pagamento para regularizar.
+          </div>
+        ) : ativas.length > 0 ? (
+          <div className="alerta alerta--ok" role="status">
+            Nenhuma inscrição pendente de comprovante de pagamento.
           </div>
         ) : null}
 
@@ -86,13 +105,19 @@ export default async function ComprovantesPage({ searchParams }: Props) {
                   >
                     {ativas.map((inscricao) => {
                       const evento = typeof inscricao.evento === 'object' ? inscricao.evento : null
-                      const quantos = comprovantes.get(String(inscricao.id))?.length ?? 0
+                      const lista = comprovantes.get(String(inscricao.id))
+                      const quantos = lista?.length ?? 0
+                      const faltaComprovante = estaPendenteDeComprovante(inscricao, lista)
                       const quando = periodo(evento?.dataInicio, evento?.dataFim)
                       return (
                         <option key={inscricao.id} value={inscricao.protocolo}>
                           {nomeDoEvento(evento)}
                           {quando ? ` — ${quando}` : ''} · {inscricao.protocolo}
-                          {quantos > 0 ? ' (comprovante já enviado)' : ''}
+                          {quantos > 0
+                            ? ' (comprovante enviado)'
+                            : faltaComprovante
+                              ? ' (comprovante pendente)'
+                              : ''}
                         </option>
                       )
                     })}

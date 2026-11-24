@@ -8,6 +8,7 @@ import * as migration_20261110_041139_add_arquivos_e_confirmacao from './2026111
 import * as migration_20261110_111621_add_grupos_opcoes from './20261110_111621_add_grupos_opcoes';
 import * as migration_20261120_214500_categoria_peso_inscricao from './20261120_214500_categoria_peso_inscricao';
 import * as migration_20261120_223000_sexo_atleta from './20261120_223000_sexo_atleta';
+import * as migration_20261124_120000_texto_comprovante_area from './20261124_120000_texto_comprovante_area';
 
 export const migrations = [
   {
@@ -59,5 +60,10 @@ export const migrations = [
     up: migration_20261120_223000_sexo_atleta.up,
     down: migration_20261120_223000_sexo_atleta.down,
     name: '20261120_223000_sexo_atleta'
+  },
+  {
+    up: migration_20261124_120000_texto_comprovante_area.up,
+    down: migration_20261124_120000_texto_comprovante_area.down,
+    name: '20261124_120000_texto_comprovante_area'
   },
 ];

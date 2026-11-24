@@ -1450,7 +1450,11 @@ p {
   width: 100%;
 }
 .select {
+  /* Filtros e toolbars usam a largura do conteúdo; `max-width` impede que uma
+     opção longa (ex.: "competição — data · protocolo") estique a página no
+     celular e force o navegador a encolher o layout inteiro. */
   width: auto;
+  max-width: 100%;
   padding-right: 34px;
 }
 .textarea {
@@ -1487,6 +1491,15 @@ p {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  /* Campo dentro de card/grid pode ser espremido pelo conteúdo (texto longo
+     de opção, protocolo, e-mail). Sem isto o item mínimo estica o layout. */
+  min-width: 0;
+}
+
+/* Em formulário, o select ocupa a largura do campo — como os demais inputs.
+   Fora do `.field` (filtros, toolbars) ele continua no tamanho do conteúdo. */
+.field > .select {
+  width: 100%;
 }
 .field label {
   font-weight: 600;
@@ -2760,4 +2773,66 @@ p {
 }
 .inscricao-lista__txt {
   flex: 1 1 260px;
+}
+
+/* ---------- Consentimento de cookies (GA4) ---------- */
+.consentimento {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  /* Acima do conteúdo e da barra fixa; abaixo do menu de celular (z 100). */
+  z-index: 90;
+  width: min(760px, calc(100vw - 32px));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  align-items: center;
+  padding: 16px 18px;
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--r-md);
+  background: var(--fundo);
+  box-shadow: 0 18px 48px rgba(20, 20, 26, 0.18);
+}
+.consentimento__texto {
+  flex: 1 1 340px;
+}
+.consentimento__texto strong {
+  display: block;
+  font-family: var(--f-display);
+  font-size: 15px;
+  line-height: 1.3;
+}
+.consentimento__texto p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--texto-3);
+}
+.consentimento__texto a {
+  color: var(--azul);
+  text-decoration: underline;
+}
+.consentimento__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.footer__bottom-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.link-botao {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #8c8c99;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.link-botao:hover {
+  color: var(--fundo);
 }

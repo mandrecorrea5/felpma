@@ -23,6 +23,10 @@ ENV NEXT_PUBLIC_NDOVU_ENDPOINT=$NEXT_PUBLIC_NDOVU_ENDPOINT \
     NEXT_PUBLIC_NDOVU_API_KEY=$NEXT_PUBLIC_NDOVU_API_KEY \
     NEXT_PUBLIC_NDOVU_APP=$NEXT_PUBLIC_NDOVU_APP \
     NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
+# GA4. Idem: é público e vai embutido no bundle. Vazio = nenhum script do
+# Google é enviado (o banner de consentimento continua funcionando).
+ARG NEXT_PUBLIC_GA_ID
+ENV NEXT_PUBLIC_GA_ID=$NEXT_PUBLIC_GA_ID
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # O build gera as páginas sob demanda; não precisa de banco nesta etapa

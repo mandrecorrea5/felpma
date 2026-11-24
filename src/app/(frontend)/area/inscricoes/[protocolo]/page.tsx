@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { EventoGA } from '@/components/analytics/EventoGA'
 import { PageHero } from '@/components/ui'
 import { Icon } from '@/components/Icon'
 import { exigirAtleta } from '@/lib/atleta/guarda'
@@ -9,7 +10,10 @@ import { decifrar, ehCifrado } from '@/lib/crypto/campos'
 import { mascararCpf } from '@/lib/cpf'
 import { dataCurta, dataLonga, tamanhoArquivo } from '@/lib/format'
 import { categoriaPesoDaInscricao, ehCategoriaPeso } from '@/lib/inscricoes/categoria-peso'
-import { comprovantesDaInscricao } from '@/lib/inscricoes/comprovante'
+import {
+  comprovantesDaInscricao,
+  estaPendenteDeComprovante,
+} from '@/lib/inscricoes/comprovante'
 import { getPayloadClient } from '@/lib/payload'
 import { cancelarInscricao } from './actions'
 
@@ -18,7 +22,7 @@ export const dynamic = 'force-dynamic'
 
 type Props = {
   params: Promise<{ protocolo: string }>
-  searchParams: Promise<{ cancelada?: string; erro?: string }>
+  searchParams: Promise<{ cancelada?: string; enviada?: string; erro?: string }>
 }
 
 type Snapshot = {
@@ -69,6 +73,7 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
   if (!inscricao) notFound()
 
   const comprovantes = await comprovantesDaInscricao(atleta.id, inscricao.id)
+  const pendenteComprovante = estaPendenteDeComprovante(inscricao, comprovantes)
 
   const evento = typeof inscricao.evento === 'object' ? inscricao.evento : null
   const categoriaPeso = categoriaPesoDaInscricao(inscricao)
@@ -122,12 +127,32 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
           <span className={`status ${TOM[inscricao.status] ?? 'status--blue'}`}>
             {labelOf(STATUS_INSCRICAO, inscricao.status)}
           </span>
+          {pendenteComprovante ? (
+            <span
+              className="status status--red"
+              title="Falta enviar o comprovante de pagamento"
+            >
+              Pendente
+            </span>
+          ) : null}
           {categoriaPeso ? <span className="tag">Categoria de peso: {categoriaPeso}</span> : null}
           <span className="tag tag--cinza">Enviada em {dataCurta(inscricao.enviadaEm)}</span>
         </div>
       </PageHero>
 
       <div className="container section" style={{ display: 'grid', gap: 28, maxWidth: 820 }}>
+        {/*
+          Conversão principal do site (GA4). `protocolo` fica só na chave de
+          deduplicação: ele identifica o titular e não vai como parâmetro — vai
+          o slug do evento, que é o dado de negócio.
+        */}
+        {sp.enviada ? (
+          <EventoGA
+            chave={`inscricao:${inscricao.protocolo}`}
+            nome="inscricao_enviada"
+            parametros={{ evento: evento?.slug ?? 'desconhecido' }}
+          />
+        ) : null}
         {sp.cancelada ? (
           <div className="alerta alerta--ok" role="status">
             Inscrição cancelada.
@@ -141,6 +166,26 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
         {inscricao.status === 'rejeitada' && inscricao.motivoRejeicao ? (
           <div className="alerta alerta--erro" role="alert">
             <strong>Motivo:</strong> {inscricao.motivoRejeicao}
+          </div>
+        ) : null}
+        {pendenteComprovante ? (
+          <div
+            className="alerta alerta--erro"
+            role="alert"
+            style={{ display: 'grid', gap: 10 }}
+          >
+            <div>
+              <strong>Inscrição pendente de comprovante.</strong> Falta o envio do comprovante de
+              pagamento. A inscrição fica pendente até a federação receber o comprovante.
+            </div>
+            <div>
+              <Link
+                href={`/area/comprovantes?inscricao=${inscricao.protocolo}`}
+                className="btn btn--sm btn--vermelho"
+              >
+                Enviar comprovante agora
+              </Link>
+            </div>
           </div>
         ) : null}
 
@@ -201,7 +246,12 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
             Comprovante de pagamento
           </h2>
           <div className="card card--pad" style={{ marginTop: 12, display: 'grid', gap: 14 }}>
-            {comprovantes.length === 0 ? (
+            {pendenteComprovante ? (
+              <div className="alerta alerta--erro" role="status" style={{ margin: 0 }}>
+                <strong>Comprovante pendente.</strong> Nenhum comprovante de pagamento foi
+                enviado para esta inscrição. Envie um PDF ou uma foto (JPG/PNG) para regularizar.
+              </div>
+            ) : comprovantes.length === 0 ? (
               <p className="muted" style={{ margin: 0, fontSize: 14 }}>
                 Nenhum comprovante enviado por aqui. Se o pagamento foi feito depois da inscrição,
                 envie o comprovante para a federação.
@@ -232,7 +282,9 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
               <div>
                 <Link
                   href={`/area/comprovantes?inscricao=${inscricao.protocolo}`}
-                  className="btn btn--sm btn--azul"
+                  className={
+                    pendenteComprovante ? 'btn btn--sm btn--vermelho' : 'btn btn--sm btn--azul'
+                  }
                 >
                   {comprovantes.length === 0 ? 'Enviar comprovante' : 'Enviar outro comprovante'}
                 </Link>
