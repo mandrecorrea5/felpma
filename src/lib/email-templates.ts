@@ -333,3 +333,42 @@ export const emailFederacaoComprovante = (args: {
     `Comprovante de pagamento — inscrição ${args.protocolo}.`,
   )
 }
+
+/**
+ * Mensagem enviada pelo formulário de contato do site.
+ *
+ * O `Reply-To` do e-mail aponta para o visitante (montado em
+ * `enviarContato`), então basta responder para falar com ele. O corpo traz a
+ * mensagem como texto (escapada), não como HTML livre.
+ */
+export const emailContatoRecebido = (args: {
+  adminUrl: string
+  assunto: string
+  email: string
+  mensagem: string
+  nome: string
+  telefone?: string
+}): string => {
+  const linhas = [
+    linhaDetalhe('Nome', args.nome),
+    linhaDetalhe('E-mail', args.email),
+    args.telefone ? linhaDetalhe('Telefone', args.telefone) : '',
+    linhaDetalhe('Assunto', args.assunto),
+  ]
+    .filter(Boolean)
+    .join('')
+
+  const corpoMensagem = escapar(args.mensagem).replace(/\r?\n/g, '<br>')
+
+  return layout(
+    'Nova mensagem pelo site',
+    `<p style="margin:0">Alguém usou o formulário de contato da FELPMA.</p>
+     ${tabelaDetalhes(linhas)}
+     <h2 style="margin:26px 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.3;color:#14141a;font-weight:700">Mensagem</h2>
+     ${caixa(`<span style="white-space:normal">${corpoMensagem}</span>`)}
+     ${caixa('Responda este e-mail para falar direto com quem escreveu — o endereço dele já está no "Responder".', true)}
+     ${botao(args.adminUrl, 'Abrir no painel')}`,
+    'Você recebeu este e-mail porque ele faz parte do canal de contato da FELPMA.',
+    `Contato — ${args.assunto} — ${args.nome}.`,
+  )
+}

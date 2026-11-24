@@ -253,6 +253,11 @@ A caixa da federação é definida por `EMAIL_FEDERACAO`; sem a variável, o pad
 `lpomaranhao@gmail.com`. Se o Resend recusar o envio com anexo, o sistema tenta de novo sem
 anexo para a federação ao menos ser avisada — o original continua no painel.
 
+O formulário de **Contato** (`/contato`) grava a mensagem em **Mensagens de contato** e manda
+um aviso para `EMAIL_CONTATO` (padrão `contato@felpma.com.br`), com `Reply-To` do visitante —
+basta responder no cliente de e-mail para falar com ele. O envio é best-effort: se o Resend
+falhar, a mensagem continua no painel e o visitante vê o sucesso normal.
+
 - **Sem as credenciais em produção:** o cadastro de atleta é bloqueado com uma mensagem clara
   (melhor do que criar uma conta que nunca poderá ser ativada); a recuperação de senha fica
   oculta. A confirmação de inscrição e a cópia da federação apenas registram o erro no log — a

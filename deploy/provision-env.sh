@@ -89,6 +89,8 @@ NDOVU_OTLP_NIVEL=warn
 RESEND_API_KEY=
 EMAIL_FROM_ADDRESS=
 EMAIL_FROM_NAME=FELPMA
+# Mensagens do formulário de contato (Reply-To = visitante).
+EMAIL_CONTATO=contato@felpma.com.br
 
 # --- Backup ------------------------------------------------------------------
 # Com as quatro R2_* vazias o upload é pulado e o dump fica só no disco da VPS

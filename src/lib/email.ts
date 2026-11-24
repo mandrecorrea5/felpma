@@ -39,6 +39,16 @@ const nomeRemetente = (): string => process.env.EMAIL_FROM_NAME?.trim() || 'FELP
 export const emailFederacao = (): string =>
   process.env.EMAIL_FEDERACAO?.trim() || 'lpomaranhao@gmail.com'
 
+/**
+ * Caixa que recebe as mensagens do formulário de contato do site.
+ *
+ * O formulário continua gravando em `mensagens` (painel), mas a federação pediu
+ * o aviso também por e-mail — quem responde usa "Responder", que já vai para o
+ * e-mail do visitante.
+ */
+export const emailContato = (): string =>
+  process.env.EMAIL_CONTATO?.trim() || 'contato@felpma.com.br'
+
 /** Extrai o primeiro link do HTML para o log de desenvolvimento. */
 const primeiroLink = (html?: null | string): string | undefined =>
   typeof html === 'string' ? html.match(/https?:\/\/[^\s"'<>]+/)?.[0] : undefined

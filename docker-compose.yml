@@ -44,6 +44,9 @@ services:
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-FELPMA}
       # Cópia operacional de cada inscrição e comprovante enviados pelo site.
       EMAIL_FEDERACAO: ${EMAIL_FEDERACAO:-lpomaranhao@gmail.com}
+      # Caixa que recebe as mensagens do formulário de contato (com Reply-To do
+      # visitante). Sem a variável, cai no padrão da federação.
+      EMAIL_CONTATO: ${EMAIL_CONTATO:-contato@felpma.com.br}
     ports:
       - '3000:3000'
     volumes:
