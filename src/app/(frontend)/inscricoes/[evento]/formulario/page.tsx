@@ -9,7 +9,7 @@ import { periodo } from '@/lib/format'
 import {
   eventoPorSlug,
   formularioPublicado,
-  inscricaoDoAtleta,
+  inscricoesDoAtletaNoEvento,
   inscritosNoEvento,
 } from '@/lib/inscricoes/consultas'
 import { estadoInscricao, type EventoParaInscricao } from '@/lib/inscricoes/estado'
@@ -35,11 +35,12 @@ export default async function FormularioPage({ params }: Props) {
   if (!formulario) notFound()
 
   const inscritos = await inscritosNoEvento(evento.id)
-  const inscricao = await inscricaoDoAtleta(evento.id, atleta.id)
+  const inscricoes = await inscricoesDoAtletaNoEvento(evento.id, atleta.id)
   const estado = estadoInscricao(evento as EventoParaInscricao, {
     temFormulario: true,
     inscritos,
-    jaInscrito: Boolean(inscricao),
+    inscricoesDoAtleta: inscricoes.length,
+    limitePorAtleta: formulario.limitePorAtleta ?? 1,
   })
 
   if (!estado.podeInscrever) {
@@ -54,9 +55,12 @@ export default async function FormularioPage({ params }: Props) {
             {estado.rotulo}: {estado.detalhe}
           </div>
           <div style={{ marginTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {inscricao ? (
-              <Link href={`/area/inscricoes/${inscricao.protocolo}`} className="btn btn--azul">
-                Ver minha inscrição
+            {inscricoes[0] ? (
+              <Link
+                href={`/area/inscricoes/${inscricoes[0].protocolo}`}
+                className="btn btn--azul"
+              >
+                {inscricoes.length > 1 ? 'Ver minhas inscrições' : 'Ver minha inscrição'}
               </Link>
             ) : null}
             <Link href={`/calendario/${evento.slug}`} className="btn btn--contorno">
@@ -106,6 +110,17 @@ export default async function FormularioPage({ params }: Props) {
       />
 
       <div className="container section" style={{ maxWidth: 820 }}>
+        {inscricoes.length > 0 ? (
+          <div className="alerta alerta--ok" role="status">
+            <strong>
+              Você já tem {inscricoes.length === 1 ? 'uma inscrição' : `${inscricoes.length} inscrições`}{' '}
+              neste evento.
+            </strong>{' '}
+            Pode se inscrever em outra <strong>categoria de idade</strong> (por exemplo, Sub-17 e
+            Sub-20), desde que a <strong>categoria de peso</strong> seja a mesma. Cada inscrição
+            fica com seu próprio protocolo e seu comprovante.
+          </div>
+        ) : null}
         <FormularioInscricao
           acao={enviarInscricao}
           camposBloqueados={camposBloqueados}

@@ -55,6 +55,7 @@ Também ficam disponíveis `sitemap.xml`, `robots.txt`, metadados de compartilha
 - **Total no resultado**: calculado sozinho (arranco + arremesso) quando fica vazio.
 - **Curtidas nas notícias**: coração com contador na página da notícia e o número nos cards da listagem e da home. É anônimo: cada navegador recebe um UUID em cookie httpOnly `felpma-visitante` e curte/descurte uma vez por notícia — sem conta, sem IP, sem e-mail. O contador em `noticias.curtidas` é recalculado a partir da coleção **Curtidas** a cada clique (a fonte da verdade é a coleção); o índice único `(noticia, chave)` impede curtida duplicada em cliques simultâneos.
 - **Área do atleta**: o cabeçalho e o rodapé apontam para `/area`; *Configurações do site › Links externos* permite sobrescrever com um endereço externo (ex.: SSO).
+- **Mais de uma categoria de idade**: o atleta pode se inscrever em várias faixas etárias no mesmo evento (Sub-17, Sub-20, Adulto…) — a pesagem é uma só, então todas as inscrição têm de ficar na **mesma categoria de peso**. O limite vem de *Formulários de inscrição › Inscrições por atleta* (padrão 1, ou seja, o comportamento antigo). Repetir a mesma faixa é recusado; o peso é comparado pelo número em kg do rótulo da categoria ("Sub-17 – 61 kg" = 61 kg), e cada inscrição continua com protocolo, comprovante e confirmação próprios.
 
 ## Inscrições e área do atleta
 

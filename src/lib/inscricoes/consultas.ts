@@ -52,21 +52,32 @@ export async function inscritosNoEvento(eventoId: number | string): Promise<numb
   return totalDocs
 }
 
-export async function inscricaoDoAtleta(
+/**
+ * Todas as inscrições ativas do atleta no evento.
+ *
+ * Pode ser mais de uma: o mesmo atleta se inscreve em várias categorias de
+ * idade (Sub-17, Sub-20, Adulto), desde que a categoria de peso seja a mesma.
+ * Canceladas não contam — quem cancelou pode se inscrever de novo.
+ */
+export async function inscricoesDoAtletaNoEvento(
   eventoId: number | string,
   atletaId: number | string,
-): Promise<Inscricao | null> {
+): Promise<Inscricao[]> {
   const payload = await getPayloadClient()
   const { docs } = await payload.find({
     collection: 'inscricoes',
     where: {
-      and: [{ evento: { equals: eventoId } }, { atleta: { equals: atletaId } }],
+      and: [
+        { evento: { equals: eventoId } },
+        { atleta: { equals: atletaId } },
+        { status: { not_equals: 'cancelada' } },
+      ],
     },
     sort: '-enviadaEm',
-    limit: 1,
+    limit: 25,
     depth: 1,
   })
-  return docs[0] ?? null
+  return docs
 }
 
 export async function inscricoesDoAtleta(atletaId: number | string): Promise<Inscricao[]> {
@@ -118,13 +129,16 @@ export async function painelDoAtleta(atletaId: number | string): Promise<PainelD
       limit: 200,
       depth: 1,
       // A lista só precisa saber que o formulário existe e a qual evento pertence.
-      select: { evento: true, versao: true },
+      select: { evento: true, versao: true, limitePorAtleta: true },
     }),
     inscricoesDoAtleta(atletaId),
   ])
 
   // Um evento pode ter mais de uma versão publicada: vale sempre a mais recente.
-  const formularioPorEvento = new Map<string, { id: number; evento: Competicao; versao: number }>()
+  const formularioPorEvento = new Map<
+    string,
+    { id: number; evento: Competicao; limitePorAtleta: number; versao: number }
+  >()
   for (const formulario of publicados.docs) {
     if (typeof formulario.evento !== 'object' || !formulario.evento) continue
     const chave = String(formulario.evento.id)
@@ -134,27 +148,32 @@ export async function painelDoAtleta(atletaId: number | string): Promise<PainelD
       formularioPorEvento.set(chave, {
         id: formulario.id,
         evento: formulario.evento as Competicao,
+        limitePorAtleta: Number(formulario.limitePorAtleta ?? 1),
         versao,
       })
     }
   }
 
-  // A inscrição mais recente de cada evento (a lista já vem da mais nova para a mais antiga).
+  // A inscrição mais recente de cada evento (a lista já vem da mais nova para a mais antiga)
+  // e quantas ativas o atleta tem ali — ele pode ter uma por categoria de idade.
   const inscricaoPorEvento = new Map<string, Inscricao>()
+  const contagemPorEvento = new Map<string, number>()
   for (const inscricao of inscricoes) {
+    if (inscricao.status === 'cancelada') continue
     const eventoId = typeof inscricao.evento === 'object' ? inscricao.evento?.id : inscricao.evento
-    if (eventoId != null && !inscricaoPorEvento.has(String(eventoId))) {
-      inscricaoPorEvento.set(String(eventoId), inscricao)
-    }
+    if (eventoId == null) continue
+    const chave = String(eventoId)
+    contagemPorEvento.set(chave, (contagemPorEvento.get(chave) ?? 0) + 1)
+    if (!inscricaoPorEvento.has(chave)) inscricaoPorEvento.set(chave, inscricao)
   }
 
   const itens = await Promise.all(
     [...formularioPorEvento.values()].map(async (formulario): Promise<FormularioDoPainel> => {
       const evento = formulario.evento
-      const inscricao = inscricaoPorEvento.get(String(evento.id))
+      const feitas = contagemPorEvento.get(String(evento.id)) ?? 0
       // Só conta vagas quando isso pode mudar a decisão: evento com limite,
-      // inscrições abertas e atleta sem inscrição.
-      const contarVagas = Boolean(evento.limiteVagas && evento.inscricoesAbertas && !inscricao)
+      // inscrições abertas e atleta ainda sem inscrição.
+      const contarVagas = Boolean(evento.limiteVagas && evento.inscricoesAbertas && feitas === 0)
       const inscritos = contarVagas ? await inscritosNoEvento(evento.id) : 0
 
       return {
@@ -163,7 +182,8 @@ export async function painelDoAtleta(atletaId: number | string): Promise<PainelD
         estado: estadoInscricao(evento, {
           temFormulario: true,
           inscritos,
-          jaInscrito: Boolean(inscricao),
+          inscricoesDoAtleta: feitas,
+          limitePorAtleta: formulario.limitePorAtleta,
         }),
       }
     }),

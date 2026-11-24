@@ -41,7 +41,16 @@ export type EventoParaInscricao = Pick<
 export type ContextoInscricao = {
   agora?: Date
   inscritos?: number
-  jaInscrito?: boolean
+  /**
+   * Quantas inscrições ativas o atleta já tem neste evento.
+   *
+   * Pode passar de 1: a mesma pessoa se inscreve em mais de uma categoria de
+   * idade (Sub-17, Sub-20, Adulto...), desde que a categoria de peso seja a
+   * mesma. Quem limita é o `limitePorAtleta` do formulário.
+   */
+  inscricoesDoAtleta?: number
+  /** Limite configurado no formulário. Ausente = 1 (uma inscrição por atleta). */
+  limitePorAtleta?: number
   temFormulario?: boolean
 }
 
@@ -139,11 +148,18 @@ export function estadoInscricao(
     }
   }
 
-  if (contexto.jaInscrito) {
+  // Quantas inscrições ativas o atleta já tem e quantas o formulário permite.
+  const feitas = Math.max(0, Math.trunc(contexto.inscricoesDoAtleta ?? 0))
+  const limite = Math.max(1, Math.trunc(contexto.limitePorAtleta ?? 1))
+
+  if (feitas >= limite) {
     return {
       estado: 'inscrito',
       rotulo: 'Inscrição já recebida',
-      detalhe: 'Você já tem uma inscrição neste evento.',
+      detalhe:
+        limite > 1
+          ? `Você já usou as ${limite} inscrições deste evento.`
+          : 'Você já tem uma inscrição neste evento.',
       podeInscrever: false,
     }
   }
@@ -151,7 +167,12 @@ export function estadoInscricao(
   return {
     estado: 'aberto',
     rotulo: 'Inscrições abertas',
-    detalhe: `Encerra em ${dataCurta(evento.inscricoesAte)}.`,
+    detalhe:
+      feitas > 0
+        ? `Você já tem ${feitas === 1 ? 'uma inscrição' : `${feitas} inscrições`} neste evento: ` +
+          'pode se inscrever em outra categoria de idade, mantendo a mesma categoria de peso. ' +
+          `Encerra em ${dataCurta(evento.inscricoesAte)}.`
+        : `Encerra em ${dataCurta(evento.inscricoesAte)}.`,
     podeInscrever: true,
   }
 }

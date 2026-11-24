@@ -5,7 +5,12 @@ import { RichText } from '@/components/RichText'
 import { PageHero } from '@/components/ui'
 import { atletaAtual } from '@/lib/atleta/sessao'
 import { dataLonga, periodo } from '@/lib/format'
-import { inscricaoDoAtleta, eventoPorSlug, formularioPublicado, inscritosNoEvento } from '@/lib/inscricoes/consultas'
+import {
+  eventoPorSlug,
+  formularioPublicado,
+  inscricoesDoAtletaNoEvento,
+  inscritosNoEvento,
+} from '@/lib/inscricoes/consultas'
 import { estadoInscricao, type EventoParaInscricao } from '@/lib/inscricoes/estado'
 
 export const metadata: Metadata = {
@@ -24,12 +29,13 @@ export default async function InscricaoEventoPage({ params }: Props) {
   const formulario = await formularioPublicado(evento.id)
   const atleta = await atletaAtual()
   const inscritos = await inscritosNoEvento(evento.id)
-  const inscricao = atleta ? await inscricaoDoAtleta(evento.id, atleta.id) : null
+  const inscricoes = atleta ? await inscricoesDoAtletaNoEvento(evento.id, atleta.id) : []
 
   const estado = estadoInscricao(evento as EventoParaInscricao, {
     temFormulario: Boolean(formulario),
     inscritos,
-    jaInscrito: Boolean(inscricao),
+    inscricoesDoAtleta: inscricoes.length,
+    limitePorAtleta: formulario?.limitePorAtleta ?? 1,
   })
 
   const retorno = encodeURIComponent(`/inscricoes/${slug}/formulario`)
@@ -71,7 +77,7 @@ export default async function InscricaoEventoPage({ params }: Props) {
             {estado.estado === 'aberto' ? (
               atleta ? (
                 <Link href={`/inscricoes/${slug}/formulario`} className="btn btn--azul">
-                  Preencher inscrição
+                  {inscricoes.length > 0 ? 'Inscrever em outra categoria' : 'Preencher inscrição'}
                 </Link>
               ) : (
                 <Link href={`/area/entrar?retorno=${retorno}`} className="btn btn--azul">
@@ -80,9 +86,12 @@ export default async function InscricaoEventoPage({ params }: Props) {
               )
             ) : null}
 
-            {estado.estado === 'inscrito' && inscricao ? (
-              <Link href={`/area/inscricoes/${inscricao.protocolo}`} className="btn btn--azul">
-                Ver minha inscrição
+            {estado.estado === 'inscrito' && inscricoes.length > 0 ? (
+              <Link
+                href={`/area/inscricoes/${inscricoes[0].protocolo}`}
+                className="btn btn--azul"
+              >
+                {inscricoes.length > 1 ? 'Ver minhas inscrições' : 'Ver minha inscrição'}
               </Link>
             ) : null}
 

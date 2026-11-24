@@ -6,6 +6,13 @@ import { atletaAtual } from '@/lib/atleta/sessao'
 import type { EstadoFormulario } from '@/lib/atleta/tipos'
 import { cpfValido, normalizarCpf } from '@/lib/cpf'
 import { cifrar } from '@/lib/crypto/campos'
+import {
+  categoriaIdadeDeRespostas,
+  categoriaPesoDaInscricao,
+  categoriaPesoDeRespostas,
+  mesmaCategoria,
+  pesoDaCategoria,
+} from '@/lib/inscricoes/categoria-peso'
 import { limitar } from '@/lib/rate-limit'
 import { origemDaRequisicao, provaConsentimento } from '@/lib/inscricoes/consentimento'
 import {
@@ -20,7 +27,7 @@ import { ehMenorDeIdade, idadeEm } from '@/lib/inscricoes/idade'
 import {
   eventoPorSlug,
   formularioPublicado,
-  inscricaoDoAtleta,
+  inscricoesDoAtletaNoEvento,
   inscritosNoEvento,
 } from '@/lib/inscricoes/consultas'
 import {
@@ -70,11 +77,12 @@ export async function enviarInscricao(
   }
 
   const inscritos = await inscritosNoEvento(evento.id)
-  const jaInscrito = await inscricaoDoAtleta(evento.id, atleta.id)
+  const existentes = await inscricoesDoAtletaNoEvento(evento.id, atleta.id)
   const estado = estadoInscricao(evento as EventoParaInscricao, {
     temFormulario: true,
     inscritos,
-    jaInscrito: Boolean(jaInscrito),
+    inscricoesDoAtleta: existentes.length,
+    limitePorAtleta: formulario.limitePorAtleta ?? 1,
   })
 
   if (!estado.podeInscrever) return { ok: false, erro: estado.detalhe }
@@ -197,6 +205,44 @@ export async function enviarInscricao(
   const payload = await getPayloadClient()
   const protocolo = gerarProtocolo()
   const respostasSnapshot = montarSnapshot(campos, validacao.valores)
+
+  // ------------------------------------------------- categorias (2ª inscrição)
+  // O mesmo atleta pode se inscrever em mais de uma categoria de idade no
+  // evento (Sub-17, Sub-20, Adulto...) — nunca em categorias de peso
+  // diferentes, porque a pesagem é uma só. A faixa etária também não se repete:
+  // duas inscrições iguais seriam a mesma vaga.
+  if (existentes.length > 0) {
+    const idadeNova = categoriaIdadeDeRespostas(respostasSnapshot)
+    const categoriaNova = categoriaPesoDeRespostas(respostasSnapshot)
+    const pesoNovo = pesoDaCategoria(categoriaNova)
+
+    for (const anterior of existentes) {
+      const idadeAnterior = categoriaIdadeDeRespostas(anterior.respostas)
+      if (mesmaCategoria(idadeNova, idadeAnterior)) {
+        return {
+          ok: false,
+          erro: `Você já tem uma inscrição na categoria ${idadeNova ?? 'selecionada'} neste evento.`,
+        }
+      }
+    }
+
+    const categoriasAnteriores = existentes.map((inscricao) => ({
+      categoria: categoriaPesoDaInscricao(inscricao),
+      peso: pesoDaCategoria(categoriaPesoDaInscricao(inscricao)),
+    }))
+
+    for (const anterior of categoriasAnteriores) {
+      if (pesoNovo != null && anterior.peso != null && anterior.peso !== pesoNovo) {
+        return {
+          ok: false,
+          erro:
+            `Todas as suas inscrições neste evento precisam ser na mesma categoria de peso. ` +
+            `Já existe uma em ${anterior.categoria ?? `${anterior.peso} kg`} e esta é em ` +
+            `${categoriaNova ?? `${pesoNovo} kg`}.`,
+        }
+      }
+    }
+  }
 
   const arquivosPorCampo = new Map<string, ArquivoSnapshot>()
   const arquivosGravados: Array<number | string> = []
