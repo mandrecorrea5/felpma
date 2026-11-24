@@ -429,6 +429,10 @@ export interface Competicao {
    */
   limiteVagas?: number | null;
   /**
+   * Taxa cobrada por inscrição. Vazio ou 0 = evento sem cobrança: ninguém precisa enviar comprovante de pagamento.
+   */
+  valorInscricao?: number | null;
+  /**
    * Padrão: cada inscrição ocupa uma vaga (quem se inscreve em Sub-17 e Sub-20 ocupa duas). Em "Atletas", a pessoa conta uma vez só, quantas categorias fizer.
    */
   contarVagasPor?: ('inscricoes' | 'atletas') | null;
@@ -1660,6 +1664,7 @@ export interface CompeticoesSelect<T extends boolean = true> {
   status?: T;
   inscricoesAbertas?: T;
   limiteVagas?: T;
+  valorInscricao?: T;
   contarVagasPor?: T;
   avisoForaDoPeriodo?: T;
   formularios?: T;

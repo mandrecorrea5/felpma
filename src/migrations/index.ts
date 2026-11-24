@@ -13,6 +13,7 @@ import * as migration_20261124_145650_add_curtidas from './20261124_145650_add_c
 import * as migration_20261124_181157_contar_vagas_por from './20261124_181157_contar_vagas_por';
 import * as migration_20261124_183810_resposta_contato from './20261124_183810_resposta_contato';
 import * as migration_20261124_191112_comprovante_por_evento from './20261124_191112_comprovante_por_evento';
+import * as migration_20261124_194213_valor_inscricao from './20261124_194213_valor_inscricao';
 
 export const migrations = [
   {
@@ -88,6 +89,11 @@ export const migrations = [
   {
     up: migration_20261124_191112_comprovante_por_evento.up,
     down: migration_20261124_191112_comprovante_por_evento.down,
-    name: '20261124_191112_comprovante_por_evento'
+    name: '20261124_191112_comprovante_por_evento',
+  },
+  {
+    up: migration_20261124_194213_valor_inscricao.up,
+    down: migration_20261124_194213_valor_inscricao.down,
+    name: '20261124_194213_valor_inscricao'
   },
 ];

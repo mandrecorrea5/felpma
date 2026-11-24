@@ -11,6 +11,7 @@ import {
   comprovantesDoAtleta,
   estaPendenteDeComprovante,
   eventoDaInscricao,
+  eventoCobraInscricao,
   MAX_COMPROVANTES_POR_EVENTO,
 } from '@/lib/inscricoes/comprovante'
 import { inscricoesDoAtleta } from '@/lib/inscricoes/consultas'
@@ -68,9 +69,14 @@ export default async function ComprovantesPage({ searchParams }: Props) {
 
   const enviado = sp.enviado ? (porEvento.get(String(sp.enviado)) ?? null) : null
 
-  const eventosPendentes = [...porEvento.entries()].filter(([chave, grupo]) =>
+  // Evento sem taxa não entra na cobrança: nada de comprovante nem pendência.
+  const eventosComTaxa = [...porEvento.entries()].filter(([, grupo]) =>
+    eventoCobraInscricao(grupo.evento),
+  )
+
+  const eventosPendentes = eventosComTaxa.filter(([chave, grupo]) =>
     grupo.inscricoes.some((inscricao) =>
-      estaPendenteDeComprovante(inscricao, comprovantes.get(chave)),
+      estaPendenteDeComprovante(inscricao, comprovantes.get(chave), grupo.evento),
     ),
   )
   const eventosComComprovante = [...porEvento.entries()].filter(
@@ -106,7 +112,7 @@ export default async function ComprovantesPage({ searchParams }: Props) {
             </strong>{' '}
             Um comprovante já quita todas as inscrições suas naquela competição.
           </div>
-        ) : eventosComComprovante.length > 0 ? (
+        ) : eventosComTaxa.length > 0 && eventosComComprovante.length > 0 ? (
           <div className="alerta alerta--ok" role="status">
             Nenhuma competição pendente de comprovante de pagamento.
           </div>
@@ -117,6 +123,11 @@ export default async function ComprovantesPage({ searchParams }: Props) {
             Você ainda não tem inscrições que possam receber comprovante.{' '}
             <Link href="/area">Voltar para a área do atleta</Link> ou confira o{' '}
             <Link href="/calendario">calendário de competições</Link>.
+          </div>
+        ) : eventosComTaxa.length === 0 ? (
+          <div className="alerta alerta--ok" role="status">
+            Nenhuma das suas competições tem taxa de inscrição — não é preciso enviar comprovante
+            de pagamento.
           </div>
         ) : (
           <section aria-labelledby="enviar-comprovante">
@@ -134,11 +145,11 @@ export default async function ComprovantesPage({ searchParams }: Props) {
                     defaultValue={selecionado}
                     required
                   >
-                    {[...porEvento.entries()].map(([chave, grupo]) => {
+                    {eventosComTaxa.map(([chave, grupo]) => {
                       const lista = comprovantes.get(chave)
                       const quantos = lista?.length ?? 0
                       const falta = grupo.inscricoes.some((inscricao) =>
-                        estaPendenteDeComprovante(inscricao, lista),
+                        estaPendenteDeComprovante(inscricao, lista, grupo.evento),
                       )
                       return (
                         <option key={chave} value={chave}>

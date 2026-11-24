@@ -1,7 +1,13 @@
 import 'server-only'
 import type { ArquivoInscricao, Inscricao } from '@/payload-types'
 import { getPayloadClient } from '@/lib/payload'
-import { ehComprovantePagamento, statusTemPendenciaDeComprovante } from './comprovante-regra'
+import {
+  ehComprovantePagamento,
+  eventoCobraInscricao,
+  statusTemPendenciaDeComprovante,
+} from './comprovante-regra'
+
+export { eventoCobraInscricao }
 
 export type Comprovante = {
   criadoEm: string
@@ -52,8 +58,11 @@ const eventoDoArquivo = (arquivo: ArquivoInscricao): null | string => {
 export const estaPendenteDeComprovante = (
   inscricao: Pick<Inscricao, 'status'>,
   comprovantes: Comprovante[] | undefined,
+  evento?: { valorInscricao?: null | number } | null,
 ): boolean => {
   if (!statusTemPendenciaDeComprovante(inscricao.status)) return false
+  // Evento gratuito não cobra comprovante de ninguém.
+  if (evento !== undefined && !eventoCobraInscricao(evento)) return false
   return !comprovantes || comprovantes.length === 0
 }
 

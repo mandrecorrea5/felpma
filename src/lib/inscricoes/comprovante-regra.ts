@@ -30,3 +30,15 @@ export const ehComprovantePagamento = (
   const texto = `${arquivo.campo ?? ''} ${arquivo.rotulo ?? ''}`.toLowerCase()
   return texto.includes('comprovante') && (texto.includes('pagamento') || texto.includes('taxa'))
 }
+
+/**
+ * A competição cobra inscrição?
+ *
+ * Sem valor (ou valor zero) não há taxa para comprovar: nada de pendência, nada
+ * de upload e o painel mostra "—" na coluna do comprovante. Só valor maior que
+ * zero entra na cobrança. Fica neste módulo puro porque a config do Payload
+ * (CLI de migrations/types) também usa a regra.
+ */
+export const eventoCobraInscricao = (evento: {
+  valorInscricao?: null | number
+} | null | undefined): boolean => Number(evento?.valorInscricao ?? 0) > 0

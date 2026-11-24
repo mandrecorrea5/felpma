@@ -78,16 +78,13 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
   const inscricao = docs[0]
   if (!inscricao) notFound()
 
-  // O comprovante é do atleta na competição: vale por todas as inscrições dele ali.
-  const comprovantes = inscricao.evento
-    ? await comprovantesDoEvento(
-        atleta.id,
-        typeof inscricao.evento === 'object' ? inscricao.evento.id : inscricao.evento,
-      )
-    : []
-  const pendenteComprovante = estaPendenteDeComprovante(inscricao, comprovantes)
-
   const evento = typeof inscricao.evento === 'object' ? inscricao.evento : null
+
+  // O comprovante é do atleta na competição: vale por todas as inscrições dele ali.
+  const comprovantes = evento
+    ? await comprovantesDoEvento(atleta.id, evento.id)
+    : []
+  const pendenteComprovante = estaPendenteDeComprovante(inscricao, comprovantes, evento)
   const categoriaPeso = categoriaPesoDaInscricao(inscricao)
   // Cursos e eventos podem não pedir categoria de peso: nesse caso não há o
   // que cobrar do atleta nem o que exibir como "não informada".

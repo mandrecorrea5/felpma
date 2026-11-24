@@ -13,6 +13,7 @@ import {
   ehComprovantePagamento,
   statusTemPendenciaDeComprovante,
 } from '../lib/inscricoes/comprovante-regra'
+import { eventoCobraInscricao } from '../lib/inscricoes/comprovante-regra'
 import { gerarCsvInscricoes, respostaCsv } from '../lib/inscricoes/exportacao'
 import { gerarProtocolo } from '../lib/inscricoes/protocolo'
 import { auditarAcesso, registrarAcesso } from '../lib/lgpd/auditoria'
@@ -105,6 +106,27 @@ const calculaComprovantePendente: CollectionAfterReadHook = async ({ doc, req })
 
   const eventoId = typeof doc.evento === 'object' ? doc.evento?.id : doc.evento
   const atletaId = typeof doc.atleta === 'object' ? doc.atleta?.id : doc.atleta
+
+  // Evento sem taxa (valor vazio ou zero) não cobra comprovante de ninguém.
+  const eventoRelacionado = typeof doc.evento === 'object' ? doc.evento : null
+  const evento =
+    eventoRelacionado ??
+    (eventoId != null
+      ? await req.payload
+          .findByID({
+            collection: 'competicoes',
+            id: eventoId,
+            depth: 0,
+            select: { valorInscricao: true },
+            overrideAccess: true,
+          })
+          .catch(() => null)
+      : null)
+
+  if (!eventoCobraInscricao(evento)) {
+    doc.situacaoComprovante = '—'
+    return doc
+  }
 
   // O comprovante é do atleta na competição: qualquer arquivo dele naquele
   // evento quita todas as inscrições. A consulta pela inscrição cobre os

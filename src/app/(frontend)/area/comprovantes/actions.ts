@@ -7,6 +7,7 @@ import type { EstadoFormulario } from '@/lib/atleta/tipos'
 import { CAMPO_COMPROVANTE, ROTULO_COMPROVANTE } from '@/lib/constants'
 import { nomeArmazenado } from '@/lib/inscricoes/arquivo'
 import {
+  eventoCobraInscricao,
   MAX_COMPROVANTES_POR_EVENTO,
   quantosComprovantesNoEvento,
 } from '@/lib/inscricoes/comprovante'
@@ -82,6 +83,14 @@ export async function enviarComprovante(
   const evento = typeof inscricao.evento === 'object' ? inscricao.evento : null
   if (!evento) {
     return { ok: false, erro: 'Não foi possível localizar esta competição.' }
+  }
+
+  // Evento gratuito (valor vazio ou zero) não cobra comprovante.
+  if (!eventoCobraInscricao(evento)) {
+    return {
+      ok: false,
+      erro: 'Esta competição não tem taxa de inscrição — não é preciso enviar comprovante.',
+    }
   }
 
   const jaEnviados = await quantosComprovantesNoEvento(atleta.id, evento.id)

@@ -184,6 +184,17 @@ export const Competicoes: CollectionConfig = {
       },
     },
     {
+      name: 'valorInscricao',
+      label: 'Valor da inscrição (R$)',
+      type: 'number',
+      min: 0,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Taxa cobrada por inscrição. Vazio ou 0 = evento sem cobrança: ninguém precisa enviar comprovante de pagamento.',
+      },
+    },
+    {
       name: 'contarVagasPor',
       label: 'Contar vagas por',
       type: 'select',
