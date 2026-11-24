@@ -17,7 +17,7 @@ import {
 } from '@/lib/inscricoes/consultas'
 import { estadoInscricao, type EventoParaInscricao } from '@/lib/inscricoes/estado'
 import {
-  comprovantesDaInscricao,
+  comprovantesDoEvento,
   estaPendenteDeComprovante,
 } from '@/lib/inscricoes/comprovante'
 import { getPayloadClient } from '@/lib/payload'
@@ -78,7 +78,13 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
   const inscricao = docs[0]
   if (!inscricao) notFound()
 
-  const comprovantes = await comprovantesDaInscricao(atleta.id, inscricao.id)
+  // O comprovante é do atleta na competição: vale por todas as inscrições dele ali.
+  const comprovantes = inscricao.evento
+    ? await comprovantesDoEvento(
+        atleta.id,
+        typeof inscricao.evento === 'object' ? inscricao.evento.id : inscricao.evento,
+      )
+    : []
   const pendenteComprovante = estaPendenteDeComprovante(inscricao, comprovantes)
 
   const evento = typeof inscricao.evento === 'object' ? inscricao.evento : null

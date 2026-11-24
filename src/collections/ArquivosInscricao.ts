@@ -23,7 +23,7 @@ export const ArquivosInscricao: CollectionConfig = {
   admin: {
     useAsTitle: 'titulo',
     group: 'Inscrições',
-    defaultColumns: ['titulo', 'campo', 'atleta', 'createdAt'],
+    defaultColumns: ['titulo', 'campo', 'atleta', 'evento', 'createdAt'],
     description:
       'Arquivos privados enviados pelo atleta no formulário. Ficam fora do site público; o download é auditável pela sessão.',
   },
@@ -91,6 +91,17 @@ export const ArquivosInscricao: CollectionConfig = {
           admin: { width: '50%', description: 'Preenchida após a inscrição ser gravada.' },
         },
       ],
+    },
+    {
+      name: 'evento',
+      label: 'Competição',
+      type: 'relationship',
+      relationTo: 'competicoes',
+      index: true,
+      admin: {
+        description:
+          'Evento a que o arquivo pertence. O comprovante de pagamento é do atleta na competição (vale por todas as inscrições dele ali); nunca é compartilhado entre eventos.',
+      },
     },
     {
       name: 'formulario',

@@ -6,7 +6,11 @@ import { exigirAtleta } from '@/lib/atleta/guarda'
 import { labelOf, STATUS_INSCRICAO } from '@/lib/constants'
 import { dataCurta, periodo } from '@/lib/format'
 import { categoriaPesoDaInscricao } from '@/lib/inscricoes/categoria-peso'
-import { comprovantesDoAtleta, estaPendenteDeComprovante } from '@/lib/inscricoes/comprovante'
+import {
+  comprovantesDoAtleta,
+  estaPendenteDeComprovante,
+  eventoDaInscricao,
+} from '@/lib/inscricoes/comprovante'
 import { painelDoAtleta } from '@/lib/inscricoes/consultas'
 import { sairAction } from './actions'
 
@@ -32,8 +36,10 @@ export default async function AreaPage({ searchParams }: Props) {
   )
   const painel = await painelDoAtleta(atleta.id)
   const comprovantes = await comprovantesDoAtleta(atleta.id)
+  const comprovantesDoEvento = (inscricao: (typeof painel.inscricoes)[number]) =>
+    comprovantes.get(String(eventoDaInscricao(inscricao) ?? ''))
   const pendentes = painel.inscricoes.filter((inscricao) =>
-    estaPendenteDeComprovante(inscricao, comprovantes.get(String(inscricao.id))),
+    estaPendenteDeComprovante(inscricao, comprovantesDoEvento(inscricao)),
   )
 
   // Quem clicou em "Preencher" antes de entrar volta para cá: o formulário que
@@ -200,10 +206,7 @@ export default async function AreaPage({ searchParams }: Props) {
                 const evento = typeof i.evento === 'object' ? i.evento : null
                 const quando = periodo(evento?.dataInicio, evento?.dataFim)
                 const categoriaPeso = categoriaPesoDaInscricao(i)
-                const pendente = estaPendenteDeComprovante(
-                  i,
-                  comprovantes.get(String(i.id)),
-                )
+                const pendente = estaPendenteDeComprovante(i, comprovantesDoEvento(i))
                 return (
                   <div key={i.id} className="inscricao-lista__item">
                     <div className="inscricao-lista__txt">

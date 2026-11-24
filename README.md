@@ -98,8 +98,10 @@ cadastro novo; contas antigas informam uma única vez em **Meus dados** ou na pr
 treinador, prova e categoria de peso não existem na conta e continuam sendo perguntados.
 
 **Comprovante de pagamento depois da inscrição:** em **Área do atleta › Comprovantes**
-(`/area/comprovantes`), o atleta escolhe a competição entre as inscrições dele e envia o
-comprovante em PDF/JPG/PNG (até 2 MB). O arquivo entra na coleção privada `arquivos-inscricao`
+(`/area/comprovantes`), o atleta escolhe a **competição** (não a inscrição) e envia o
+comprovante em PDF/JPG/PNG (até 2 MB). O comprovante é do atleta naquele evento: vale por todas
+as inscrições dele ali (Sub-17, Sub-20, Adulto…) e nunca é compartilhado entre eventos. Dá para
+enviar até **3 comprovantes por competição** (pagamento dividido); um só já quita todas. O arquivo entra na coleção privada `arquivos-inscricao`
 com o campo técnico `comprovante-pagamento`, fica vinculado à inscrição e aparece na área e no
 painel (bloco **Comprovantes de pagamento**). Cada envio dispara um e-mail para a caixa
 operacional da federação com o comprovante em anexo. O mesmo caminho aparece no detalhe da

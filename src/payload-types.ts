@@ -1411,6 +1411,10 @@ export interface ArquivoInscricao {
    */
   inscricao?: (number | null) | Inscricao;
   /**
+   * Evento a que o arquivo pertence. O comprovante de pagamento é do atleta na competição (vale por todas as inscrições dele ali); nunca é compartilhado entre eventos.
+   */
+  evento?: (number | null) | Competicao;
+  /**
    * Versão do formulário em que o arquivo foi enviado.
    */
   formulario?: (number | null) | FormularioInscricao;
@@ -2292,6 +2296,7 @@ export interface ArquivosInscricaoSelect<T extends boolean = true> {
   rotulo?: T;
   atleta?: T;
   inscricao?: T;
+  evento?: T;
   formulario?: T;
   updatedAt?: T;
   createdAt?: T;

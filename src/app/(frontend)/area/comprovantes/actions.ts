@@ -6,6 +6,10 @@ import { atletaAtual } from '@/lib/atleta/sessao'
 import type { EstadoFormulario } from '@/lib/atleta/tipos'
 import { CAMPO_COMPROVANTE, ROTULO_COMPROVANTE } from '@/lib/constants'
 import { nomeArmazenado } from '@/lib/inscricoes/arquivo'
+import {
+  MAX_COMPROVANTES_POR_EVENTO,
+  quantosComprovantesNoEvento,
+} from '@/lib/inscricoes/comprovante'
 import { prepararArquivo } from '@/lib/inscricoes/arquivo-servidor'
 import { enviarComprovanteParaFederacao } from '@/lib/inscricoes/notificacao-federacao'
 import { getPayloadClient } from '@/lib/payload'
@@ -14,11 +18,14 @@ import { limitar } from '@/lib/rate-limit'
 /**
  * Comprovante de pagamento enviado depois da inscrição.
  *
- * A inscrição precisa existir e ser do próprio atleta: o protocolo vem do
- * formulário, mas não é prova de nada. O arquivo passa pelas mesmas regras do
- * upload da inscrição (PDF/JPG/PNG, até 2 MB) e é gravado na coleção privada,
- * vinculado à inscrição — é esse vínculo que libera o download na área e no
- * painel. Depois de gravar, a federação recebe uma cópia por e-mail.
+ * O comprovante é do **atleta na competição**, não de uma inscrição: quem entrou
+ * em Sub-17 e Sub-20 paga uma vez e manda um comprovante só, que quita as duas.
+ * Cada evento é independente — nada é reaproveitado de outro. O limite é de
+ * 3 comprovantes por competição (pagamento dividido).
+ *
+ * O atleta precisa ter inscrição ativa naquele evento; o id vem do formulário,
+ * mas não é prova de nada — a consulta é filtrada pelo dono. Depois de gravar, a
+ * federação recebe uma cópia por e-mail.
  */
 export async function enviarComprovante(
   _prev: EstadoFormulario,
@@ -34,8 +41,8 @@ export async function enviarComprovante(
     return { ok: false, erro: 'Muitos envios em pouco tempo. Aguarde alguns minutos.' }
   }
 
-  const protocolo = String(form.get('protocolo') ?? '').trim()
-  if (!protocolo) return { ok: false, erro: 'Escolha a competição da inscrição.' }
+  const eventoId = String(form.get('evento') ?? '').trim()
+  if (!eventoId) return { ok: false, erro: 'Escolha a competição.' }
 
   const enviado = form.get('arquivo')
   const arquivo = enviado instanceof File ? enviado : null
@@ -47,27 +54,42 @@ export async function enviarComprovante(
   if (!preparado.ok) return { ok: false, erro: preparado.erro }
 
   const payload = await getPayloadClient()
-  const { docs } = await payload.find({
+
+  // Inscrições do atleta neste evento — é o que dá direito a enviar comprovante.
+  const { docs: inscricoes } = await payload.find({
     collection: 'inscricoes',
     where: {
-      and: [{ protocolo: { equals: protocolo } }, { atleta: { equals: atleta.id } }],
+      and: [
+        { evento: { equals: eventoId } },
+        { atleta: { equals: atleta.id } },
+        { status: { not_equals: 'cancelada' } },
+      ],
     },
-    limit: 1,
+    sort: '-enviadaEm',
+    limit: 10,
     depth: 2,
     overrideAccess: true,
   })
 
-  const inscricao = docs[0]
+  const inscricao = inscricoes[0]
   if (!inscricao) {
-    return { ok: false, erro: 'Inscrição não encontrada na sua conta. Confira a competição.' }
-  }
-  if (inscricao.status === 'cancelada') {
-    return { ok: false, erro: 'Esta inscrição foi cancelada e não aceita mais comprovantes.' }
+    return {
+      ok: false,
+      erro: 'Você não tem inscrição ativa nesta competição. Confira a competição escolhida.',
+    }
   }
 
   const evento = typeof inscricao.evento === 'object' ? inscricao.evento : null
   if (!evento) {
-    return { ok: false, erro: 'Não foi possível localizar o evento desta inscrição.' }
+    return { ok: false, erro: 'Não foi possível localizar esta competição.' }
+  }
+
+  const jaEnviados = await quantosComprovantesNoEvento(atleta.id, evento.id)
+  if (jaEnviados >= MAX_COMPROVANTES_POR_EVENTO) {
+    return {
+      ok: false,
+      erro: `Esta competição já tem ${MAX_COMPROVANTES_POR_EVENTO} comprovantes seus. Se precisar trocar algum, fale com a federação.`,
+    }
   }
 
   const formularioId =
@@ -83,7 +105,7 @@ export async function enviarComprovante(
         campo: CAMPO_COMPROVANTE,
         rotulo: ROTULO_COMPROVANTE,
         atleta: atleta.id,
-        inscricao: inscricao.id,
+        evento: evento.id,
         ...(formularioId != null ? { formulario: formularioId } : {}),
       },
       file: {
@@ -111,6 +133,9 @@ export async function enviarComprovante(
   })
 
   revalidatePath('/area/comprovantes')
-  revalidatePath(`/area/inscricoes/${inscricao.protocolo}`)
-  redirect(`/area/comprovantes?enviado=${encodeURIComponent(inscricao.protocolo)}`)
+  revalidatePath('/area')
+  for (const item of inscricoes) {
+    revalidatePath(`/area/inscricoes/${item.protocolo}`)
+  }
+  redirect(`/area/comprovantes?enviado=${encodeURIComponent(String(evento.id))}`)
 }

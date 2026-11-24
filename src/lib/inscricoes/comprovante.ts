@@ -11,6 +11,9 @@ export type Comprovante = {
   tamanho: number
 }
 
+/** Quantos comprovantes o atleta pode enviar por competição. */
+export const MAX_COMPROVANTES_POR_EVENTO = 3
+
 const paraResumo = (arquivo: ArquivoInscricao): Comprovante => ({
   criadoEm: arquivo.createdAt,
   id: arquivo.id,
@@ -19,18 +22,32 @@ const paraResumo = (arquivo: ArquivoInscricao): Comprovante => ({
   tamanho: Number(arquivo.filesize ?? 0),
 })
 
-const inscricaoDoArquivo = (arquivo: ArquivoInscricao): null | string => {
-  const relacao = arquivo.inscricao
-  if (relacao == null) return null
-  return String(typeof relacao === 'object' ? relacao.id : relacao)
+/**
+ * A que evento o comprovante pertence.
+ *
+ * O comprovante é do **atleta na competição**, não da inscrição: quem entrou em
+ * Sub-17 e Sub-20 paga uma vez e manda um comprovante só, que vale pelas duas.
+ * Arquivos antigos (gravados antes do campo `evento`) caem no evento da
+ * inscrição vinculada.
+ */
+const eventoDoArquivo = (arquivo: ArquivoInscricao): null | string => {
+  if (arquivo.evento != null) {
+    return String(typeof arquivo.evento === 'object' ? arquivo.evento.id : arquivo.evento)
+  }
+
+  const inscricao = typeof arquivo.inscricao === 'object' ? arquivo.inscricao : null
+  const evento = inscricao?.evento
+  if (evento == null) return null
+  return String(typeof evento === 'object' ? evento.id : evento)
 }
 
 /**
  * A inscrição está pendente de comprovante?
  *
  * A regra é derivada dos arquivos, não de um campo que precisa ser sincronizado:
- * enviou (por esta tela ou pelo formulário) deixa de ser pendente; cancelada ou
- * rejeitada nunca entra como pendência.
+ * qualquer comprovante do atleta naquele evento quita todas as inscrições dele
+ * ali (a lista chega por evento). Cancelada ou rejeitada nunca entra como
+ * pendência.
  */
 export const estaPendenteDeComprovante = (
   inscricao: Pick<Inscricao, 'status'>,
@@ -40,11 +57,19 @@ export const estaPendenteDeComprovante = (
   return !comprovantes || comprovantes.length === 0
 }
 
+/** Id do evento de uma inscrição (a relação pode vir expandida ou só o id). */
+export const eventoDaInscricao = (inscricao: Pick<Inscricao, 'evento'>): null | string => {
+  const evento = inscricao.evento
+  if (evento == null) return null
+  return String(typeof evento === 'object' ? evento.id : evento)
+}
+
 /**
- * Comprovantes do atleta agrupados pela inscrição (id da inscrição → arquivos).
+ * Comprovantes do atleta agrupados por **competição** (id do evento → arquivos).
  *
- * É a consulta da tela "Comprovantes": o atleta pode ter mais de um comprovante
- * por competição, por isso a lista, e não um único arquivo.
+ * É a chave usada na área do atleta e no painel: cada competição é independente,
+ * um comprovante nunca vale para outro evento, e o mesmo atleta pode ter mais de
+ * um comprovante no mesmo evento (pagamento dividido).
  */
 export async function comprovantesDoAtleta(
   atletaId: number | string,
@@ -55,37 +80,38 @@ export async function comprovantesDoAtleta(
     where: { atleta: { equals: atletaId } },
     sort: '-createdAt',
     limit: 500,
-    depth: 0,
+    // Precisa do evento da inscrição para os arquivos gravados antes do campo
+    // `evento` existir.
+    depth: 1,
     overrideAccess: true,
   })
 
-  const porInscricao = new Map<string, Comprovante[]>()
+  const porEvento = new Map<string, Comprovante[]>()
   for (const arquivo of docs) {
     if (!ehComprovantePagamento(arquivo)) continue
-    const inscricaoId = inscricaoDoArquivo(arquivo)
-    if (!inscricaoId) continue
-    const lista = porInscricao.get(inscricaoId) ?? []
+    const eventoId = eventoDoArquivo(arquivo)
+    if (!eventoId) continue
+    const lista = porEvento.get(eventoId) ?? []
     lista.push(paraResumo(arquivo))
-    porInscricao.set(inscricaoId, lista)
+    porEvento.set(eventoId, lista)
   }
-  return porInscricao
+  return porEvento
 }
 
-/** Comprovantes de uma inscrição específica, do mais novo para o mais antigo. */
-export async function comprovantesDaInscricao(
+/** Comprovantes do atleta numa competição, do mais novo para o mais antigo. */
+export async function comprovantesDoEvento(
   atletaId: number | string,
-  inscricaoId: number | string,
+  eventoId: number | string,
 ): Promise<Comprovante[]> {
-  const payload = await getPayloadClient()
-  const { docs } = await payload.find({
-    collection: 'arquivos-inscricao',
-    where: {
-      and: [{ atleta: { equals: atletaId } }, { inscricao: { equals: inscricaoId } }],
-    },
-    sort: '-createdAt',
-    limit: 100,
-    depth: 0,
-    overrideAccess: true,
-  })
-  return docs.filter(ehComprovantePagamento).map((arquivo) => paraResumo(arquivo))
+  const mapa = await comprovantesDoAtleta(atletaId)
+  return mapa.get(String(eventoId)) ?? []
+}
+
+/** Quantos comprovantes o atleta já enviou nesta competição. */
+export async function quantosComprovantesNoEvento(
+  atletaId: number | string,
+  eventoId: number | string,
+): Promise<number> {
+  const lista = await comprovantesDoEvento(atletaId, eventoId)
+  return lista.length
 }

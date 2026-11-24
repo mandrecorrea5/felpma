@@ -260,6 +260,9 @@ export async function enviarInscricao(
           campo,
           rotulo,
           atleta: atleta.id,
+          // O comprovante fecha a competição inteira, então o evento vai junto
+          // (é por ele que a pendência e o limite de comprovantes são contados).
+          evento: evento.id,
           formulario: formulario.id,
         },
         file: {

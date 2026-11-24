@@ -7,7 +7,12 @@ import { exigirAtleta } from '@/lib/atleta/guarda'
 import { labelOf, STATUS_INSCRICAO } from '@/lib/constants'
 import { dataCurta, periodo, tamanhoArquivo } from '@/lib/format'
 import { acceptDoCampo, LIMITE_ARQUIVO_MB } from '@/lib/inscricoes/arquivo'
-import { comprovantesDoAtleta, estaPendenteDeComprovante } from '@/lib/inscricoes/comprovante'
+import {
+  comprovantesDoAtleta,
+  estaPendenteDeComprovante,
+  eventoDaInscricao,
+  MAX_COMPROVANTES_POR_EVENTO,
+} from '@/lib/inscricoes/comprovante'
 import { inscricoesDoAtleta } from '@/lib/inscricoes/consultas'
 import { enviarComprovante } from './actions'
 
@@ -33,27 +38,50 @@ export default async function ComprovantesPage({ searchParams }: Props) {
   // Inscrição cancelada não recebe pagamento novo; o histórico continua no detalhe.
   const ativas = inscricoes.filter((inscricao) => inscricao.status !== 'cancelada')
 
-  const protocoloPreferido = [sp.enviado, sp.inscricao].find(
-    (protocolo) => protocolo && ativas.some((inscricao) => inscricao.protocolo === protocolo),
-  )
-  const selecionada = protocoloPreferido ?? ativas[0]?.protocolo ?? ''
+  // O comprovante é do atleta na competição: o seletor é o evento, não a
+  // inscrição. Quem entrou em Sub-17 e Sub-20 manda um comprovante só.
+  const porEvento = new Map<
+    string,
+    { evento: NonNullable<(typeof ativas)[number]['evento']> & object; inscricoes: typeof ativas }
+  >()
+  for (const inscricao of ativas) {
+    const evento = typeof inscricao.evento === 'object' ? inscricao.evento : null
+    if (!evento) continue
+    const chave = String(evento.id)
+    const atual = porEvento.get(chave)
+    if (atual) atual.inscricoes.push(inscricao)
+    else porEvento.set(chave, { evento, inscricoes: [inscricao] })
+  }
 
-  const enviado = sp.enviado
-    ? (inscricoes.find((inscricao) => inscricao.protocolo === sp.enviado) ?? null)
-    : null
-
-  const comComprovante = ativas.filter((inscricao) =>
-    comprovantes.has(String(inscricao.id)),
+  const preferido = [sp.enviado, sp.inscricao].find(
+    (valor) =>
+      valor &&
+      (porEvento.has(String(valor)) ||
+        ativas.some((inscricao) => inscricao.protocolo === valor)),
   )
-  const pendentes = ativas.filter((inscricao) =>
-    estaPendenteDeComprovante(inscricao, comprovantes.get(String(inscricao.id))),
+  const selecionado = (() => {
+    if (!preferido) return String([...porEvento.keys()][0] ?? '')
+    if (porEvento.has(String(preferido))) return String(preferido)
+    const inscricao = ativas.find((i) => i.protocolo === preferido)
+    return inscricao ? String(eventoDaInscricao(inscricao) ?? '') : ''
+  })()
+
+  const enviado = sp.enviado ? (porEvento.get(String(sp.enviado)) ?? null) : null
+
+  const eventosPendentes = [...porEvento.entries()].filter(([chave, grupo]) =>
+    grupo.inscricoes.some((inscricao) =>
+      estaPendenteDeComprovante(inscricao, comprovantes.get(chave)),
+    ),
+  )
+  const eventosComComprovante = [...porEvento.entries()].filter(
+    ([chave]) => (comprovantes.get(chave)?.length ?? 0) > 0,
   )
 
   return (
     <>
       <PageHero
         titulo="Comprovantes de pagamento"
-        intro="Escolha a competição e envie o comprovante da inscrição que ficou para depois. A federação recebe uma cópia por e-mail."
+        intro="Escolha a competição e envie o comprovante do pagamento. A federação recebe uma cópia por e-mail."
         crumbs={[{ href: '/area', label: 'Área do atleta' }, { label: 'Comprovantes' }]}
       />
 
@@ -61,27 +89,30 @@ export default async function ComprovantesPage({ searchParams }: Props) {
         {enviado ? (
           <div className="alerta alerta--ok" role="status">
             Comprovante enviado. A federação recebeu uma cópia por e-mail.{' '}
-            <Link href={`/area/inscricoes/${enviado.protocolo}`}>Ver a inscrição</Link>.
+            <Link href={`/area/inscricoes/${enviado.inscricoes[0].protocolo}`}>
+              Ver a inscrição
+            </Link>
+            .
           </div>
         ) : null}
 
-        {pendentes.length > 0 ? (
+        {eventosPendentes.length > 0 ? (
           <div className="alerta alerta--erro" role="alert">
             <strong>
-              {pendentes.length === 1
-                ? 'Uma inscrição está pendente'
-                : `${pendentes.length} inscrições estão pendentes`}{' '}
+              {eventosPendentes.length === 1
+                ? 'Uma competição está pendente'
+                : `${eventosPendentes.length} competições estão pendentes`}{' '}
               de comprovante.
             </strong>{' '}
-            Escolha a competição abaixo e envie o comprovante de pagamento para regularizar.
+            Um comprovante já quita todas as inscrições suas naquela competição.
           </div>
-        ) : ativas.length > 0 ? (
+        ) : eventosComComprovante.length > 0 ? (
           <div className="alerta alerta--ok" role="status">
-            Nenhuma inscrição pendente de comprovante de pagamento.
+            Nenhuma competição pendente de comprovante de pagamento.
           </div>
         ) : null}
 
-        {ativas.length === 0 ? (
+        {porEvento.size === 0 ? (
           <div className="empty">
             Você ainda não tem inscrições que possam receber comprovante.{' '}
             <Link href="/area">Voltar para a área do atleta</Link> ou confira o{' '}
@@ -95,27 +126,29 @@ export default async function ComprovantesPage({ searchParams }: Props) {
             <div className="card card--pad" style={{ marginTop: 12 }}>
               <FormularioAcao acao={enviarComprovante} rotulo="Enviar comprovante">
                 <div className="field">
-                  <label htmlFor="protocolo">Competição</label>
+                  <label htmlFor="evento">Competição</label>
                   <select
-                    id="protocolo"
-                    name="protocolo"
+                    id="evento"
+                    name="evento"
                     className="select"
-                    defaultValue={selecionada}
+                    defaultValue={selecionado}
                     required
                   >
-                    {ativas.map((inscricao) => {
-                      const evento = typeof inscricao.evento === 'object' ? inscricao.evento : null
-                      const lista = comprovantes.get(String(inscricao.id))
+                    {[...porEvento.entries()].map(([chave, grupo]) => {
+                      const lista = comprovantes.get(chave)
                       const quantos = lista?.length ?? 0
-                      const faltaComprovante = estaPendenteDeComprovante(inscricao, lista)
-                      const quando = periodo(evento?.dataInicio, evento?.dataFim)
+                      const falta = grupo.inscricoes.some((inscricao) =>
+                        estaPendenteDeComprovante(inscricao, lista),
+                      )
                       return (
-                        <option key={inscricao.id} value={inscricao.protocolo}>
-                          {nomeDoEvento(evento)}
-                          {quando ? ` — ${quando}` : ''} · {inscricao.protocolo}
+                        <option key={chave} value={chave}>
+                          {nomeDoEvento(grupo.evento)}
+                          {periodo(grupo.evento.dataInicio, grupo.evento.dataFim)
+                            ? ` — ${periodo(grupo.evento.dataInicio, grupo.evento.dataFim)}`
+                            : ''}
                           {quantos > 0
-                            ? ' (comprovante enviado)'
-                            : faltaComprovante
+                            ? ` (${quantos} comprovante${quantos > 1 ? 's' : ''} enviado${quantos > 1 ? 's' : ''})`
+                            : falta
                               ? ' (comprovante pendente)'
                               : ''}
                         </option>
@@ -123,8 +156,8 @@ export default async function ComprovantesPage({ searchParams }: Props) {
                     })}
                   </select>
                   <small className="muted">
-                    A inscrição precisa já ter sido feita pelo site. Não encontrou a competição?{' '}
-                    <Link href="/contato">Fale com a federação</Link>.
+                    Uma inscrição por categoria de idade conta como a mesma competição. Não
+                    encontrou a competição? <Link href="/contato">Fale com a federação</Link>.
                   </small>
                 </div>
 
@@ -139,8 +172,9 @@ export default async function ComprovantesPage({ searchParams }: Props) {
                     required
                   />
                   <small className="muted">
-                    PDF ou foto (JPG/PNG), até {LIMITE_ARQUIVO_MB} MB. Pode enviar mais de um
-                    comprovante para a mesma inscrição.
+                    PDF ou foto (JPG/PNG), até {LIMITE_ARQUIVO_MB} MB. Dá para enviar até{' '}
+                    {MAX_COMPROVANTES_POR_EVENTO} comprovantes por competição (pagamento
+                    dividido) — um só já vale por todas as suas inscrições nela.
                   </small>
                 </div>
               </FormularioAcao>
@@ -148,17 +182,17 @@ export default async function ComprovantesPage({ searchParams }: Props) {
           </section>
         )}
 
-        {comComprovante.length > 0 ? (
+        {eventosComComprovante.length > 0 ? (
           <section aria-labelledby="comprovantes-enviados">
             <h2 id="comprovantes-enviados" className="eyebrow">
               Comprovantes já enviados
             </h2>
             <div className="card card--pad" style={{ marginTop: 12, display: 'grid', gap: 22 }}>
-              {comComprovante.map((inscricao) => {
-                const evento = typeof inscricao.evento === 'object' ? inscricao.evento : null
-                const lista = comprovantes.get(String(inscricao.id)) ?? []
+              {eventosComComprovante.map(([chave, grupo]) => {
+                const lista = comprovantes.get(chave) ?? []
+                const protocolo = grupo.inscricoes[0]?.protocolo
                 return (
-                  <div key={inscricao.id}>
+                  <div key={chave}>
                     <div
                       style={{
                         display: 'flex',
@@ -168,18 +202,18 @@ export default async function ComprovantesPage({ searchParams }: Props) {
                         justifyContent: 'space-between',
                       }}
                     >
-                      <strong>
-                        {nomeDoEvento(evento)} · {inscricao.protocolo}
-                      </strong>
+                      <strong>{nomeDoEvento(grupo.evento)}</strong>
                       <span className="muted" style={{ fontSize: 13 }}>
-                        {labelOf(STATUS_INSCRICAO, inscricao.status)}
+                        {grupo.inscricoes
+                          .map((inscricao) => labelOf(STATUS_INSCRICAO, inscricao.status))
+                          .join(' · ')}
                       </span>
                     </div>
                     <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
                       {lista.map((comprovante) => (
                         <a
                           key={comprovante.id}
-                          href={`/area/inscricoes/${inscricao.protocolo}/arquivos/${comprovante.id}`}
+                          href={`/area/inscricoes/${protocolo}/arquivos/${comprovante.id}`}
                           className="btn btn--sm btn--contorno"
                           download
                           data-ndovu-mask
@@ -202,8 +236,8 @@ export default async function ComprovantesPage({ searchParams }: Props) {
         ) : null}
 
         <p className="muted" style={{ fontSize: 14 }}>
-          O comprovante fica guardado junto da sua inscrição e é visível para você e para a
-          federação. Dúvidas sobre pagamento? <Link href="/contato">Fale com a federação</Link>.
+          O comprovante fica guardado na sua competição e é visível para você e para a federação.
+          Dúvidas sobre pagamento? <Link href="/contato">Fale com a federação</Link>.
         </p>
       </div>
     </>

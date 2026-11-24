@@ -103,13 +103,34 @@ const calculaComprovantePendente: CollectionAfterReadHook = async ({ doc, req })
     return doc
   }
 
-  const { docs } = await req.payload.find({
-    collection: 'arquivos-inscricao',
-    where: { inscricao: { equals: doc.id } },
-    limit: 100,
-    depth: 0,
-    overrideAccess: true,
-  })
+  const eventoId = typeof doc.evento === 'object' ? doc.evento?.id : doc.evento
+  const atletaId = typeof doc.atleta === 'object' ? doc.atleta?.id : doc.atleta
+
+  // O comprovante é do atleta na competição: qualquer arquivo dele naquele
+  // evento quita todas as inscrições. A consulta pela inscrição cobre os
+  // arquivos gravados antes do campo `evento` existir.
+  const [porEvento, porInscricao] = await Promise.all([
+    eventoId != null && atletaId != null
+      ? req.payload.find({
+          collection: 'arquivos-inscricao',
+          where: {
+            and: [{ atleta: { equals: atletaId } }, { evento: { equals: eventoId } }],
+          },
+          limit: 100,
+          depth: 0,
+          overrideAccess: true,
+        })
+      : { docs: [] },
+    req.payload.find({
+      collection: 'arquivos-inscricao',
+      where: { inscricao: { equals: doc.id } },
+      limit: 100,
+      depth: 0,
+      overrideAccess: true,
+    }),
+  ])
+
+  const docs = [...porEvento.docs, ...porInscricao.docs]
   doc.situacaoComprovante = docs.some(ehComprovantePagamento) ? 'Enviado' : 'Pendente'
   return doc
 }
