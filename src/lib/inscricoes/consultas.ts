@@ -1,4 +1,5 @@
 import 'server-only'
+import type { Where } from 'payload'
 import type { Competicao, FormularioInscricao, Inscricao } from '@/payload-types'
 import { getPayloadClient } from '@/lib/payload'
 import { estadoInscricao, type ResultadoEstado } from './estado'
@@ -40,16 +41,47 @@ export async function formularioPublicado(
   return docs[0] ?? null
 }
 
-/** Quantas inscrições válidas o evento já tem (usado no limite de vagas). */
-export async function inscritosNoEvento(eventoId: number | string): Promise<number> {
+/**
+ * Quantas vagas o evento já ocupou (usado no limite de vagas).
+ *
+ * Por padrão cada inscrição ocupa uma vaga — quem entra em Sub-17 e Sub-20
+ * ocupa duas. A competição pode optar por contar atletas (`contarVagasPor:
+ * 'atletas'`), aí a pessoa ocupa uma vaga só, quantas categorias fizer.
+ */
+export async function inscritosNoEvento(
+  evento: number | string | { contarVagasPor?: null | string; id: number | string },
+): Promise<number> {
   const payload = await getPayloadClient()
-  const { totalDocs } = await payload.count({
+  const eventoId = typeof evento === 'object' ? evento.id : evento
+  const modo = typeof evento === 'object' ? (evento.contarVagasPor ?? 'inscricoes') : 'inscricoes'
+  const where: Where = {
+    and: [
+      { evento: { equals: eventoId } },
+      { status: { not_in: ['cancelada', 'rejeitada'] } },
+    ],
+  }
+
+  if (modo !== 'atletas') {
+    const { totalDocs } = await payload.count({ collection: 'inscricoes', where })
+    return totalDocs
+  }
+
+  // Uma vaga por atleta: busca só a relação e conta os ids distintos.
+  const { docs } = await payload.find({
     collection: 'inscricoes',
-    where: {
-      and: [{ evento: { equals: eventoId } }, { status: { not_in: ['cancelada', 'rejeitada'] } }],
-    },
+    where,
+    select: { atleta: true },
+    pagination: false,
+    limit: 5000,
+    depth: 0,
   })
-  return totalDocs
+  const atletas = new Set(
+    docs.map((inscricao) => {
+      const atleta = inscricao.atleta
+      return typeof atleta === 'object' && atleta ? atleta.id : atleta
+    }),
+  )
+  return atletas.size
 }
 
 /**
@@ -174,7 +206,7 @@ export async function painelDoAtleta(atletaId: number | string): Promise<PainelD
       // Só conta vagas quando isso pode mudar a decisão: evento com limite,
       // inscrições abertas e atleta ainda sem inscrição.
       const contarVagas = Boolean(evento.limiteVagas && evento.inscricoesAbertas && feitas === 0)
-      const inscritos = contarVagas ? await inscritosNoEvento(evento.id) : 0
+      const inscritos = contarVagas ? await inscritosNoEvento(evento) : 0
 
       return {
         evento,

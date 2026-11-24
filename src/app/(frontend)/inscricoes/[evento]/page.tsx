@@ -28,7 +28,7 @@ export default async function InscricaoEventoPage({ params }: Props) {
 
   const formulario = await formularioPublicado(evento.id)
   const atleta = await atletaAtual()
-  const inscritos = await inscritosNoEvento(evento.id)
+  const inscritos = await inscritosNoEvento(evento)
   const inscricoes = atleta ? await inscricoesDoAtletaNoEvento(evento.id, atleta.id) : []
 
   const estado = estadoInscricao(evento as EventoParaInscricao, {

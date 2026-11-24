@@ -415,6 +415,10 @@ export interface Competicao {
    */
   limiteVagas?: number | null;
   /**
+   * Padrão: cada inscrição ocupa uma vaga (quem se inscreve em Sub-17 e Sub-20 ocupa duas). Em "Atletas", a pessoa conta uma vez só, quantas categorias fizer.
+   */
+  contarVagasPor?: ('inscricoes' | 'atletas') | null;
+  /**
    * Aparece antes da abertura e depois do encerramento, no lugar do botão.
    */
   avisoForaDoPeriodo?: string | null;
@@ -1635,6 +1639,7 @@ export interface CompeticoesSelect<T extends boolean = true> {
   status?: T;
   inscricoesAbertas?: T;
   limiteVagas?: T;
+  contarVagasPor?: T;
   avisoForaDoPeriodo?: T;
   formularios?: T;
   editais?: T;

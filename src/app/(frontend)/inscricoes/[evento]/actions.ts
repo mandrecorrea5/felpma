@@ -76,7 +76,7 @@ export async function enviarInscricao(
     return { ok: false, erro: 'Este formulário não está mais disponível.' }
   }
 
-  const inscritos = await inscritosNoEvento(evento.id)
+  const inscritos = await inscritosNoEvento(evento)
   const existentes = await inscricoesDoAtletaNoEvento(evento.id, atleta.id)
   const estado = estadoInscricao(evento as EventoParaInscricao, {
     temFormulario: true,

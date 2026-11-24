@@ -184,6 +184,21 @@ export const Competicoes: CollectionConfig = {
       },
     },
     {
+      name: 'contarVagasPor',
+      label: 'Contar vagas por',
+      type: 'select',
+      defaultValue: 'inscricoes',
+      options: [
+        { label: 'Inscrições', value: 'inscricoes' },
+        { label: 'Atletas', value: 'atletas' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description:
+          'Padrão: cada inscrição ocupa uma vaga (quem se inscreve em Sub-17 e Sub-20 ocupa duas). Em "Atletas", a pessoa conta uma vez só, quantas categorias fizer.',
+      },
+    },
+    {
       name: 'avisoForaDoPeriodo',
       label: 'Aviso fora do período',
       type: 'textarea',

@@ -996,6 +996,77 @@ p {
 .hero__visual--foto .listras-v {
   width: 14px;
 }
+/* ---------- Carrossel do destaque ---------- */
+.carrossel {
+  position: relative;
+  overflow: hidden;
+}
+/* Os slides ficam lado a lado; só a trilha se move. */
+.carrossel__trilha {
+  display: flex;
+  transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+.carrossel__slide {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+.carrossel .hero__inner {
+  padding-bottom: 20px;
+}
+.carrossel__barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 22px;
+}
+.carrossel__pontos {
+  display: flex;
+  gap: 8px;
+}
+.carrossel__ponto {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 15, 20, 0.22);
+  cursor: pointer;
+  transition:
+    width 0.2s,
+    background 0.2s;
+}
+.carrossel__ponto[aria-current='true'] {
+  width: 26px;
+  background: var(--azul);
+}
+.carrossel__setas {
+  display: flex;
+  gap: 8px;
+}
+.carrossel__seta {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--borda-forte);
+  background: #fff;
+  color: var(--texto);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.carrossel__seta:hover {
+  border-color: var(--azul);
+  color: var(--azul);
+}
+@media (prefers-reduced-motion: reduce) {
+  .carrossel__trilha {
+    transition: none;
+  }
+}
+
 .hero__contagem {
   position: relative;
   margin: 20px;

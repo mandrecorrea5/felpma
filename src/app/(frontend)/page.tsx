@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { CentrosMap } from '@/components/CentrosMap'
+import { CarrosselDestaques } from '@/components/home/CarrosselDestaques'
 import { Icon, type IconName } from '@/components/Icon'
 import { Apoio } from '@/components/layout/Footer'
 import {
@@ -77,7 +78,7 @@ export default async function HomePage() {
   const payload = await getPayloadClient()
   const [
     config,
-    { home, competicao },
+    { home, lista: destaques },
     noticias,
     calendario,
     convocacoes,
@@ -98,36 +99,43 @@ export default async function HomePage() {
   ])
 
   const [principal, ...outras] = noticias
-  const dias = competicao ? diasAte(competicao.inscricoesAte ?? competicao.dataInicio) : null
-  const foto = home.fotoDestaque ?? competicao?.imagem
 
-  // O destaque da home é a primeira porta de entrada para o formulário: se o
-  // evento tem formulário interno aberto, o botão leva direto para ele.
-  const [formularioDestaque, inscritosDestaque] = competicao
-    ? await Promise.all([
+  // Cada destaque leva o próprio estado de inscrição: o mesmo botão que existe
+  // hoje, só que por slide. O carrossel recebe tudo pronto do servidor.
+  const slides = await Promise.all(
+    destaques.map(async (competicao, indice) => {
+      const [formulario, inscritos] = await Promise.all([
         formularioPublicado(competicao.id),
-        competicao.limiteVagas ? inscritosNoEvento(competicao.id) : Promise.resolve(0),
+        competicao.limiteVagas ? inscritosNoEvento(competicao) : Promise.resolve(0),
       ])
-    : [null, 0]
-  const estadoDestaque = competicao
-    ? estadoInscricao(competicao, {
-        temFormulario: Boolean(formularioDestaque),
-        inscritos: inscritosDestaque,
-      })
-    : null
+      const prazo = competicao.inscricoesAte ?? competicao.dataInicio
+      return {
+        competicao,
+        estado: estadoInscricao(competicao, {
+          temFormulario: Boolean(formulario),
+          inscritos,
+        }),
+        dias: prazo ? diasAte(prazo) : null,
+        // A foto escolhida em Página inicial vale para o primeiro destaque.
+        foto: (indice === 0 ? home.fotoDestaque : null) ?? competicao.imagem,
+      }
+    }),
+  )
 
   return (
     <>
-      {/* Destaque: próxima competição */}
-      {competicao ? (
-        <section className="hero" aria-labelledby="destaque-titulo">
-          <div className="container hero__inner">
-            <div className="hero__texto">
+      {/* Destaque: competições por prazo, em carrossel */}
+      {slides.length > 0 ? (
+        <CarrosselDestaques
+          rotulos={slides.map((slide) => slide.competicao.nome)}
+          slides={slides.map(({ competicao, estado: estadoDestaque, dias, foto }) => (
+            <div className="container hero__inner" key={competicao.id}>
+              <div className="hero__texto">
               <span className="hero__badge">
                 <i aria-hidden="true" />
                 Próxima competição · {statusCompeticao(competicao).label}
               </span>
-              <h1 id="destaque-titulo">{competicao.nome}</h1>
+              <h1>{competicao.nome}</h1>
               {home.textoDestaque || competicao.categorias ? (
                 <p className="hero__lead">
                   {home.textoDestaque ?? `Categorias: ${competicao.categorias}.`}
@@ -202,9 +210,10 @@ export default async function HomePage() {
                   </div>
                 </div>
               ) : null}
+              </div>
             </div>
-          </div>
-        </section>
+          ))}
+        />
       ) : (
         <section className="hero">
           <div className="container hero__inner">
