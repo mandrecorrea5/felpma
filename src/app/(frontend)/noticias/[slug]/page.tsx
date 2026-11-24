@@ -1,12 +1,16 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { cache } from 'react'
+import { BotaoCurtir } from '@/components/BotaoCurtir'
 import { RichText } from '@/components/RichText'
 import { Midia, PageHero } from '@/components/ui'
 import { CATEGORIAS_NOTICIA, labelOf } from '@/lib/constants'
 import { dataCurta, dataLonga, isMedia, mediaUrl } from '@/lib/format'
+import { COOKIE_VISITANTE, chaveValida } from '@/lib/noticias/curtidas'
 import { getPayloadClient } from '@/lib/payload'
+import { alternarCurtida } from '../actions'
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -58,6 +62,18 @@ export default async function NoticiaPage({ params }: Props) {
     depth: 0,
   })
 
+  // Curtida deste navegador (se já houver cookie). Sem cookie, ninguém curtiu ainda.
+  const chave = (await cookies()).get(COOKIE_VISITANTE)?.value
+  const curtido = chaveValida(chave)
+    ? (
+        await payload.count({
+          collection: 'curtidas',
+          where: { and: [{ noticia: { equals: n.id } }, { chave: { equals: chave } }] },
+          overrideAccess: true,
+        })
+      ).totalDocs > 0
+    : false
+
   return (
     <>
       <PageHero
@@ -72,6 +88,12 @@ export default async function NoticiaPage({ params }: Props) {
             {labelOf(CATEGORIAS_NOTICIA, n.categoria)}
           </Link>
           <time dateTime={n.dataPublicacao}>{dataLonga(n.dataPublicacao)}</time>
+          <BotaoCurtir
+            acao={alternarCurtida}
+            curtidoInicial={curtido}
+            noticiaId={n.id}
+            totalInicial={n.curtidas ?? 0}
+          />
         </div>
       </PageHero>
       <article className="container artigo">

@@ -69,6 +69,7 @@ export interface Config {
   blocks: {};
   collections: {
     noticias: Noticia;
+    curtidas: Curtida;
     paginas: Pagina;
     mensagens: Mensagem;
     competicoes: Competicao;
@@ -102,6 +103,7 @@ export interface Config {
   };
   collectionsSelect: {
     noticias: NoticiasSelect<false> | NoticiasSelect<true>;
+    curtidas: CurtidasSelect<false> | CurtidasSelect<true>;
     paginas: PaginasSelect<false> | PaginasSelect<true>;
     mensagens: MensagensSelect<false> | MensagensSelect<true>;
     competicoes: CompeticoesSelect<false> | CompeticoesSelect<true>;
@@ -219,6 +221,10 @@ export interface Noticia {
    */
   destaque?: boolean | null;
   /**
+   * Contador do botão de curtir do site. É recalculado a cada curtida a partir da coleção Curtidas — não edite à mão.
+   */
+  curtidas?: number | null;
+  /**
    * Gerado automaticamente a partir do título. Só altere se souber o que está fazendo.
    */
   slug?: string | null;
@@ -274,6 +280,22 @@ export interface Media {
       filename?: string | null;
     };
   };
+}
+/**
+ * Registro anônimo de curtidas. A chave é um cookie do navegador, não identifica a pessoa.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "curtidas".
+ */
+export interface Curtida {
+  id: number;
+  noticia: number | Noticia;
+  /**
+   * UUID do cookie felpma-visitante. Sem dado pessoal.
+   */
+  chave: string;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1415,6 +1437,10 @@ export interface PayloadLockedDocument {
         value: number | Noticia;
       } | null)
     | ({
+        relationTo: 'curtidas';
+        value: number | Curtida;
+      } | null)
+    | ({
         relationTo: 'paginas';
         value: number | Pagina;
       } | null)
@@ -1542,10 +1568,21 @@ export interface NoticiasSelect<T extends boolean = true> {
   categoria?: T;
   dataPublicacao?: T;
   destaque?: T;
+  curtidas?: T;
   slug?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "curtidas_select".
+ */
+export interface CurtidasSelect<T extends boolean = true> {
+  noticia?: T;
+  chave?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

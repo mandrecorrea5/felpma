@@ -260,6 +260,11 @@ export default async function HomePage() {
                   {labelOf(CATEGORIAS_NOTICIA, principal.categoria)}
                 </span>
                 <span>{dataCurta(principal.dataPublicacao)}</span>
+                <span className="curtidas">
+                  <Icon name="coracao" size={14} />
+                  <span className="sr-only">{principal.curtidas ?? 0} curtidas</span>
+                  <span aria-hidden="true">{principal.curtidas ?? 0}</span>
+                </span>
               </div>
               <h3>{principal.titulo}</h3>
               <p>{principal.resumo}</p>

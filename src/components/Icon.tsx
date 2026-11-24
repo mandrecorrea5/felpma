@@ -110,6 +110,9 @@ const paths = {
     </>
   ),
   escudo: <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />,
+  coracao: (
+    <path d="M12 20.3l-1.1-1C7 15.7 4.4 13.2 4.4 9.9A4.9 4.9 0 0 1 12 5.9a4.9 4.9 0 0 1 7.6 4c0 3.3-2.6 5.8-6.5 9.4z" />
+  ),
 } as const
 
 export type IconName = keyof typeof paths

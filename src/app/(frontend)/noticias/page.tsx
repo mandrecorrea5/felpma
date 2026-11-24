@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import type { Where } from 'payload'
 import { Paginacao, paginaDe } from '@/components/Paginacao'
+import { Icon } from '@/components/Icon'
 import { Empty, Midia, PageHero } from '@/components/ui'
 import { CATEGORIAS_NOTICIA, labelOf } from '@/lib/constants'
 import { dataCurta } from '@/lib/format'
@@ -65,6 +66,11 @@ export default async function NoticiasPage({ searchParams }: Props) {
                 <div className="data-meta">
                   <span className="tag">{labelOf(CATEGORIAS_NOTICIA, n.categoria)}</span>
                   <span>{dataCurta(n.dataPublicacao)}</span>
+                  <span className="curtidas">
+                    <Icon name="coracao" size={14} />
+                    <span className="sr-only">{n.curtidas ?? 0} curtidas</span>
+                    <span aria-hidden="true">{n.curtidas ?? 0}</span>
+                  </span>
                 </div>
                 <h2>{n.titulo}</h2>
                 <p>{n.resumo}</p>

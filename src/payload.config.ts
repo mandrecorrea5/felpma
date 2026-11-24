@@ -14,6 +14,7 @@ import { ArquivosInscricao } from './collections/ArquivosInscricao'
 import { Media } from './collections/Media'
 import { Documentos } from './collections/Documentos'
 import { Noticias } from './collections/Noticias'
+import { Curtidas } from './collections/Curtidas'
 import { Competicoes } from './collections/Competicoes'
 import { Convocacoes } from './collections/Convocacoes'
 import { Editais } from './collections/Editais'
@@ -51,6 +52,7 @@ export default buildConfig({
   },
   collections: [
     Noticias,
+    Curtidas,
     Paginas,
     Mensagens,
     Competicoes,

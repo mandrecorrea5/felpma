@@ -1192,6 +1192,73 @@ p {
   font-size: 13px;
   color: var(--texto-3);
 }
+
+/* ---------- Curtir ---------- */
+.curtir {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.curtir__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--borda-forte);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--texto-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+.curtir__btn:hover:not(:disabled) {
+  border-color: var(--vermelho);
+  color: var(--vermelho);
+}
+/* Curtido: coração preenchido e contorno vermelho. */
+.curtir__btn[aria-pressed='true'] {
+  border-color: var(--vermelho);
+  background: var(--vermelho-claro);
+  color: var(--vermelho);
+}
+.curtir__btn[aria-pressed='true'] svg {
+  fill: currentColor;
+}
+.curtir__btn:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+.curtir__num {
+  font-variant-numeric: tabular-nums;
+  min-width: 1ch;
+}
+.curtir .campo-erro {
+  flex-basis: 100%;
+}
+/* Contador passivo dos cards da listagem. */
+.curtidas {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--texto-3);
+  font-variant-numeric: tabular-nums;
+}
+.curtidas svg {
+  color: var(--vermelho);
+}
+@media (prefers-reduced-motion: reduce) {
+  .curtir__btn {
+    transition: none;
+  }
+}
 @media (max-width: 520px) {
   .news__main .news__img {
     height: 200px;

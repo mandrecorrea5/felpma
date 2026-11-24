@@ -53,6 +53,7 @@ Também ficam disponíveis `sitemap.xml`, `robots.txt`, metadados de compartilha
 - **Destaque da home**: a competição escolhida em *Página inicial*; se não houver, a marcada como "Destaque" ou, por último, a próxima competição estadual.
 - **Botão de ação no calendário**: *Ver resultados* (se houver resultado ligado) → *Inscrever atleta* (se inscrições abertas; usa o formulário interno publicado ou, na falta dele, o link externo) → *Ver convocação* → *Detalhes*.
 - **Total no resultado**: calculado sozinho (arranco + arremesso) quando fica vazio.
+- **Curtidas nas notícias**: coração com contador na página da notícia e o número nos cards da listagem e da home. É anônimo: cada navegador recebe um UUID em cookie httpOnly `felpma-visitante` e curte/descurte uma vez por notícia — sem conta, sem IP, sem e-mail. O contador em `noticias.curtidas` é recalculado a partir da coleção **Curtidas** a cada clique (a fonte da verdade é a coleção); o índice único `(noticia, chave)` impede curtida duplicada em cliques simultâneos.
 - **Área do atleta**: o cabeçalho e o rodapé apontam para `/area`; *Configurações do site › Links externos* permite sobrescrever com um endereço externo (ex.: SSO).
 
 ## Inscrições e área do atleta

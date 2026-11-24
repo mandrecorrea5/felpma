@@ -61,6 +61,20 @@ export const Noticias: CollectionConfig = {
         description: 'A notícia destacada mais recente vira a manchete da home.',
       },
     },
+    {
+      name: 'curtidas',
+      label: 'Curtidas',
+      type: 'number',
+      defaultValue: 0,
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description:
+          'Contador do botão de curtir do site. É recalculado a cada curtida a partir da coleção Curtidas — não edite à mão.',
+      },
+      // Só o servidor escreve aqui (a server action usa overrideAccess).
+      access: { create: () => false, update: () => false },
+    },
     slugField('titulo'),
   ],
 }
