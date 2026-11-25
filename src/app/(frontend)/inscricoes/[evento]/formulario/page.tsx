@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { FormularioInscricao } from '@/components/inscricoes/FormularioInscricao'
+import { PagamentoInscricao } from '@/components/inscricoes/PagamentoInscricao'
 import { RichText } from '@/components/RichText'
 import { PageHero } from '@/components/ui'
 import { exigirAtleta } from '@/lib/atleta/guarda'
@@ -120,7 +121,13 @@ export default async function FormularioPage({ params }: Props) {
         ]}
       />
 
-      <div className="container section" style={{ maxWidth: 820 }}>
+      <div className="container section" style={{ maxWidth: 820, display: 'grid', gap: 18 }}>
+        <PagamentoInscricao
+          valor={evento.valorInscricao}
+          pixChave={evento.pixChave}
+          pixTitular={evento.pixTitular}
+        />
+
         {inscricoes.length > 0 ? (
           <div className="alerta alerta--ok" role="status">
             <strong>

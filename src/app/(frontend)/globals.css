@@ -996,6 +996,82 @@ p {
 .hero__visual--foto .listras-v {
   width: 14px;
 }
+/* ---------- Pagamento da inscrição ---------- */
+.pagamento {
+  border: 1px solid var(--azul);
+  border-radius: var(--r-lg);
+  background: #f3f1ff;
+  padding: 20px 22px;
+  display: grid;
+  gap: 8px;
+  box-shadow: 0 10px 26px rgba(28, 10, 150, 0.08);
+}
+.pagamento__cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.pagamento__cabecalho h2 {
+  font-family: var(--f-display);
+  font-weight: 900;
+  font-size: 18px;
+  margin: 0;
+  color: var(--azul);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.pagamento__cabecalho strong {
+  font-family: var(--f-display);
+  font-weight: 900;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--texto);
+}
+.pagamento__rotulo {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texto-3);
+}
+.pagamento__chave {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  background: #fff;
+  border: 1px dashed var(--azul);
+  border-radius: var(--r);
+  padding: 12px 14px;
+}
+.pagamento__chave > span {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--texto);
+  word-break: break-all;
+}
+.pagamento__titular {
+  margin: 0;
+  font-size: 14px;
+  color: var(--texto-2);
+}
+.pagamento__ajuda {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--texto-2);
+}
+.copiar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* ---------- Carrossel do destaque ---------- */
 .carrossel {
   position: relative;

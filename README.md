@@ -97,6 +97,11 @@ cadastro novo; contas antigas informam uma única vez em **Meus dados** ou na pr
 (o valor é salvo na conta). A idade usa como referência **31/12 do ano do evento**. Clube/CT,
 treinador, prova e categoria de peso não existem na conta e continuam sendo perguntados.
 
+**Pagamento em destaque no formulário:** a página do formulário mostra, antes dos campos, uma
+caixa com o **valor da inscrição** e a **chave Pix** (com botão de copiar) — campos *Valor da
+inscrição (R$)*, *Chave Pix* e *Titular da chave Pix* em **Competições**. Sem valor e sem chave,
+a caixa não aparece.
+
 **Comprovante de pagamento depois da inscrição:** em **Área do atleta › Comprovantes**
 (`/area/comprovantes`), o atleta escolhe a **competição** (não a inscrição) e envia o
 comprovante em PDF/JPG/PNG (até 2 MB). O comprovante é do atleta naquele evento: vale por todas

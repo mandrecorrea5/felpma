@@ -433,6 +433,14 @@ export interface Competicao {
    */
   valorInscricao?: number | null;
   /**
+   * Aparece em destaque na página do formulário de inscrição, com botão de copiar. Deixe vazio para não mostrar.
+   */
+  pixChave?: string | null;
+  /**
+   * Opcional. Nome de quem recebe (ex.: FELPMA — CNPJ 00.000.000/0001-00).
+   */
+  pixTitular?: string | null;
+  /**
    * Padrão: cada inscrição ocupa uma vaga (quem se inscreve em Sub-17 e Sub-20 ocupa duas). Em "Atletas", a pessoa conta uma vez só, quantas categorias fizer.
    */
   contarVagasPor?: ('inscricoes' | 'atletas') | null;
@@ -1665,6 +1673,8 @@ export interface CompeticoesSelect<T extends boolean = true> {
   inscricoesAbertas?: T;
   limiteVagas?: T;
   valorInscricao?: T;
+  pixChave?: T;
+  pixTitular?: T;
   contarVagasPor?: T;
   avisoForaDoPeriodo?: T;
   formularios?: T;

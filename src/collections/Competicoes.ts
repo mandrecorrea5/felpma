@@ -195,6 +195,25 @@ export const Competicoes: CollectionConfig = {
       },
     },
     {
+      name: 'pixChave',
+      label: 'Chave Pix',
+      type: 'text',
+      admin: {
+        position: 'sidebar',
+        description:
+          'Aparece em destaque na página do formulário de inscrição, com botão de copiar. Deixe vazio para não mostrar.',
+      },
+    },
+    {
+      name: 'pixTitular',
+      label: 'Titular da chave Pix',
+      type: 'text',
+      admin: {
+        position: 'sidebar',
+        description: 'Opcional. Nome de quem recebe (ex.: FELPMA — CNPJ 00.000.000/0001-00).',
+      },
+    },
+    {
       name: 'contarVagasPor',
       label: 'Contar vagas por',
       type: 'select',
