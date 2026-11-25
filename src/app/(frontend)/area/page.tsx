@@ -213,6 +213,12 @@ export default async function AreaPage({ searchParams }: Props) {
                   comprovantesDoEvento(i),
                   evento ?? undefined,
                 )
+                // O formulário do evento ainda aceita outra inscrição deste atleta?
+                const podeAdicionar = Boolean(
+                  evento &&
+                    i.status !== 'cancelada' &&
+                    painel.porEvento.get(String(evento.id))?.estado.podeInscrever,
+                )
                 return (
                   <div key={i.id} className="inscricao-lista__item">
                     <div className="inscricao-lista__txt">
@@ -264,6 +270,14 @@ export default async function AreaPage({ searchParams }: Props) {
                     >
                       Ver detalhes
                     </Link>
+                    {podeAdicionar && evento ? (
+                      <Link
+                        href={`/inscricoes/${evento.slug}/formulario`}
+                        className="btn btn--sm btn--azul"
+                      >
+                        Adicionar categoria
+                      </Link>
+                    ) : null}
                   </div>
                 )
               })}

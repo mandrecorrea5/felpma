@@ -114,6 +114,14 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
   const podeAdicionarCategoria = Boolean(
     estadoDoEvento?.podeInscrever && inscricao.status !== 'cancelada',
   )
+  // Sem a possibilidade de outra inscrição, explica o motivo em vez de deixar o
+  // atleta procurando um botão que não existe.
+  const limiteDoEvento = Math.max(1, formularioDoEvento?.limitePorAtleta ?? 1)
+  const limiteAtingido = Boolean(
+    estadoDoEvento?.estado === 'inscrito' &&
+      estadoDoEvento?.rotulo === 'Inscrição já recebida' &&
+      inscricao.status !== 'cancelada',
+  )
 
   const respostas = (Array.isArray(inscricao.respostas) ? inscricao.respostas : []).map((r) => {
     const item = r as Snapshot
@@ -192,6 +200,15 @@ export default async function InscricaoPage({ params, searchParams }: Props) {
             Esta inscrição não pode mais ser cancelada por aqui. Fale com a federação.
           </div>
         ) : null}
+        {limiteAtingido ? (
+          <div className="alerta alerta--ok" role="status">
+            <strong>Inscrição já recebida.</strong> Este evento está configurado para{' '}
+            {limiteDoEvento === 1 ? 'uma inscrição' : `${limiteDoEvento} inscrições`} por atleta.
+            Precisa competir em outra categoria de idade?{' '}
+            <Link href="/contato">Fale com a federação</Link>.
+          </div>
+        ) : null}
+
         {podeAdicionarCategoria && evento ? (
           <div className="alerta alerta--ok" role="status" style={{ display: 'grid', gap: 10 }}>
             <div>

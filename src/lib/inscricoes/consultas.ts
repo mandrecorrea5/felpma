@@ -139,6 +139,12 @@ export type PainelDoAtleta = {
   emBreve: FormularioDoPainel[]
   /** Formulários que ele já preencheu (inscrições), da mais recente para a mais antiga. */
   inscricoes: Inscricao[]
+  /**
+   * Estado de inscrição por evento (id do evento → estado), inclusive dos que já
+   * foram preenchidos. É o que a lista de inscrições usa para oferecer
+   * "Adicionar categoria" quando o formulário ainda aceita outra.
+   */
+  porEvento: Map<string, FormularioDoPainel>
 }
 
 /**
@@ -222,6 +228,7 @@ export async function painelDoAtleta(atletaId: number | string): Promise<PainelD
   )
 
   return {
+    porEvento: new Map(itens.map((item) => [String(item.evento.id), item])),
     disponiveis: itens
       .filter((i) => i.estado.podeInscrever)
       .sort((a, b) => (a.evento.inscricoesAte ?? '').localeCompare(b.evento.inscricoesAte ?? '')),
