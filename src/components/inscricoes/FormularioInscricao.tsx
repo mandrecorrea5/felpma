@@ -414,7 +414,8 @@ export function FormularioInscricao({
               </li>
             </ul>
             <p className="muted" style={{ fontSize: 14, marginTop: 12 }}>
-              Dados incorretos? Atualize em <a href="/area/meus-dados">Meus dados</a>. CPF e data de
+              Estes dados vêm da sua conta e não podem ser alterados na inscrição. Dados
+              incorretos? Atualize em <a href="/area/meus-dados">Meus dados</a> — CPF e data de
               nascimento exigem atendimento da federação.
             </p>
           </div>
@@ -426,6 +427,12 @@ export function FormularioInscricao({
           <h2 id="p1" className="eyebrow">
             Dados da inscrição
           </h2>
+          {campos.some((campo) => visivel(campo) && bloqueado(campo.nome?.trim() ?? '')) ? (
+            <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+              Os dados do seu cadastro vêm preenchidos e <strong>não podem ser alterados</strong>{' '}
+              aqui. Para corrigir, <a href="/area/meus-dados">atualize em Meus dados</a>.
+            </p>
+          ) : null}
           {campos
             .filter((campo) => ehSecao(campo) || visivel(campo))
             .map((campo, indice) => {
@@ -535,6 +542,8 @@ export function FormularioInscricao({
                       ) : campo.blockType === 'multipla' ? (
                         <fieldset
                           id={id}
+                          disabled={travado}
+                          aria-describedby={travado ? `${id}-cadastro` : undefined}
                           style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}
                         >
                           <legend className="sr-only">{campo.rotulo}</legend>
@@ -744,7 +753,48 @@ export function FormularioInscricao({
           <h2 id="p3" className="eyebrow">
             Confira antes de enviar
           </h2>
+
+          {/*
+            A identificação vem da conta, não dos campos do formulário: por isso
+            não aparece na lista de respostas do CMS. Ela precisa estar no
+            resumo mesmo assim — é o nome do atleta que a federação confere.
+          */}
           <div className="card card--pad">
+            <h3 style={{ fontSize: 16, marginBottom: 12 }}>Atleta</h3>
+            <ul className="info-list">
+              <li>
+                <div>
+                  <small>Nome completo</small>
+                  {atleta.nome}
+                </div>
+              </li>
+              <li>
+                <div>
+                  <small>E-mail</small>
+                  {atleta.email}
+                </div>
+              </li>
+              <li>
+                <div>
+                  <small>CPF</small>
+                  {atleta.cpfMascara}
+                </div>
+              </li>
+              <li>
+                <div>
+                  <small>Nascimento</small>
+                  {dataLonga(atleta.nascimento)} · {atleta.idade} anos
+                </div>
+              </li>
+            </ul>
+            <p className="muted" style={{ fontSize: 13, marginTop: 12, marginBottom: 0 }}>
+              Dados do cadastro — não podem ser alterados na inscrição. Para corrigir,{' '}
+              <a href="/area/meus-dados">atualize em Meus dados</a>.
+            </p>
+          </div>
+
+          <div className="card card--pad">
+            <h3 style={{ fontSize: 16, marginBottom: 12 }}>Respostas da inscrição</h3>
             <ul className="info-list">
               {visiveis.map((campo) => (
                 <li key={campo.nome}>

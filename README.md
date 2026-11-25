@@ -89,13 +89,14 @@ clicou em "Preencher" antes de entrar volta para essa lista com o formulário de
 destaque, pronto para continuar — sem precisar procurar o evento no calendário.
 
 **Dados do cadastro aproveitados na inscrição.** O formulário nasce preenchido com o que já
-existe na conta: nome, e-mail, telefone, cidade, UF, data de nascimento, idade e **sexo**. Nome,
-e-mail, sexo, nascimento e idade ficam travados e o servidor os sobrescreve com o dado da conta —
-o atleta não consegue trocar o sexo no navegador para entrar em outra categoria. Telefone,
-cidade e UF vêm preenchidos, mas podem ser ajustados para aquela inscrição. O sexo é pedido no
-cadastro novo; contas antigas informam uma única vez em **Meus dados** ou na primeira inscrição
+existe na conta: nome, e-mail, telefone, cidade, UF, data de nascimento, idade e **sexo**. Todos
+esses campos ficam travados (aparecem desabilitados, com aviso para corrigir em **Meus dados**) e
+o servidor os sobrescreve com o dado da conta — o atleta não consegue trocar o sexo no navegador
+para entrar em outra categoria, nem digitar um telefone que não é o do cadastro. O sexo é pedido
+no cadastro novo; contas antigas informam uma única vez em **Meus dados** ou na primeira inscrição
 (o valor é salvo na conta). A idade usa como referência **31/12 do ano do evento**. Clube/CT,
-treinador, prova e categoria de peso não existem na conta e continuam sendo perguntados.
+treinador, prova e categoria de peso não existem na conta e continuam sendo perguntados. O passo
+**Revisão** mostra a identificação do atleta (nome, e-mail, CPF e nascimento) acima das respostas.
 
 **Pagamento em destaque no formulário:** a página do formulário mostra, antes dos campos, uma
 caixa com o **valor da inscrição** e a **chave Pix** (com botão de copiar) — campos *Valor da

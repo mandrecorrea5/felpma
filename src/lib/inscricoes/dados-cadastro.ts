@@ -7,11 +7,11 @@ import { type CampoFormulario, ehSecao, type Resposta, type Respostas } from './
  *
  * O atleta não pode criar outra conta: nome, e-mail, CPF, nascimento, telefone,
  * cidade, UF e sexo já foram informados no cadastro. Em vez de pedir tudo de
- * novo, o formulário nasce com esses campos preenchidos. Os dados que definem
- * categoria (nome, e-mail, sexo, nascimento e idade) são travados e o servidor
- * os sobrescreve — sem isso, bastaria alterar o sexo no navegador para entrar
- * na categoria errada. Telefone, cidade e UF vêm preenchidos, mas podem ser
- * ajustados para a inscrição.
+ * novo, o formulário nasce com esses campos preenchidos — e todos eles ficam
+ * travados: a inscrição não é lugar de editar o cadastro. O servidor sobrescreve
+ * cada um com o dado da conta, senão bastaria alterar o sexo no navegador para
+ * entrar na categoria errada (ou trocar o telefone por um número que não é do
+ * atleta). A correção é feita em **Meus dados**.
  */
 
 type TipoDado = 'cidade' | 'email' | 'idade' | 'nascimento' | 'nome' | 'sexo' | 'telefone' | 'uf'
@@ -60,6 +60,22 @@ const POR_ROTULO: Record<string, TipoDado> = {
   'data de nascimento': 'nascimento',
 }
 
+/**
+ * Palavras que identificam o dado quando o rótulo diz explicitamente "do
+ * atleta" ("Telefone / WhatsApp do atleta", "Nome completo do atleta"). Sem
+ * isso, o campo continuaria editável e o servidor não o sobrescreveria.
+ */
+const POR_PALAVRA: Array<[RegExp, TipoDado]> = [
+  [/\be-?mail\b/, 'email'],
+  [/\bnascimento\b/, 'nascimento'],
+  [/\bnome\b/, 'nome'],
+  [/\b(telefone|celular|whatsapp)\b/, 'telefone'],
+  [/\bsexo\b/, 'sexo'],
+  [/\bidade\b/, 'idade'],
+  [/\bcidade\b/, 'cidade'],
+  [/\buf\b/, 'uf'],
+]
+
 const tipoDoCampo = (campo: CampoFormulario): null | TipoDado => {
   const rotulo = normalizar(campo.rotulo ?? '').replace(/\s+/g, ' ')
   // "Nome do treinador", "telefone do responsável" e afins não são dados do
@@ -67,9 +83,20 @@ const tipoDoCampo = (campo: CampoFormulario): null | TipoDado => {
   if (/\b(clube|equipe|academia|treinador|tecnico|responsavel)\b/.test(rotulo)) return null
 
   const nome = chave(campo.nome ?? '')
-  if (nome && POR_NOME[nome]) return POR_NOME[nome]
+  if (nome) {
+    // "telefone-do-atleta", "nome_atleta": o sufixo diz de quem é o dado.
+    const semAtleta = nome.replace(/^atleta-/, '').replace(/-(de-|do-|da-)?atleta$/, '')
+    for (const candidato of [nome, semAtleta]) {
+      if (candidato && POR_NOME[candidato]) return POR_NOME[candidato]
+    }
+  }
 
-  return POR_ROTULO[rotulo] ?? null
+  if (POR_ROTULO[rotulo]) return POR_ROTULO[rotulo]
+
+  // Só cai na palavra-chave quando o rótulo nomeia o atleta — senão "Categoria
+  // de idade" e "Nome do clube" virariam dado da conta.
+  if (!/\batleta\b/.test(rotulo)) return null
+  return POR_PALAVRA.find(([padrao]) => padrao.test(rotulo))?.[1] ?? null
 }
 
 const opcaoDeSexo = (campo: CampoFormulario, sexo: 'F' | 'M'): null | string => {
@@ -104,13 +131,13 @@ const valorDoCadastro = (
       return atleta.email ? { bloqueado: true, valor: atleta.email } : null
 
     case 'telefone':
-      return atleta.telefone ? { bloqueado: false, valor: atleta.telefone } : null
+      return atleta.telefone ? { bloqueado: true, valor: atleta.telefone } : null
 
     case 'cidade':
-      return atleta.cidade ? { bloqueado: false, valor: atleta.cidade } : null
+      return atleta.cidade ? { bloqueado: true, valor: atleta.cidade } : null
 
     case 'uf':
-      return atleta.uf ? { bloqueado: false, valor: atleta.uf } : null
+      return atleta.uf ? { bloqueado: true, valor: atleta.uf } : null
 
     case 'sexo': {
       if (!atleta.sexo) return null
@@ -170,7 +197,6 @@ export const dadosIniciaisDoCadastro = (
 /**
  * Versão autoritativa usada na server action: sobrescreve os campos travados
  * com o dado da conta, mesmo que o corpo da requisição traga outro valor.
- * Telefone, cidade e UF continuam aceitando o ajuste feito na inscrição.
  */
 export const aplicarDadosDoCadastro = (
   campos: CampoFormulario[],
