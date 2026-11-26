@@ -92,6 +92,13 @@ export default async function FormularioPage({ params }: Props) {
     evento.dataInicio,
   )
 
+  // A taxa desta competição depende da categoria e da modalidade ("Situação do
+  // atleta"). Destacar um valor único na caixa de pagamento faria todo mundo
+  // achar que paga o mesmo preço — a tabela vai nas instruções do formulário.
+  const taxaVariaPorModalidade =
+    Number(evento.valorInscricao ?? 0) > 0 &&
+    campos.some((campo) => campo.nome?.trim() === 'situacao')
+
   // O modal só é montado se houver algo para mostrar. O documento precisa estar
   // público: o link aponta para a rota de arquivo do Payload, que respeita
   // `publico` e devolveria 403 para quem não está no painel.
@@ -122,8 +129,18 @@ export default async function FormularioPage({ params }: Props) {
       />
 
       <div className="container section" style={{ maxWidth: 820, display: 'grid', gap: 18 }}>
+        {formulario.descricao ? (
+          <section className="card card--pad" aria-labelledby="instrucoes-inscricao">
+            <h2 id="instrucoes-inscricao" className="eyebrow">
+              Antes de preencher
+            </h2>
+            <RichText data={formulario.descricao} />
+          </section>
+        ) : null}
+
         <PagamentoInscricao
-          valor={evento.valorInscricao}
+          valor={taxaVariaPorModalidade ? null : evento.valorInscricao}
+          valorVariaPorModalidade={taxaVariaPorModalidade}
           pixChave={evento.pixChave}
           pixTitular={evento.pixTitular}
         />
