@@ -408,6 +408,9 @@ export async function gerarPdfEdital(
     const tituloGrupo = trocar(grupo?.titulo)
     if (!tituloGrupo && !(grupo?.linhas ?? []).length) continue
     if (tituloGrupo) {
+      // Título de grupo sozinho no pé da página: cabeçalho + duas linhas da
+      // tabela precisam caber junto do título.
+      if (doc.y + 90 > RODAPE) doc.addPage()
       doc.x = MARGEM
       doc
         .font('Helvetica-Bold')

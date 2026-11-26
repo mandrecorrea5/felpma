@@ -52,19 +52,53 @@ export const CATEGORIAS_IDADE_PADRAO = [
     nome: 'Sênior (Adulto)',
     descricao: 'a partir de 16 anos completos no ano de {ano}',
   },
+  // Master em faixas de 5 anos (mesma divisão usada no formulário de inscrição):
+  // 30–34, 35–39, 40–44… e a última faixa, 85+, aberta.
   {
     nome: 'Master 30+',
-    descricao: 'a partir de 30 anos até 39 anos completos em {ano}',
+    descricao: 'a partir de 30 anos até 34 anos completos em {ano}',
+  },
+  {
+    nome: 'Master 35+',
+    descricao: 'a partir de 35 anos até 39 anos completos em {ano}',
   },
   {
     nome: 'Master 40+',
-    descricao: 'a partir de 40 anos até 49 anos completos em {ano}',
+    descricao: 'a partir de 40 anos até 44 anos completos em {ano}',
+  },
+  {
+    nome: 'Master 45+',
+    descricao: 'a partir de 45 anos até 49 anos completos em {ano}',
   },
   {
     nome: 'Master 50+',
-    descricao: 'a partir de 50 anos até 59 anos completos em {ano}',
+    descricao: 'a partir de 50 anos até 54 anos completos em {ano}',
   },
-  { nome: 'Master 60+', descricao: 'a partir de 60 anos completos em {ano}' },
+  {
+    nome: 'Master 55+',
+    descricao: 'a partir de 55 anos até 59 anos completos em {ano}',
+  },
+  {
+    nome: 'Master 60+',
+    descricao: 'a partir de 60 anos até 64 anos completos em {ano}',
+  },
+  {
+    nome: 'Master 65+',
+    descricao: 'a partir de 65 anos até 69 anos completos em {ano}',
+  },
+  {
+    nome: 'Master 70+',
+    descricao: 'a partir de 70 anos até 74 anos completos em {ano}',
+  },
+  {
+    nome: 'Master 75+',
+    descricao: 'a partir de 75 anos até 79 anos completos em {ano}',
+  },
+  {
+    nome: 'Master 80+',
+    descricao: 'a partir de 80 anos até 84 anos completos em {ano}',
+  },
+  { nome: 'Master 85+', descricao: 'a partir de 85 anos completos em {ano}' },
 ]
 
 export const CATEGORIAS_PESO_PADRAO = [
