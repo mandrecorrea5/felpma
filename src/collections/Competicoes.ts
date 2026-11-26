@@ -191,7 +191,7 @@ export const Competicoes: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description:
-          'Taxa cobrada por inscrição. Vazio ou 0 = evento sem cobrança: ninguém precisa enviar comprovante de pagamento.',
+          'Taxa cobrada por inscrição. Vazio ou 0 = evento sem cobrança: ninguém precisa enviar comprovante de pagamento. Atenção: o valor só aparece em destaque no formulário quando a taxa é única. Se ela varia por categoria ou modalidade, mantenha aqui um valor de referência (para a cobrança existir) e coloque a tabela de taxas nas instruções do formulário — o valor fixo não é exibido.',
       },
     },
     {
