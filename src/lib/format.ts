@@ -53,10 +53,22 @@ export const periodo = (inicio?: string | null, fim?: string | null) => {
     : `${fmt({ day: 'numeric', month: 'long' }).format(i)} a ${dataLonga(fim)}`
 }
 
+/**
+ * `AAAA-MM-DD` do instante no fuso de Fortaleza — o valor que um
+ * `<input type="date">` espera. O ISO cru pode cair no dia anterior quando a
+ * data foi gravada à meia-noite UTC.
+ */
+export const ymd = (iso?: null | string): string => {
+  if (!iso) return ''
+  const data = new Date(iso)
+  if (Number.isNaN(data.getTime())) return ''
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(data)
+}
+
 /** Início do dia de hoje em Fortaleza, como Date. */
 export const hojeISO = () => {
-  const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date())
-  return new Date(`${ymd}T00:00:00-03:00`)
+  const dia = new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date())
+  return new Date(`${dia}T00:00:00-03:00`)
 }
 
 export const diasAte = (iso?: string | null) => {

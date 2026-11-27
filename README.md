@@ -92,7 +92,10 @@ destaque, pronto para continuar — sem precisar procurar o evento no calendári
 existe na conta: nome, e-mail, telefone, cidade, UF, data de nascimento, idade e **sexo**. Todos
 esses campos ficam travados (aparecem desabilitados, com aviso para corrigir em **Meus dados**) e
 o servidor os sobrescreve com o dado da conta — o atleta não consegue trocar o sexo no navegador
-para entrar em outra categoria, nem digitar um telefone que não é o do cadastro. O sexo é pedido
+para entrar em outra categoria, nem digitar um telefone que não é o do cadastro. Em **Meus dados**
+o atleta corrige nome, contato, endereço e **data de nascimento**; a correção da data é validada e
+registrada, e, se ele já tiver inscrição enviada, a federação recebe um e-mail para revisar a
+categoria de idade. O CPF e o sexo (depois de informado) só mudam pela federação. O sexo é pedido
 no cadastro novo; contas antigas informam uma única vez em **Meus dados** ou na primeira inscrição
 (o valor é salvo na conta). A idade usa como referência **31/12 do ano do evento**. Clube/CT,
 treinador, prova e categoria de peso não existem na conta e continuam sendo perguntados. O passo

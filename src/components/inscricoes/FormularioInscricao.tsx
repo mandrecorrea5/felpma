@@ -415,8 +415,8 @@ export function FormularioInscricao({
             </ul>
             <p className="muted" style={{ fontSize: 14, marginTop: 12 }}>
               Estes dados vêm da sua conta e não podem ser alterados na inscrição. Dados
-              incorretos? Atualize em <a href="/area/meus-dados">Meus dados</a> — CPF e data de
-              nascimento exigem atendimento da federação.
+              incorretos? Atualize em <a href="/area/meus-dados">Meus dados</a> — o CPF exige
+              atendimento da federação.
             </p>
           </div>
         </section>
@@ -619,7 +619,8 @@ export function FormularioInscricao({
                       {travado ? (
                         <small id={`${id}-cadastro`} className="muted">
                           Dado do seu cadastro. Para alterar,{' '}
-                          <a href="/area/meus-dados">atualize em Meus dados</a>.
+                          <a href="/area/meus-dados">atualize em Meus dados</a>; CPF e sexo só
+                          mudam pela federação.
                         </small>
                       ) : null}
                     </>
@@ -789,7 +790,8 @@ export function FormularioInscricao({
             </ul>
             <p className="muted" style={{ fontSize: 13, marginTop: 12, marginBottom: 0 }}>
               Dados do cadastro — não podem ser alterados na inscrição. Para corrigir,{' '}
-              <a href="/area/meus-dados">atualize em Meus dados</a>.
+              <a href="/area/meus-dados">atualize em Meus dados</a>; CPF e sexo só
+              mudam pela federação.
             </p>
           </div>
 

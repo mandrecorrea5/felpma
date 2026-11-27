@@ -335,6 +335,54 @@ export const emailFederacaoComprovante = (args: {
 }
 
 /**
+ * Aviso operacional de correção de data de nascimento.
+ *
+ * A idade e a categoria de uma inscrição já enviada são um retrato do momento
+ * do envio: corrigir a data na conta não reescreve esse histórico. O e-mail
+ * existe para a federação conferir a categoria antes de confirmar.
+ */
+export const emailFederacaoCorrecaoNascimento = (args: {
+  adminUrl: string
+  anterior: string
+  atleta: string
+  emailAtleta: string
+  inscricoes: { evento: string; idade?: string; protocolo: string }[]
+  nova: string
+  total: number
+}): string => {
+  const linhas = [
+    linhaDetalhe('Atleta', args.atleta),
+    linhaDetalhe('E-mail', args.emailAtleta),
+    linhaDetalhe('Data anterior', args.anterior),
+    linhaDetalhe('Data corrigida', args.nova),
+  ]
+    .filter(Boolean)
+    .join('')
+
+  const itens = args.inscricoes
+    .map(
+      (inscricao) =>
+        `<li style="margin:0 0 8px"><strong style="color:#14141a">${escapar(inscricao.protocolo)}</strong> — ${escapar(inscricao.evento)}${inscricao.idade ? ` · ${escapar(inscricao.idade)}` : ''}</li>`,
+    )
+    .join('')
+
+  const restantes = args.total - args.inscricoes.length
+
+  return layout(
+    'Data de nascimento corrigida',
+    `<p style="margin:0">O atleta corrigiu a data de nascimento em <strong>Meus dados</strong>. Ele já tem inscrição enviada — confira a categoria de idade antes de confirmar.</p>
+     ${tabelaDetalhes(linhas)}
+     <h2 style="margin:26px 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.3;color:#14141a;font-weight:700">Inscrições para revisar</h2>
+     <ul style="margin:0;padding-left:20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#5a5a66">${itens}</ul>
+     ${restantes > 0 ? caixa(`Há mais ${restantes} inscrição(ões) deste atleta no painel.`) : ''}
+     ${caixa('A idade e a categoria gravadas na inscrição são um retrato do envio e não mudam sozinhas ao corrigir a data de nascimento.', true)}
+     ${botao(args.adminUrl, 'Abrir conta no painel')}`,
+    'Você recebeu este e-mail porque ele faz parte da operação de inscrições da FELPMA.',
+    `Correção de data de nascimento — ${args.atleta}.`,
+  )
+}
+
+/**
  * Mensagem enviada pelo formulário de contato do site.
  *
  * O `Reply-To` do e-mail aponta para o visitante (montado em

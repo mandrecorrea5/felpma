@@ -10,7 +10,9 @@ import { cpfValido, normalizarCpf } from '@/lib/cpf'
 import { hashBusca } from '@/lib/crypto/campos'
 import { emailDisponivel, enviarEmailAtivacao } from '@/lib/email'
 import { caminhoInterno, destinoPosLogin } from '@/lib/atleta/caminho'
+import { registrarCorrecaoDeNascimento } from '@/lib/atleta/correcao-nascimento'
 import { origemDaRequisicao } from '@/lib/inscricoes/consentimento'
+import { ymd } from '@/lib/format'
 import { limitar } from '@/lib/rate-limit'
 import type { ErroDeCampo, EstadoFormulario } from '@/lib/atleta/tipos'
 
@@ -26,7 +28,19 @@ const senhaForte = (valor: string): null | string => {
   return null
 }
 
-const dataParaISO = (ymd: string): string => `${ymd}T00:00:00-03:00`
+const dataParaISO = (dia: string): string => `${dia}T00:00:00-03:00`
+
+/** Rejeita 31/02 e afins: o `Date` do JS normalizaria para o mês seguinte. */
+const dataValida = (valor: string): boolean => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(valor)) return false
+  const [ano, mes, dia] = valor.split('-').map(Number)
+  const data = new Date(Date.UTC(ano, mes - 1, dia))
+  return (
+    data.getUTCFullYear() === ano &&
+    data.getUTCMonth() === mes - 1 &&
+    data.getUTCDate() === dia
+  )
+}
 
 const anosDesde = (iso: string, hoje = new Date()): number => {
   const nascimento = new Date(iso)
@@ -70,11 +84,13 @@ export async function criarConta(_prev: EstadoFormulario, form: FormData): Promi
   if (problemaSenha) erros.push({ campo: 'senha', mensagem: problemaSenha })
   if (!cpfValido(campos.cpf))
     erros.push({ campo: 'cpf', mensagem: 'Informe um CPF válido (11 números).' })
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(campos.nascimento)) {
+  if (!dataValida(campos.nascimento)) {
     erros.push({ campo: 'nascimento', mensagem: 'Informe a data de nascimento.' })
   } else {
     const idade = anosDesde(dataParaISO(campos.nascimento))
-    if (idade < 0 || idade > 100)
+    if (new Date(dataParaISO(campos.nascimento)).getTime() > Date.now())
+      erros.push({ campo: 'nascimento', mensagem: 'A data não pode estar no futuro.' })
+    else if (idade < 0 || idade > 100)
       erros.push({ campo: 'nascimento', mensagem: 'Confira a data de nascimento.' })
   }
   if (campos.sexo !== 'M' && campos.sexo !== 'F')
@@ -287,8 +303,34 @@ export async function atualizarDadosAction(_prev: EstadoFormulario, form: FormDa
   const nome = texto(form, 'nome')
   if (nome.length < 5 || !nome.includes(' ')) return { ok: false, erro: 'Informe o nome completo.' }
 
+  // A data de nascimento passou a ser corrigível pelo próprio titular. A
+  // validação repete a do cadastro e a mudança fica na trilha de auditoria;
+  // se houver inscrição já enviada, a federação é avisada para revisar a
+  // categoria de idade.
+  const nascimento = texto(form, 'nascimento')
+  if (!dataValida(nascimento)) return { ok: false, erro: 'Informe uma data de nascimento válida.' }
+
+  const nascimentoISO = dataParaISO(nascimento)
+  if (new Date(nascimentoISO).getTime() > Date.now()) {
+    return { ok: false, erro: 'A data de nascimento não pode estar no futuro.' }
+  }
+  const idade = anosDesde(nascimentoISO)
+  if (idade < 0 || idade > 100) return { ok: false, erro: 'Confira a data de nascimento.' }
+
+  const corrigiuNascimento = ymd(atleta.dataNascimento) !== nascimento
+
+  // Cada correção com inscrição enviada dispara e-mail para a federação. O teto
+  // evita que uma conta autenticada use o formulário como bombardeio de caixa.
+  if (corrigiuNascimento && !limitar(`nascimento:${atleta.id}`, 5, 60 * 60 * 1000)) {
+    return {
+      ok: false,
+      erro: 'Muitas alterações de data em pouco tempo. Aguarde ou fale com a federação.',
+    }
+  }
+
   const dados: {
     cidade: null | string
+    dataNascimento?: string
     nome: string
     sexo?: 'F' | 'M'
     telefone: null | string
@@ -299,6 +341,8 @@ export async function atualizarDadosAction(_prev: EstadoFormulario, form: FormDa
     cidade: texto(form, 'cidade').slice(0, 120) || null,
     uf: (texto(form, 'uf') || 'MA').slice(0, 2).toUpperCase(),
   }
+
+  if (corrigiuNascimento) dados.dataNascimento = nascimentoISO
 
   // O sexo é informado uma única vez. Depois disso, só a federação corrige —
   // é ele que define a categoria de peso e não pode virar autoatribuição.
@@ -315,7 +359,21 @@ export async function atualizarDadosAction(_prev: EstadoFormulario, form: FormDa
       overrideAccess: true,
       data: dados,
     })
-    return { ok: true, sucesso: 'Dados atualizados.' }
+
+    const correcao = corrigiuNascimento
+      ? await registrarCorrecaoDeNascimento({
+          atleta,
+          nova: nascimentoISO,
+          payload,
+        })
+      : null
+
+    return {
+      ok: true,
+      sucesso: correcao?.avisada
+        ? 'Dados atualizados. A federação foi avisada para revisar suas inscrições.'
+        : 'Dados atualizados.',
+    }
   } catch (e) {
     console.error('Falha ao atualizar dados do atleta', e)
     return { ok: false, erro: 'Não foi possível salvar agora. Tente novamente.' }

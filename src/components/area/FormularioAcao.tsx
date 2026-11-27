@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { type FormEvent, type ReactNode, useState, useTransition } from 'react'
 import type { EstadoFormulario } from '@/lib/atleta/tipos'
 
@@ -21,13 +22,18 @@ export function FormularioAcao({
 }) {
   const [estado, setEstado] = useState<EstadoFormulario>({ ok: false })
   const [pendente, iniciarTransicao] = useTransition()
+  const router = useRouter()
 
   // Envio manual: `action={...}` faria o React resetar os campos no erro.
   const enviar = (evento: FormEvent<HTMLFormElement>) => {
     evento.preventDefault()
     const dados = new FormData(evento.currentTarget)
     iniciarTransicao(async () => {
-      setEstado(await acao(estado, dados))
+      const resultado = await acao(estado, dados)
+      setEstado(resultado)
+      // O resumo acima do formulário é renderizado no servidor: sem o refresh
+      // ele continuaria mostrando o dado antigo depois de salvar.
+      if (resultado.ok) router.refresh()
     })
   }
 

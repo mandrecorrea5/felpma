@@ -60,6 +60,35 @@ const registraAprovacao: CollectionBeforeChangeHook = ({ data, originalDoc, req 
   return data
 }
 
+const comoTempo = (valor: unknown): null | number => {
+  if (valor == null || valor === '') return null
+  const data = new Date(valor as Date | number | string)
+  return Number.isNaN(data.getTime()) ? null : data.getTime()
+}
+
+/**
+ * O campo tem `access.update` apenas para administrador. Para um editor, o
+ * Payload descarta a mudança e restaura a data antiga em silêncio — a pessoa
+ * salva, vê "salvo" e o valor não muda. Falhar com mensagem clara é melhor.
+ *
+ * O próprio atleta não passa por aqui: a correção dele vai pela server action
+ * com `overrideAccess`, e a validação de idade fica em `atualizarDadosAction`.
+ */
+const protegeDataNascimento: CollectionBeforeChangeHook = ({ data, originalDoc, req }) => {
+  const ator = req.user
+  if (ator?.collection !== 'users' || ator.role === 'admin') return data
+  if (!data || data.dataNascimento === undefined) return data
+
+  if (comoTempo(data.dataNascimento) !== comoTempo(originalDoc?.dataNascimento)) {
+    throw new APIError(
+      'A data de nascimento só pode ser alterada por um administrador no painel. Peça ao atleta para corrigir em Meus dados.',
+      403,
+    )
+  }
+
+  return data
+}
+
 export const Atletas: CollectionConfig = {
   slug: 'atletas',
   typescript: { interface: 'Atleta' },
@@ -104,7 +133,7 @@ export const Atletas: CollectionConfig = {
   hooks: {
     afterOperation: [auditarAcesso('atletas')],
     beforeValidate: [preparaCpf],
-    beforeChange: [registraAprovacao],
+    beforeChange: [registraAprovacao, protegeDataNascimento],
   },
   fields: [
     { name: 'nome', label: 'Nome completo', type: 'text', required: true },
@@ -135,7 +164,11 @@ export const Atletas: CollectionConfig = {
       label: 'Data de nascimento',
       type: 'date',
       required: true,
-      admin: { date: { pickerAppearance: 'dayOnly', displayFormat: 'dd/MM/yyyy' } },
+      admin: {
+        date: { pickerAppearance: 'dayOnly', displayFormat: 'dd/MM/yyyy' },
+        description:
+          'O atleta pode corrigir em Meus dados, no site. No painel, só um administrador altera.',
+      },
       access: { update: isAdminField },
     },
     {

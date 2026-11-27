@@ -81,11 +81,11 @@ export function ConsentimentoGA() {
 
       {visivel ? (
         <section
-          className="consentimento"
+          className="consentimento-cookies"
           role="region"
           aria-label="Consentimento para cookies de medição"
         >
-          <div className="consentimento__texto">
+          <div className="consentimento-cookies__texto">
             <strong>Cookies de medição (Google Analytics)</strong>
             <p>
               Queremos entender quais páginas e eventos são acessados para melhorar o site. O
@@ -93,7 +93,7 @@ export function ConsentimentoGA() {
               <Link href="/institucional/politica-de-privacidade">política de privacidade</Link>.
             </p>
           </div>
-          <div className="consentimento__acoes">
+          <div className="consentimento-cookies__acoes">
             <button
               type="button"
               className="btn btn--azul btn--sm"

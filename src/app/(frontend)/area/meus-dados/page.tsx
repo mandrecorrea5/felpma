@@ -4,7 +4,7 @@ import { FormularioAcao } from '@/components/area/FormularioAcao'
 import { PageHero } from '@/components/ui'
 import { exigirAtleta } from '@/lib/atleta/guarda'
 import { labelOf, SEXOS } from '@/lib/constants'
-import { dataCurta } from '@/lib/format'
+import { dataCurta, ymd } from '@/lib/format'
 import { atualizarDadosAction } from '../actions'
 
 export const metadata: Metadata = { title: 'Meus dados', robots: { index: false } }
@@ -17,7 +17,7 @@ export default async function MeusDadosPage() {
     <>
       <PageHero
         titulo="Meus dados"
-        intro="Você pode corrigir contato e endereço. CPF e data de nascimento exigem atendimento da federação; o sexo pode ser informado uma vez e depois só a federação altera."
+        intro="Você pode corrigir contato, endereço e data de nascimento. O CPF exige atendimento da federação; o sexo pode ser informado uma vez e depois só a federação altera."
         crumbs={[{ href: '/area', label: 'Área do atleta' }, { label: 'Meus dados' }]}
       />
       <div className="container section" style={{ maxWidth: 640 }}>
@@ -82,6 +82,24 @@ export default async function MeusDadosPage() {
               required
             />
           </div>
+          <div className="field">
+            <label htmlFor="nascimento">Data de nascimento</label>
+            <input
+              id="nascimento"
+              name="nascimento"
+              type="date"
+              data-ndovu-mask
+              className="input"
+              defaultValue={ymd(atleta.dataNascimento)}
+              max={ymd(new Date().toISOString())}
+              autoComplete="bday"
+              required
+            />
+            <small className="muted">
+              Define a categoria de idade nas inscrições. Se você já enviou alguma inscrição, a
+              federação será avisada para revisar a categoria.
+            </small>
+          </div>
           <div className="field-row">
             <div className="field">
               <label htmlFor="telefone">Telefone (WhatsApp)</label>
@@ -122,8 +140,7 @@ export default async function MeusDadosPage() {
           Quer trocar a senha? <Link href="/area/recuperar-senha">Enviar link por e-mail</Link>.
         </p>
         <p style={{ marginTop: 8, fontSize: 14 }}>
-          Precisa corrigir CPF, data de nascimento ou sexo?{' '}
-          <Link href="/contato">Fale com a federação</Link>.
+          Precisa corrigir CPF ou sexo? <Link href="/contato">Fale com a federação</Link>.
         </p>
       </div>
     </>
